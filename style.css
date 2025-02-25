@@ -1,0 +1,110 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Roboto', sans-serif;
+}
+
+#map { 
+    height: 100vh; 
+}
+
+#controls {
+    position: absolute;
+    top: 90px;
+    left: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+#controls label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+#cursor-coordinates {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 5px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+#hexagon-sidebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 250px;
+    height: 100%;
+    background: white;
+    padding: 10px;
+    border-left: 1px solid #ccc;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: -2px 0 6px rgba(0,0,0,0.3);
+}
+
+#hexagon-sidebar-toggle {
+    position: absolute;
+    top: 265px;
+    left: 10px;
+    z-index: 1001;
+    background: white;
+    padding: 5px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    font: inherit;
+}
+
+#help-sidebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 250px;
+    height: 100%;
+    background: white;
+    padding: 10px;
+    border-left: 1px solid #ccc;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: -2px 0 6px rgba(0,0,0,0.3);
+}
+
+#help-sidebar-toggle {
+    position: absolute;
+    top: 305px;
+    left: 10px;
+    z-index: 1001;
+    background: white;
+    padding: 5px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    font: inherit;
+}
+
+.popup {
+    display: none;
+    position: absolute;
+    background: white;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    z-index: 1001;
+}
+
+.hexagon-list-item {
+    cursor: pointer;
+}

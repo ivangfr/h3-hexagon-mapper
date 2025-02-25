@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>H3 Hexagon Mapper</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="map"></div>
+    <div id="controls">
+        <label for="resolution">Resolution: <span id="resolution-value">9</span></label>
+        <input type="range" id="resolution" min="0" max="15" value="9">
+        <br>
+        <label for="color-picker">Color:</label>
+        <input type="color" id="color-picker" value="#0000ff">
+        <br>
+        <label for="opacity">Opacity: <span id="opacity-value">0.3</span></label>
+        <input type="range" id="opacity" min="0" max="1" step="0.1" value="0.3">
+    </div>
+    <div id="cursor-coordinates">Lat: 0, Lon: 0</div>
+    <div id="hexagon-sidebar">
+        <h2>Selected Hexagons</h2>
+        <ul id="hexagon-list"></ul>
+    </div>
+    <button id="hexagon-sidebar-toggle">Selected Hexagons</button>
+    <button id="help-sidebar-toggle">Help</button>
+    <div id="help-sidebar">
+        <h2>Help</h2>
+        <ul>
+            <li><strong>Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.</li>
+            <li><strong>Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.</li>
+            <li><strong>Add a Marker:</strong> Right-click on the map to open a popup where you can enter a marker name and add it to the map.</li>
+            <li><strong>Remove a Marker:</strong> Right-click on an existing marker to remove it.</li>
+            <li><strong>Adjust Hexagon Resolution:</strong> Use the resolution slider in the controls section to adjust the resolution of the hexagons.</li>
+            <li><strong>Change Hexagon Color:</strong> Use the color picker in the controls section to change the color of the hexagons.</li>
+            <li><strong>Change Hexagon Opacity:</strong> Use the opacity slider in the controls section to change the opacity of the hexagons.</li>
+        </ul>
+        <h3>This website uses these open-source libraries:</h3>
+        <ul>
+            <li><strong><a href="https://github.com/Leaflet/Leaflet">Leaflet</a></strong>: Licence <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE">BSD 2-Clause "Simplified" License</a></li>
+            <li><strong><a href="https://github.com/uber/h3">H3-js</a></strong>: Licence <a href="https://github.com/uber/h3-js/blob/master/LICENSE">Apache License 2.0</a></li>
+            <li><strong><a href="https://www.openstreetmap.org">OpenStreetMap</a></strong>: Licence <a href="https://www.openstreetmap.org/copyright">Open Database License (ODbL)</a></li>
+        </ul>
+    </div>
+    <div id="marker-popup" class="popup">
+        <label for="marker-name">Marker name:</label>
+        <input type="text" id="marker-name">
+        <button id="add-marker-btn">OK</button>
+        <button id="cancel-marker-btn">Cancel</button>
+    </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/h3-js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
