@@ -161,6 +161,10 @@ addMarkerBtn.addEventListener('click', function() {
 
         marker.on('contextmenu', function() {
             map.removeLayer(marker);
+            const index = markers.indexOf(marker);
+            if (index >= 0) {
+                markers.splice(index, 1);
+            }
         });
 
         markerPopup.style.display = 'none';
@@ -171,3 +175,116 @@ addMarkerBtn.addEventListener('click', function() {
 cancelMarkerBtn.addEventListener('click', function() {
     markerPopup.style.display = 'none';
 });
+
+function saveGeoJSON() {
+    const geoJson = {
+        type: "FeatureCollection",
+        features: [
+            ...Object.keys(hexagons).map(h3Index => {
+                const { polygon, latitude, longitude } = hexagons[h3Index];
+                return {
+                    type: "Feature",
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: [polygon.getLatLngs()[0].map(latlng => [latlng.lng, latlng.lat])]
+                    },
+                    properties: {
+                        h3Index,
+                        color: polygon.options.color,
+                        fillColor: polygon.options.fillColor,
+                        fillOpacity: polygon.options.fillOpacity,
+                        latitude,
+                        longitude
+                    }
+                };
+            }),
+            ...markers.map(marker => {
+                const { lat, lng } = marker.getLatLng();
+                return {
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: [lng, lat]
+                    },
+                    properties: {
+                        name: marker.getPopup().getContent()
+                    }
+                };
+            })
+        ]
+    };
+
+    const blob = new Blob([JSON.stringify(geoJson)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "hexagons.geojson";
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function loadGeoJSON(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            let geoJson;
+            try {
+                geoJson = JSON.parse(e.target.result);
+            } catch (error) {
+                alert("Invalid GeoJSON format. Please select a valid GeoJSON file.");
+                return;
+            }
+
+            // Clear existing hexagons
+            Object.keys(hexagons).forEach(h3Index => {
+                map.removeLayer(hexagons[h3Index].polygon);
+                removeHexagonFromList(h3Index);
+                delete hexagons[h3Index];
+            });
+
+            // Clear existing markers
+            markers.forEach(marker => map.removeLayer(marker));
+            markers.length = 0;
+
+            // Load new hexagons and markers
+            geoJson.features.forEach(feature => {
+                if (feature.geometry.type === "Polygon") {
+                    const { h3Index, color, fillColor, fillOpacity, latitude, longitude } = feature.properties;
+                    const hexagonBoundary = h3.cellToBoundary(h3Index);
+                    const polygon = L.polygon(hexagonBoundary, {
+                        color,
+                        fillColor,
+                        fillOpacity,
+                        originalFillOpacity: fillOpacity
+                    }).addTo(map);
+
+                    hexagons[h3Index] = { polygon, latitude, longitude };
+                    addHexagonToList(h3Index);
+                } else if (feature.geometry.type === "Point") {
+                    const [lng, lat] = feature.geometry.coordinates;
+                    const marker = L.marker([lat, lng]).addTo(map)
+                        .bindPopup(feature.properties.name)
+                        .openPopup();
+                    markers.push(marker);
+
+                    marker.on('contextmenu', function() {
+                        map.removeLayer(marker);
+                        const index = markers.indexOf(marker);
+                        if (index >= 0) {
+                            markers.splice(index, 1);
+                        }
+                    });
+                }
+            });
+        };
+        reader.readAsText(file);
+    }
+}
+
+// Add event listeners for save and load buttons
+document.getElementById('save-btn').addEventListener('click', saveGeoJSON);
+document.getElementById('load-btn').addEventListener('click', function() {
+    document.getElementById('load-file').click();
+});
+document.getElementById('load-file').addEventListener('change', loadGeoJSON);

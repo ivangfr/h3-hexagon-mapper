@@ -1,6 +1,6 @@
 # H3 Hexagon Mapper
 
-This project is a web-based tool for visualizing and interacting with H3 hexagons on a map. It allows users to add and remove hexagons, adjust their resolution, change their color, and add markers.
+This project is a web tool that helps you see and interact with H3 hexagons on a map. You can add or remove hexagons, change their size, color, and transparency, add or remove markers, and save or load everything as a GeoJSON file.
 
 ![Screenshot](documentation/demo.gif)
 
@@ -22,7 +22,9 @@ You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mappe
 - **Remove a Marker**: Right-click on an existing marker to remove it.
 - **Adjust Hexagon Resolution**: Use the resolution slider in the controls section to adjust the resolution of the hexagons.
 - **Change Hexagon Color**: Use the color picker in the controls section to change the color of the hexagons.
-- **Change Hexagon Opacity**: Use the resolution slider in the controls section to adjust the opacity of the hexagons.
+- **Change Hexagon Opacity**: Use the opacity slider in the controls section to adjust the opacity of the hexagons.
+- **Save Hexagons and Markers**: Click the "Save" button to download the current hexagons and markers as a GeoJSON file.
+- **Load Hexagons and Markers**: Click the "Load" button and select a GeoJSON file to load hexagons and markers from the file.
 
 ## How to Run Locally
 

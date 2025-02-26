@@ -27,14 +27,21 @@
         <br>
         <label for="opacity">Opacity: <span id="opacity-value">0.3</span></label>
         <input type="range" id="opacity" min="0" max="1" step="0.1" value="0.3">
+        <br>
+        <button id="save-btn">Save</button>
+        <input type="file" id="load-file" accept=".geojson" style="display: none;">
+        <br>
+        <button id="load-btn">Load</button>
+        <br>
+        <button id="hexagon-sidebar-toggle">Selected Hexagons</button>
+        <br>
+        <button id="help-sidebar-toggle">Help</button>
     </div>
     <div id="cursor-coordinates">Lat: 0, Lon: 0</div>
     <div id="hexagon-sidebar">
         <h2>Selected Hexagons</h2>
         <ul id="hexagon-list"></ul>
     </div>
-    <button id="hexagon-sidebar-toggle">Selected Hexagons</button>
-    <button id="help-sidebar-toggle">Help</button>
     <div id="help-sidebar">
         <h2>Help</h2>
         <ul>
@@ -45,6 +52,8 @@
             <li><strong>Adjust Hexagon Resolution:</strong> Use the resolution slider in the controls section to adjust the resolution of the hexagons.</li>
             <li><strong>Change Hexagon Color:</strong> Use the color picker in the controls section to change the color of the hexagons.</li>
             <li><strong>Change Hexagon Opacity:</strong> Use the opacity slider in the controls section to change the opacity of the hexagons.</li>
+            <li><strong>Save Hexagons and Markers:</strong> Click the "Save" button to download the current hexagons and markers as a GeoJSON file.</li>
+            <li><strong>Load Hexagons and Markers:</strong> Click the "Load" button and select a GeoJSON file to load hexagons and markers from the file.</li>
         </ul>
         <h3>This website uses these open-source libraries:</h3>
         <ul>
