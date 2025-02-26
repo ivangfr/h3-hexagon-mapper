@@ -25,7 +25,8 @@ function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
         const polygon = L.polygon(hexagonBoundary, {
             color: color,
             fillColor: color,
-            fillOpacity: opacity
+            fillOpacity: opacity,
+            originalFillOpacity: opacity
         }).addTo(map);
 
         hexagons[h3Index] = { polygon, latitude, longitude };
@@ -39,14 +40,15 @@ function addHexagonToList(h3Index) {
     const listItem = document.createElement('li');
     listItem.textContent = h3Index;
     listItem.id = h3Index;
-    listItem.classList.add('hexagon-list-item'); // Add class
+    listItem.classList.add('hexagon-list-item');
 
     listItem.addEventListener('mouseover', function() {
-        hexagons[h3Index].polygon.setStyle({ fillOpacity: 0.6 });
+        hexagons[h3Index].polygon.setStyle({ fillOpacity: 1.0 });
     });
 
     listItem.addEventListener('mouseout', function() {
-        hexagons[h3Index].polygon.setStyle({ fillOpacity: opacity });
+        const originalFillOpacity = hexagons[h3Index].polygon.options.originalFillOpacity;
+        hexagons[h3Index].polygon.setStyle({ fillOpacity: originalFillOpacity });
     });
 
     hexagonList.appendChild(listItem);
