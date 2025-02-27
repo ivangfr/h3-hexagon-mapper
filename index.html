@@ -14,37 +14,32 @@
     <title>H3 Hexagon Mapper</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" />
     <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-    <div id="map"></div>
-    <div id="controls">
-        <label for="resolution">Resolution: <span id="resolution-value">9</span></label>
-        <input type="range" id="resolution" min="0" max="15" value="9">
-        <br>
-        <label for="color-picker">Color:</label>
-        <input type="color" id="color-picker" value="#0000ff">
-        <br>
-        <label for="opacity">Opacity: <span id="opacity-value">0.3</span></label>
-        <input type="range" id="opacity" min="0" max="1" step="0.1" value="0.3">
-        <br>
-        <button id="save-btn">Save</button>
+<body class="font-roboto">
+    <div id="map" class="h-screen"></div>
+    <div id="controls" class="absolute top-24 left-4 z-50 bg-white p-4 rounded-lg shadow-lg">
+        <label for="resolution" class="block mb-2">Resolution: <span id="resolution-value">9</span></label>
+        <input type="range" id="resolution" min="0" max="15" value="9" class="w-full mb-4">
+        <label for="color-picker" class="block mb-2">Color:</label>
+        <input type="color" id="color-picker" value="#0000ff" class="w-full mb-4">
+        <label for="opacity" class="block mb-2">Opacity: <span id="opacity-value">0.3</span></label>
+        <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3" class="w-full mb-4">
+        <button id="hexagon-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded mb-2 hover:bg-gray-600">Hexagon IDs</button>
+        <button id="save-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Save</button>
         <input type="file" id="load-file" accept=".geojson" style="display: none;">
-        <br>
-        <button id="load-btn">Load</button>
-        <br>
-        <button id="hexagon-sidebar-toggle">Selected Hexagons</button>
-        <br>
-        <button id="help-sidebar-toggle">Help</button>
+        <button id="load-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Load</button>
+        <button id="help-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Help</button>
     </div>
-    <div id="cursor-coordinates">Lat: 0, Lon: 0</div>
-    <div id="hexagon-sidebar">
-        <h2>Selected Hexagons</h2>
+    <div id="cursor-coordinates" class="absolute bottom-4 left-4 z-50 bg-white p-2 rounded-lg shadow-lg">Lat: 0, Lon: 0</div>
+    <div id="hexagon-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white p-4 border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg">
+        <h2 class="text-xl font-bold mb-4">Hexagon IDs</h2>
         <ul id="hexagon-list"></ul>
     </div>
-    <div id="help-sidebar">
-        <h2>Help</h2>
-        <ul>
+    <div id="help-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white p-4 border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg">
+        <h2 class="text-xl font-bold mb-4">Help</h2>
+        <ul class="list-disc pl-5">
             <li><strong>Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.</li>
             <li><strong>Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.</li>
             <li><strong>Add a Marker:</strong> Right-click on the map to open a popup where you can enter a marker name and add it to the map.</li>
@@ -55,18 +50,21 @@
             <li><strong>Save Hexagons and Markers:</strong> Click the "Save" button to download the current hexagons and markers as a GeoJSON file.</li>
             <li><strong>Load Hexagons and Markers:</strong> Click the "Load" button and select a GeoJSON file to load hexagons and markers from the file.</li>
         </ul>
-        <h3>This website uses these open-source libraries:</h3>
-        <ul>
-            <li><strong><a href="https://github.com/Leaflet/Leaflet">Leaflet</a></strong>: Licence <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE">BSD 2-Clause "Simplified" License</a></li>
-            <li><strong><a href="https://github.com/uber/h3">H3-js</a></strong>: Licence <a href="https://github.com/uber/h3-js/blob/master/LICENSE">Apache License 2.0</a></li>
-            <li><strong><a href="https://www.openstreetmap.org">OpenStreetMap</a></strong>: Licence <a href="https://www.openstreetmap.org/copyright">Open Database License (ODbL)</a></li>
+        <h3 class="text-lg font-bold mt-4">This website uses these open-source libraries:</h3>
+        <ul class="list-disc pl-5">
+            <li><strong><a href="https://github.com/Leaflet/Leaflet" class="text-blue-500 hover:underline">Leaflet</a></strong>: Licence <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" class="text-blue-500 hover:underline">BSD 2-Clause "Simplified" License</a></li>
+            <li><strong><a href="https://github.com/uber/h3" class="text-blue-500 hover:underline">H3-js</a></strong>: Licence <a href="https://github.com/uber/h3-js/blob/master/LICENSE" class="text-blue-500 hover:underline">Apache License 2.0</a></li>
+            <li><strong><a href="https://www.openstreetmap.org" class="text-blue-500 hover:underline">OpenStreetMap</a></strong>: Licence <a href="https://www.openstreetmap.org/copyright" class="text-blue-500 hover:underline">Open Database License (ODbL)</a></li>
+            <li><strong><a href="https://tailwindcss.com/" class="text-blue-500 hover:underline">Tailwind CSS</a></strong>: Licence <a href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" class="text-blue-500 hover:underline">MIT License</a></li>
         </ul>
     </div>
-    <div id="marker-popup" class="popup">
-        <label for="marker-name">Marker name:</label>
-        <input type="text" id="marker-name">
-        <button id="add-marker-btn">OK</button>
-        <button id="cancel-marker-btn">Cancel</button>
+    <div id="marker-popup" class="popup absolute bg-white p-4 border border-gray-300 rounded-lg shadow-lg hidden z-50">
+        <label for="marker-name" class="block mb-2">Marker name:</label>
+        <input type="text" id="marker-name" class="w-full mb-4 p-2 border border-gray-300 rounded">
+        <div class="flex space-x-2">
+            <button id="add-marker-btn" class="flex-1 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">OK</button>
+            <button id="cancel-marker-btn" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Cancel</button>
+        </div>
     </div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/h3-js"></script>
