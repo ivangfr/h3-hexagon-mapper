@@ -8,6 +8,12 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 // Store generated hexagons and their polygons
 const hexagons = {};
+const markers = [];
+
+// Default settings
+let resolution = 9;
+let color = '#0000ff';
+let opacity = 0.3;
 
 // Function to generate and display H3 grid cells
 function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
@@ -62,13 +68,8 @@ function removeHexagonFromList(h3Index) {
     }
 }
 
-let resolution = 9; // Default resolution
-let color = '#0000ff'; // Default color
-let opacity = 0.3; // Default opacity
-
 // Add event listener to the map for click events
 map.on('click', function(e) {
-    // Close the marker popup if it is open
     if (markerPopup.style.display === 'block') {
         markerPopup.style.display = 'none';
     } else {
@@ -109,9 +110,9 @@ map.on('mousemove', function(e) {
 
 // Function to toggle sidebars
 function toggleSidebar(sidebarId) {
-    var sidebars = ['hexagon-sidebar', 'help-sidebar'];
+    const sidebars = ['hexagon-sidebar', 'help-sidebar'];
     sidebars.forEach(function(id) {
-        var sidebar = document.getElementById(id);
+        const sidebar = document.getElementById(id);
         if (id === sidebarId) {
             sidebar.style.display = (sidebar.style.display === 'block') ? 'none' : 'block';
         } else {
@@ -138,7 +139,6 @@ const markerNameInput = document.getElementById('marker-name');
 const addMarkerBtn = document.getElementById('add-marker-btn');
 const cancelMarkerBtn = document.getElementById('cancel-marker-btn');
 let currentLatLng;
-const markers = [];
 
 // Add event listener to open the marker popup on right-click
 map.on('contextmenu', function(e) {
@@ -176,6 +176,7 @@ cancelMarkerBtn.addEventListener('click', function() {
     markerPopup.style.display = 'none';
 });
 
+// Function to save hexagons and markers to GeoJSON
 function saveGeoJSON() {
     const geoJson = {
         type: "FeatureCollection",
@@ -223,6 +224,7 @@ function saveGeoJSON() {
     URL.revokeObjectURL(url);
 }
 
+// Function to load hexagons and markers from GeoJSON
 function loadGeoJSON(event) {
     const file = event.target.files[0];
     if (file) {
