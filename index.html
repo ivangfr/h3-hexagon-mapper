@@ -27,10 +27,15 @@
         <label for="opacity" class="block mb-2">Opacity: <span id="opacity-value">0.3</span></label>
         <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3" class="w-full mb-4">
         <button id="hexagon-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded mb-2 hover:bg-gray-600">Hexagon IDs</button>
+        <hr class="my-4 border-t border-gray-300">
         <button id="save-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Save</button>
         <input type="file" id="load-file" accept=".geojson" style="display: none;">
         <button id="load-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Load</button>
+        <hr class="my-4 border-t border-gray-300">
         <button id="help-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Help</button>
+        <hr class="my-4 border-t border-gray-300">
+        <label>Ivan Franchin © 2025</label>
+        <a href="https://github.com/ivangfr/h3-hexagon-mapper/blob/main/LICENSE" class="text-blue-500 hover:underline">BSD 3-Clause License</a>
     </div>
     <div id="cursor-coordinates" class="absolute bottom-4 left-4 z-50 bg-white p-2 rounded-lg shadow-lg">Lat: 0, Lon: 0</div>
     <div id="hexagon-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white p-4 border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg">
@@ -50,12 +55,22 @@
             <li><strong>Save Hexagons and Markers:</strong> Click the "Save" button to download the current hexagons and markers as a GeoJSON file.</li>
             <li><strong>Load Hexagons and Markers:</strong> Click the "Load" button and select a GeoJSON file to load hexagons and markers from the file.</li>
         </ul>
-        <h3 class="text-lg font-bold mt-4">This website uses these open-source libraries:</h3>
+        <hr class="my-4 border-t border-gray-300">
+        <h3 class="text-lg font-bold mt-4">Source-code:</h3>
+        <ul class="list-disc pl-5">
+            <li><strong><a href="https://github.com/ivangfr/h3-hexagon-mapper" class="text-blue-500 hover:underline">ivangfr/h3-hexagon-mapper</a></strong></li>
+        </ul>
+        <hr class="my-4 border-t border-gray-300">
+        <h3 class="text-lg font-bold mt-4">Open-source libraries used:</h3>
         <ul class="list-disc pl-5">
             <li><strong><a href="https://github.com/Leaflet/Leaflet" class="text-blue-500 hover:underline">Leaflet</a></strong>: Licence <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" class="text-blue-500 hover:underline">BSD 2-Clause "Simplified" License</a></li>
             <li><strong><a href="https://github.com/uber/h3" class="text-blue-500 hover:underline">H3-js</a></strong>: Licence <a href="https://github.com/uber/h3-js/blob/master/LICENSE" class="text-blue-500 hover:underline">Apache License 2.0</a></li>
             <li><strong><a href="https://www.openstreetmap.org" class="text-blue-500 hover:underline">OpenStreetMap</a></strong>: Licence <a href="https://www.openstreetmap.org/copyright" class="text-blue-500 hover:underline">Open Database License (ODbL)</a></li>
             <li><strong><a href="https://tailwindcss.com/" class="text-blue-500 hover:underline">Tailwind CSS</a></strong>: Licence <a href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" class="text-blue-500 hover:underline">MIT License</a></li>
+        </ul>
+        <hr class="my-4 border-t border-gray-300">
+        <ul>
+            <li>Ivan Franchin © 2025</li>
         </ul>
     </div>
     <div id="marker-popup" class="popup absolute bg-white p-4 border border-gray-300 rounded-lg shadow-lg hidden z-50">

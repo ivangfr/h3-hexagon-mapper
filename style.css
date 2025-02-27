@@ -11,7 +11,7 @@ html, body {
 
 #controls {
     position: absolute;
-    width: 150px;
+    width: 200px;
     top: 90px;
     left: 10px;
     z-index: 1000;
@@ -51,7 +51,7 @@ html, body {
     position: absolute;
     top: 0;
     right: 0;
-    width: 350px;
+    width: 480px;
     height: 100%;
     background: white;
     padding: 10px;
