@@ -171,6 +171,13 @@ addMarkerBtn.addEventListener('click', function() {
     }
 });
 
+// Add event listener to add marker on pressing Enter
+markerNameInput.addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        addMarkerBtn.click();
+    }
+});
+
 // Add event listener to cancel adding marker
 cancelMarkerBtn.addEventListener('click', function() {
     markerPopup.style.display = 'none';
@@ -180,6 +187,7 @@ cancelMarkerBtn.addEventListener('click', function() {
 function saveGeoJSON() {
     const geoJson = {
         type: "FeatureCollection",
+        timestamp: new Date().toISOString(),
         features: [
             ...Object.keys(hexagons).map(h3Index => {
                 const { polygon, latitude, longitude } = hexagons[h3Index];
@@ -279,6 +287,8 @@ function loadGeoJSON(event) {
                     });
                 }
             });
+            // Reset the file input value to allow reloading the same file
+            event.target.value = '';
         };
         reader.readAsText(file);
     }
