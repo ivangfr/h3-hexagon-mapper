@@ -36,17 +36,27 @@ function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
         }).addTo(map);
 
         hexagons[h3Index] = { polygon, latitude, longitude };
-        addHexagonToList(h3Index);
+        addHexagonToList(h3Index, color, opacity);
     }
 }
 
 // Function to add hexagon ID to the list
-function addHexagonToList(h3Index) {
+function addHexagonToList(h3Index, fillColor, fillOpacity) {
     const hexagonList = document.getElementById('hexagon-list');
     const listItem = document.createElement('li');
-    listItem.textContent = h3Index;
     listItem.id = h3Index;
     listItem.classList.add('hexagon-list-item');
+
+    const colorSquare = document.createElement('div');
+    colorSquare.className = 'hexagon-color';
+    colorSquare.style.backgroundColor = fillColor;
+    colorSquare.style.opacity = fillOpacity;
+
+    const hexagonText = document.createElement('span');
+    hexagonText.textContent = h3Index;
+
+    listItem.appendChild(colorSquare);
+    listItem.appendChild(hexagonText);
 
     listItem.addEventListener('mouseover', function() {
         hexagons[h3Index].polygon.setStyle({ fillOpacity: 1.0 });
@@ -55,6 +65,15 @@ function addHexagonToList(h3Index) {
     listItem.addEventListener('mouseout', function() {
         const originalFillOpacity = hexagons[h3Index].polygon.options.originalFillOpacity;
         hexagons[h3Index].polygon.setStyle({ fillOpacity: originalFillOpacity });
+    });
+
+    listItem.addEventListener('click', function() {
+        const hexagon = hexagons[h3Index];
+        color = hexagon.polygon.options.color;
+        opacity = hexagon.polygon.options.originalFillOpacity;
+        document.getElementById('color-picker').value = color;
+        document.getElementById('opacity').value = opacity;
+        document.getElementById('opacity-value').textContent = opacity;
     });
 
     hexagonList.appendChild(listItem);
