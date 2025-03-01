@@ -15,6 +15,50 @@ let resolution = 9;
 let color = '#0000ff';
 let opacity = 0.3;
 
+// Action stacks for undo and redo
+let actionStack = [];
+let redoStack = [];
+
+function addAction(action) {
+    actionStack.push(action);
+    redoStack = []; // Clear redo stack on new action
+}
+
+function undoAction() {
+    if (actionStack.length > 0) {
+        const action = actionStack.pop();
+        redoStack.push(action);
+        if (action.type === 'addHexagon') {
+            removeHexagon(action.data, false);
+        } else if (action.type === 'removeHexagon') {
+            addHexagon(action.data, false);
+        } else if (action.type === 'addMarker') {
+            removeMarker(action.data, false);
+        } else if (action.type === 'removeMarker') {
+            addMarker(action.data, false);
+        }
+    }
+}
+
+function redoAction() {
+    if (redoStack.length > 0) {
+        const action = redoStack.pop();
+        actionStack.push(action);
+        if (action.type === 'addHexagon') {
+            addHexagon(action.data, false);
+        } else if (action.type === 'removeHexagon') {
+            removeHexagon(action.data, false);
+        } else if (action.type === 'addMarker') {
+            addMarker(action.data, false);
+        } else if (action.type === 'removeMarker') {
+            removeMarker(action.data, false);
+        }
+    }
+}
+
+document.getElementById('undo-btn').addEventListener('click', undoAction);
+document.getElementById('redo-btn').addEventListener('click', redoAction);
+
 // Function to generate and display H3 grid cells
 function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
     const h3Index = h3.latLngToCell(latitude, longitude, resolution);
@@ -22,21 +66,41 @@ function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
     
     if (hexagons[h3Index]) {
         console.log(`Removing hexagon with index: ${h3Index}`);
+        removeHexagon({ h3Index, latitude, longitude, resolution, color, opacity });
+    } else {
+        console.log(`Adding hexagon with index: ${h3Index}`);
+        addHexagon({ h3Index, latitude, longitude, resolution, color, opacity });
+    }
+}
+
+function addHexagon(hexagon, recordAction = true) {
+    const { h3Index, latitude, longitude, resolution, color, opacity } = hexagon;
+    const hexagonBoundary = h3.cellToBoundary(h3Index);
+    const polygon = L.polygon(hexagonBoundary, {
+        color: color,
+        fillColor: color,
+        fillOpacity: opacity,
+        originalFillOpacity: opacity
+    }).addTo(map);
+
+    hexagons[h3Index] = { polygon, latitude, longitude };
+    addHexagonToList(h3Index, color, opacity);
+
+    if (recordAction) {
+        addAction({ type: 'addHexagon', data: hexagon });
+    }
+}
+
+function removeHexagon(hexagon, recordAction = true) {
+    const { h3Index } = hexagon;
+    if (hexagons[h3Index]) {
         map.removeLayer(hexagons[h3Index].polygon);
         delete hexagons[h3Index];
         removeHexagonFromList(h3Index);
-    } else {
-        console.log(`Adding hexagon with index: ${h3Index}`);
-        const hexagonBoundary = h3.cellToBoundary(h3Index);
-        const polygon = L.polygon(hexagonBoundary, {
-            color: color,
-            fillColor: color,
-            fillOpacity: opacity,
-            originalFillOpacity: opacity
-        }).addTo(map);
 
-        hexagons[h3Index] = { polygon, latitude, longitude };
-        addHexagonToList(h3Index, color, opacity);
+        if (recordAction) {
+            addAction({ type: 'removeHexagon', data: hexagon });
+        }
     }
 }
 
@@ -178,12 +242,10 @@ addMarkerBtn.addEventListener('click', function() {
             .openPopup();
         markers.push(marker);
 
+        addAction({ type: 'addMarker', data: { id: marker._leaflet_id, lat: currentLatLng.lat, lng: currentLatLng.lng, name: markerName } });
+
         marker.on('contextmenu', function() {
-            map.removeLayer(marker);
-            const index = markers.indexOf(marker);
-            if (index >= 0) {
-                markers.splice(index, 1);
-            }
+            removeMarker({ id: marker._leaflet_id, lat: currentLatLng.lat, lng: currentLatLng.lng, name: markerName });
         });
 
         markerPopup.style.display = 'none';
@@ -201,6 +263,42 @@ markerNameInput.addEventListener('keypress', function(event) {
 cancelMarkerBtn.addEventListener('click', function() {
     markerPopup.style.display = 'none';
 });
+
+// Function to add a marker to the map
+function addMarker(marker, recordAction = true) {
+    const { id, lat, lng, name } = marker;
+    const markerLayer = L.marker([lat, lng]).addTo(map)
+        .bindPopup(name)
+        .openPopup();
+    markers.push(markerLayer);
+
+    marker.id = markerLayer._leaflet_id;
+
+    if (recordAction) {
+        addAction({ type: 'addMarker', data: marker });
+    }
+
+    markerLayer.on('contextmenu', function() {
+        removeMarker(marker);
+    });
+}
+
+// Function to remove a marker from the map
+function removeMarker(marker, recordAction = true) {
+    const { id } = marker;
+    const markerLayer = markers.find(m => m._leaflet_id === id);
+    if (markerLayer) {
+        map.removeLayer(markerLayer);
+        const index = markers.indexOf(markerLayer);
+        if (index >= 0) {
+            markers.splice(index, 1);
+        }
+
+        if (recordAction) {
+            addAction({ type: 'removeMarker', data: marker });
+        }
+    }
+}
 
 // Function to save hexagons and markers to GeoJSON
 function saveGeoJSON() {

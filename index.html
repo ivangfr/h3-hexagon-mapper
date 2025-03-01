@@ -26,12 +26,16 @@
         <input type="color" id="color-picker" value="#0000ff" class="w-full mb-4">
         <label for="opacity" class="block mb-2">Opacity: <span id="opacity-value">0.3</span></label>
         <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3" class="w-full mb-4">
-        <button id="hexagon-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded mb-2 hover:bg-gray-600">Hexagon IDs</button>
+                <div class="flex space-x-2 mb-2">
+            <button id="undo-btn" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Undo</button>
+            <button id="redo-btn" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Redo</button>
+        </div>
         <hr class="my-4 border-t border-gray-300">
         <button id="save-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Save</button>
         <input type="file" id="load-file" accept=".geojson" style="display: none;">
         <button id="load-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Load</button>
         <hr class="my-4 border-t border-gray-300">
+        <button id="hexagon-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded mb-2 hover:bg-gray-600">Hexagon IDs</button>
         <button id="help-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Help</button>
         <hr class="my-4 border-t border-gray-300">
         <label>Ivan Franchin © 2025</label>
@@ -41,7 +45,7 @@
     <div id="hexagon-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white p-4 border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg">
         <h2 class="text-xl font-bold mb-4">Hexagon IDs</h2>
         <hr class="my-4 border-t border-gray-300">
-        <p class="text-sm mb-4"><strong>Note:</strong> You can select the color and opacity of an existing hexagon by clicking on it.</p>
+        <p class="text-sm mb-4"><strong>Note:</strong> You can select the color and opacity of an existing hexagon by clicking on it in the list below.</p>
         <hr class="my-4 border-t border-gray-300">
         <ul id="hexagon-list"></ul>
     </div>
