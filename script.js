@@ -73,6 +73,7 @@ function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
     }
 }
 
+// Function to add a hexagon to the map
 function addHexagon(hexagon, recordAction = true) {
     const { h3Index, latitude, longitude, resolution, color, opacity } = hexagon;
     const hexagonBoundary = h3.cellToBoundary(h3Index);
@@ -91,6 +92,7 @@ function addHexagon(hexagon, recordAction = true) {
     }
 }
 
+// Function to remove a hexagon from the map
 function removeHexagon(hexagon, recordAction = true) {
     const { h3Index } = hexagon;
     if (hexagons[h3Index]) {
@@ -374,6 +376,10 @@ function loadGeoJSON(event) {
             markers.forEach(marker => map.removeLayer(marker));
             markers.length = 0;
 
+            // Clear action stacks
+            actionStack = [];
+            redoStack = [];
+
             // Load new hexagons and markers
             geoJson.features.forEach(feature => {
                 if (feature.geometry.type === "Polygon") {
@@ -387,7 +393,7 @@ function loadGeoJSON(event) {
                     }).addTo(map);
 
                     hexagons[h3Index] = { polygon, latitude, longitude };
-                    addHexagonToList(h3Index);
+                    addHexagonToList(h3Index, color, opacity);
                 } else if (feature.geometry.type === "Point") {
                     const [lng, lat] = feature.geometry.coordinates;
                     const marker = L.marker([lat, lng]).addTo(map)
