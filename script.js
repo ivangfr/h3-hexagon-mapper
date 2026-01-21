@@ -9,11 +9,17 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // Store generated hexagons and their polygons
 const hexagons = {};
 const markers = [];
+const drawnLines = [];
 
 // Default settings
 let resolution = 9;
 let color = '#0000ff';
 let opacity = 0.3;
+
+// Drawing settings
+let isDrawing = false;
+let currentLine = null;
+let currentLinePoints = [];
 
 // Action stacks for undo and redo
 let actionStack = [];
@@ -36,6 +42,11 @@ function undoAction() {
             removeMarker(action.data, false);
         } else if (action.type === 'removeMarker') {
             addMarker(action.data, false);
+        } else if (action.type === 'drawLine') {
+            if (drawnLines.length > 0) {
+                const line = drawnLines.pop();
+                map.removeLayer(line);
+            }
         }
     }
 }
@@ -52,6 +63,13 @@ function redoAction() {
             addMarker(action.data, false);
         } else if (action.type === 'removeMarker') {
             removeMarker(action.data, false);
+        } else if (action.type === 'drawLine') {
+            const line = L.polyline(action.data.points, {
+                color: color,
+                weight: 8,
+                opacity: 1.0
+            }).addTo(map);
+            drawnLines.push(line);
         }
     }
 }
@@ -153,14 +171,66 @@ function removeHexagonFromList(h3Index) {
     }
 }
 
+// Drawing functions
+function startDrawing() {
+    isDrawing = true;
+    currentLinePoints = [];
+    currentLine = null;
+}
+
+function stopDrawing() {
+    isDrawing = false;
+    currentLine = null;
+    currentLinePoints = []
+}
+
+function finalizeLine() {
+    if (currentLinePoints.length > 1 && currentLine) {
+        drawnLines.push(currentLine);
+        const points = currentLinePoints.map(p => [p[0], p[1]]);
+        addAction({ type: 'drawLine', data: { points: points } });
+    }
+    currentLinePoints = [];
+    currentLine = null;
+}
+
 // Add event listener to the map for click events
 map.on('click', function(e) {
+    if (isDrawing) {
+        return; // Don't add hexagons while drawing
+    }
     if (markerPopup.style.display === 'block') {
         markerPopup.style.display = 'none';
     } else {
         const { lat, lng } = e.latlng;
         generateH3Grid(lat, lng, resolution, color, opacity, map);
     }
+});
+
+// Drawing mode: mouse down to start drawing
+map.on('mousedown', function(e) {
+    if (!isDrawing) return;
+    const { lat, lng } = e.latlng;
+    currentLinePoints = [[lat, lng]];
+    currentLine = L.polyline([[lat, lng]], {
+        color: color,
+        weight: 8,
+        opacity: 1.0
+    }).addTo(map);
+});
+
+// Drawing mode: mouse move to draw
+map.on('mousemove', function(e) {
+    if (!isDrawing || !currentLine) return;
+    const { lat, lng } = e.latlng;
+    currentLinePoints.push([lat, lng]);
+    currentLine.setLatLngs(currentLinePoints);
+});
+
+// Drawing mode: mouse up to finish the stroke
+map.on('mouseup', function() {
+    if (!isDrawing || !currentLine) return;
+    finalizeLine();
 });
 
 // Add event listener to the resolution slider
@@ -216,6 +286,22 @@ sidebarToggle.addEventListener('click', function() {
 const helpSidebarToggle = document.getElementById('help-sidebar-toggle');
 helpSidebarToggle.addEventListener('click', function() {
     toggleSidebar('help-sidebar');
+});
+
+// Add event listener to toggle drawing mode
+const drawToggle = document.getElementById('draw-toggle');
+drawToggle.addEventListener('click', function() {
+    if (!isDrawing) {
+        startDrawing();
+        drawToggle.textContent = 'Stop Drawing';
+        drawToggle.style.backgroundColor = '#16a34a';
+        map.dragging.disable();
+    } else {
+        stopDrawing();
+        drawToggle.textContent = 'Start Drawing';
+        drawToggle.style.backgroundColor = '#22c55e';
+        map.dragging.enable();
+    }
 });
 
 // Add event listener for right-click to open the popup
@@ -326,6 +412,22 @@ function saveGeoJSON() {
                     }
                 };
             }),
+            ...drawnLines.map((line, index) => {
+                const coordinates = line.getLatLngs().map(latlng => [latlng.lng, latlng.lat]);
+                return {
+                    type: "Feature",
+                    geometry: {
+                        type: "LineString",
+                        coordinates: coordinates
+                    },
+                    properties: {
+                        type: "drawnLine",
+                        lineIndex: index,
+                        color: line.options.color,
+                        weight: line.options.weight
+                    }
+                };
+            }),
             ...markers.map(marker => {
                 const { lat, lng } = marker.getLatLng();
                 return {
@@ -372,6 +474,10 @@ function loadGeoJSON(event) {
                 delete hexagons[h3Index];
             });
 
+            // Clear existing drawn lines
+            drawnLines.forEach(line => map.removeLayer(line));
+            drawnLines.length = 0;
+
             // Clear existing markers
             markers.forEach(marker => map.removeLayer(marker));
             markers.length = 0;
@@ -380,7 +486,7 @@ function loadGeoJSON(event) {
             actionStack = [];
             redoStack = [];
 
-            // Load new hexagons and markers
+            // Load new hexagons, lines and markers
             geoJson.features.forEach(feature => {
                 if (feature.geometry.type === "Polygon") {
                     const { h3Index, color, fillColor, fillOpacity, latitude, longitude } = feature.properties;
@@ -394,6 +500,16 @@ function loadGeoJSON(event) {
 
                     hexagons[h3Index] = { polygon, latitude, longitude };
                     addHexagonToList(h3Index, color, opacity);
+                } else if (feature.geometry.type === "LineString") {
+                    if (feature.properties.type === "drawnLine") {
+                        const coordinates = feature.geometry.coordinates;
+                        const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
+                        const line = L.polyline(latLngs, {
+                            color: feature.properties.color,
+                            weight: feature.properties.weight
+                        }).addTo(map);
+                        drawnLines.push(line);
+                    }
                 } else if (feature.geometry.type === "Point") {
                     const [lng, lat] = feature.geometry.coordinates;
                     const marker = L.marker([lat, lng]).addTo(map)

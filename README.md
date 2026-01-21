@@ -24,6 +24,7 @@ You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mappe
 - **Adjust Hexagon Resolution**: Use the resolution slider in the controls section to adjust the resolution of the hexagons.
 - **Change Hexagon Color**: Use the color picker in the controls section to change the color of the hexagons.
 - **Change Hexagon Opacity**: Use the opacity slider in the controls section to adjust the opacity of the hexagons.
+- **Free Drwaing**: Click the "Start Drawing" button to enter free drawing mode. Click on the map to draw. Click the "Stop Drawing" button to exit free drawing mode.
 - **Save Hexagons and Markers**: Click the "Save" button to download the current hexagons and markers as a GeoJSON file.
 - **Load Hexagons and Markers**: Click the "Load" button and select a GeoJSON file to load hexagons and markers from the file.
 
