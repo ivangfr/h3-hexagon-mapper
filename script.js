@@ -219,12 +219,20 @@ function startDrawing() {
     isDrawing = true;
     currentLinePoints = [];
     currentLine = null;
+    
+    // Show drawing mode indicator and overlay
+    document.getElementById('drawing-overlay').classList.remove('hidden');
+    document.getElementById('drawing-mode-indicator').classList.remove('hidden');
 }
 
 function stopDrawing() {
     isDrawing = false;
     currentLine = null;
     currentLinePoints = []
+    
+    // Hide drawing mode indicator and overlay
+    document.getElementById('drawing-overlay').classList.add('hidden');
+    document.getElementById('drawing-mode-indicator').classList.add('hidden');
 }
 
 function finalizeLine() {
