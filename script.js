@@ -1,19 +1,10 @@
 // Initialize the map centered on a specific location (e.g., Berlin)
 const map = L.map('map').setView([52.5200, 13.4050], 15);
 
-// Define tile layers
-const tileLayers = {
-    streetMap: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }),
-    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '&copy; <a href="https://www.arcgis.com">Esri</a>'
-    })
-};
-
-// Add default Street Map tile layer
-let currentLayer = 'streetMap';
-tileLayers.streetMap.addTo(map);
+// Add OpenStreetMap tile layer
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
 
 // Store generated hexagons and their polygons
 const hexagons = {};
@@ -86,39 +77,7 @@ function redoAction() {
 document.getElementById('undo-btn').addEventListener('click', undoAction);
 document.getElementById('redo-btn').addEventListener('click', redoAction);
 
-// Function to switch tile layers
-function switchLayer(layerName) {
-    if (currentLayer !== layerName && tileLayers[layerName]) {
-        map.removeLayer(tileLayers[currentLayer]);
-        tileLayers[layerName].addTo(map);
-        currentLayer = layerName;
-        
-        // Update button styles
-        const streetmapBtn = document.getElementById('streetmap-btn');
-        const satelliteBtn = document.getElementById('satellite-btn');
-        
-        if (layerName === 'streetMap') {
-            streetmapBtn.classList.remove('bg-gray-500', 'hover:bg-gray-600');
-            streetmapBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
-            satelliteBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-            satelliteBtn.classList.add('bg-gray-500', 'hover:bg-gray-600');
-        } else if (layerName === 'satellite') {
-            satelliteBtn.classList.remove('bg-gray-500', 'hover:bg-gray-600');
-            satelliteBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
-            streetmapBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-            streetmapBtn.classList.add('bg-gray-500', 'hover:bg-gray-600');
-        }
-    }
-}
 
-// Add event listeners for layer selection buttons
-document.getElementById('streetmap-btn').addEventListener('click', function() {
-    switchLayer('streetMap');
-});
-
-document.getElementById('satellite-btn').addEventListener('click', function() {
-    switchLayer('satellite');
-});
 
 // Function to generate and display H3 grid cells
 function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
