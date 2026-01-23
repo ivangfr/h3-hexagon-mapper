@@ -21,6 +21,11 @@ let isDrawing = false;
 let currentLine = null;
 let currentLinePoints = [];
 
+// Measurement settings
+let isMeasuring = false;
+let measurementStart = null;
+let measurementLine = null;
+
 // Action stacks for undo and redo
 let actionStack = [];
 let redoStack = [];
@@ -204,10 +209,63 @@ function finalizeLine() {
     currentLine = null;
 }
 
+// Measurement functions
+function startMeasurement() {
+    isMeasuring = true;
+    // Clean up any existing measurement line
+    if (measurementLine) {
+        map.removeLayer(measurementLine);
+        measurementLine = null;
+    }
+    measurementStart = null;
+
+    // Show drawing mode indicator and overlay
+    document.getElementById('drawing-overlay').classList.remove('hidden');
+    document.getElementById('drawing-mode-indicator').textContent = 'Measurement Mode Active';
+    document.getElementById('drawing-mode-indicator').classList.remove('hidden');
+    const measurementDisplay = document.getElementById('measurement-display');
+    measurementDisplay.textContent = '0.00 km';
+    measurementDisplay.classList.remove('hidden');
+}
+
+function stopMeasurement() {
+    isMeasuring = false;
+    if (measurementLine) {
+        map.removeLayer(measurementLine);
+        measurementLine = null;
+    }
+    measurementStart = null;
+
+    // Hide drawing mode indicator, overlay, and measurement display
+    document.getElementById('drawing-overlay').classList.add('hidden');
+    document.getElementById('drawing-mode-indicator').classList.add('hidden');
+    document.getElementById('measurement-display').classList.add('hidden');
+}
+
+function calculateDistance(start, end) {
+    const startLatLng = L.latLng(start.lat, start.lng);
+    const endLatLng = L.latLng(end.lat, end.lng);
+    return startLatLng.distanceTo(endLatLng) / 1000; // Convert meters to kilometers
+}
+
 // Add event listener to the map for click events
 map.on('click', function(e) {
     if (isDrawing) {
         return; // Don't add hexagons while drawing
+    }
+    if (isMeasuring) {
+        const { lat, lng } = e.latlng;
+        if (!measurementStart) {
+            // First click - set measurement start point
+            measurementStart = { lat, lng };
+        } else {
+            // Second click - clear measurement and reset button
+            stopMeasurement();
+            const measurementToggle = document.getElementById('measurement-toggle');
+            measurementToggle.textContent = 'Start Measurement';
+            measurementToggle.style.backgroundColor = '';
+        }
+        return;
     }
     if (markerPopup.style.display === 'block') {
         markerPopup.style.display = 'none';
@@ -267,10 +325,34 @@ opacitySlider.addEventListener('input', function() {
 
 // Add event listener to show cursor coordinates
 const cursorCoordinates = document.getElementById('cursor-coordinates');
+const measurementDisplay = document.getElementById('measurement-display');
 map.on('mousemove', function(e) {
     const lat = e.latlng.lat.toFixed(4);
     const lng = e.latlng.lng.toFixed(4);
-    cursorCoordinates.textContent = `Lat: ${lat}, Lon: ${lng}`;
+
+    if (isMeasuring && measurementStart) {
+        // Update measurement line and show distance
+        const currentPoint = { lat: e.latlng.lat, lng: e.latlng.lng };
+        const distance = calculateDistance(measurementStart, currentPoint);
+
+        // Remove existing line if it exists
+        if (measurementLine) {
+            map.removeLayer(measurementLine);
+        }
+
+        // Create new measurement line (black)
+        measurementLine = L.polyline([measurementStart, currentPoint], {
+            color: '#000000',
+            weight: 5,
+            opacity: 0.8,
+            dashArray: '5, 10'
+        }).addTo(map);
+
+        // Update measurement display with large numbers
+        measurementDisplay.textContent = `${distance.toFixed(2)} km`;
+    } else {
+        cursorCoordinates.textContent = `Lat: ${lat}, Lon: ${lng}`;
+    }
 });
 
 // Function to toggle sidebars
@@ -309,8 +391,29 @@ drawToggle.addEventListener('click', function() {
     } else {
         stopDrawing();
         drawToggle.textContent = 'Start Drawing';
-        drawToggle.style.backgroundColor = '#22c55e';
+        drawToggle.style.backgroundColor = '';
         map.dragging.enable();
+    }
+});
+
+// Add event listener to toggle measurement mode
+const measurementToggle = document.getElementById('measurement-toggle');
+measurementToggle.addEventListener('click', function() {
+    if (!isMeasuring) {
+        // Stop drawing mode if active
+        if (isDrawing) {
+            stopDrawing();
+            drawToggle.textContent = 'Start Drawing';
+            drawToggle.style.backgroundColor = '';
+            map.dragging.enable();
+        }
+        startMeasurement();
+        measurementToggle.textContent = 'Stop Measurement';
+        measurementToggle.style.backgroundColor = '#16a34a';
+    } else {
+        stopMeasurement();
+        measurementToggle.textContent = 'Start Measurement';
+        measurementToggle.style.backgroundColor = '';
     }
 });
 
