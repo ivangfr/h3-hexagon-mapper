@@ -90,3 +90,24 @@ html, body {
 .hexagon-list-item {
     cursor: pointer;
 }
+
+/* Enhanced disabled button styling for undo and redo buttons */
+#undo-btn:disabled,
+#redo-btn:disabled {
+    background-color: #d1d5db !important; /* Light gray background */
+    color: #9ca3af !important; /* Muted text color */
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+    border: 0px solid #e5e7eb !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+#undo-btn:disabled:hover,
+#redo-btn:disabled:hover {
+    /* No hover effects when disabled */
+    background-color: #d1d5db !important;
+    color: #9ca3af !important;
+    transform: none !important;
+    box-shadow: none !important;
+}

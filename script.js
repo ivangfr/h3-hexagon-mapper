@@ -33,6 +33,8 @@ let redoStack = [];
 function addAction(action) {
     actionStack.push(action);
     redoStack = []; // Clear redo stack on new action
+    updateUndoButtonState();
+    updateRedoButtonState();
 }
 
 function undoAction() {
@@ -53,6 +55,8 @@ function undoAction() {
                 map.removeLayer(line);
             }
         }
+        updateUndoButtonState();
+        updateRedoButtonState();
     }
 }
 
@@ -76,11 +80,36 @@ function redoAction() {
             }).addTo(map);
             drawnLines.push(line);
         }
+        updateUndoButtonState();
+        updateRedoButtonState();
     }
 }
 
 document.getElementById('undo-btn').addEventListener('click', undoAction);
 document.getElementById('redo-btn').addEventListener('click', redoAction);
+
+// Button state management functions
+function updateUndoButtonState() {
+    const undoBtn = document.getElementById('undo-btn');
+    if (actionStack.length === 0) {
+        undoBtn.disabled = true;
+    } else {
+        undoBtn.disabled = false;
+    }
+}
+
+function updateRedoButtonState() {
+    const redoBtn = document.getElementById('redo-btn');
+    if (redoStack.length === 0) {
+        redoBtn.disabled = true;
+    } else {
+        redoBtn.disabled = false;
+    }
+}
+
+// Initialize button states
+updateUndoButtonState();
+updateRedoButtonState();
 
 
 
