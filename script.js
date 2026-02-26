@@ -8,7 +8,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 // Store generated hexagons and their polygons
 const hexagons = {};
-const markers = [];
 const drawnLines = [];
 
 // Default settings
@@ -45,10 +44,6 @@ function undoAction() {
             removeHexagon(action.data, false);
         } else if (action.type === 'removeHexagon') {
             addHexagon(action.data, false);
-        } else if (action.type === 'addMarker') {
-            removeMarker(action.data, false);
-        } else if (action.type === 'removeMarker') {
-            addMarker(action.data, false);
         } else if (action.type === 'drawLine') {
             if (drawnLines.length > 0) {
                 const line = drawnLines.pop();
@@ -68,10 +63,6 @@ function redoAction() {
             addHexagon(action.data, false);
         } else if (action.type === 'removeHexagon') {
             removeHexagon(action.data, false);
-        } else if (action.type === 'addMarker') {
-            addMarker(action.data, false);
-        } else if (action.type === 'removeMarker') {
-            removeMarker(action.data, false);
         } else if (action.type === 'drawLine') {
             const line = L.polyline(action.data.points, {
                 color: color,
@@ -296,12 +287,8 @@ map.on('click', function(e) {
         }
         return;
     }
-    if (markerPopup.style.display === 'block') {
-        markerPopup.style.display = 'none';
-    } else {
-        const { lat, lng } = e.latlng;
-        generateH3Grid(lat, lng, resolution, color, opacity, map);
-    }
+    const { lat, lng } = e.latlng;
+    generateH3Grid(lat, lng, resolution, color, opacity, map);
 });
 
 // Drawing mode: mouse down to start drawing
@@ -446,91 +433,7 @@ measurementToggle.addEventListener('click', function() {
     }
 });
 
-// Add event listener for right-click to open the popup
-const markerPopup = document.getElementById('marker-popup');
-const markerNameInput = document.getElementById('marker-name');
-const addMarkerBtn = document.getElementById('add-marker-btn');
-const cancelMarkerBtn = document.getElementById('cancel-marker-btn');
-let currentLatLng;
-
-// Add event listener to open the marker popup on right-click
-map.on('contextmenu', function(e) {
-    currentLatLng = e.latlng;
-    markerPopup.style.display = 'block';
-    markerPopup.style.left = `${e.containerPoint.x}px`;
-    markerPopup.style.top = `${e.containerPoint.y}px`;
-    markerNameInput.value = '';
-    markerNameInput.focus();
-});
-
-// Add event listener to add marker on clicking OK
-addMarkerBtn.addEventListener('click', function() {
-    const markerName = markerNameInput.value;
-    if (markerName) {
-        const marker = L.marker(currentLatLng).addTo(map)
-            .bindPopup(markerName)
-            .openPopup();
-        markers.push(marker);
-
-        addAction({ type: 'addMarker', data: { id: marker._leaflet_id, lat: currentLatLng.lat, lng: currentLatLng.lng, name: markerName } });
-
-        marker.on('contextmenu', function() {
-            removeMarker({ id: marker._leaflet_id, lat: currentLatLng.lat, lng: currentLatLng.lng, name: markerName });
-        });
-
-        markerPopup.style.display = 'none';
-    }
-});
-
-// Add event listener to add marker on pressing Enter
-markerNameInput.addEventListener('keypress', function(event) {
-    if (event.key === 'Enter') {
-        addMarkerBtn.click();
-    }
-});
-
-// Add event listener to cancel adding marker
-cancelMarkerBtn.addEventListener('click', function() {
-    markerPopup.style.display = 'none';
-});
-
-// Function to add a marker to the map
-function addMarker(marker, recordAction = true) {
-    const { id, lat, lng, name } = marker;
-    const markerLayer = L.marker([lat, lng]).addTo(map)
-        .bindPopup(name)
-        .openPopup();
-    markers.push(markerLayer);
-
-    marker.id = markerLayer._leaflet_id;
-
-    if (recordAction) {
-        addAction({ type: 'addMarker', data: marker });
-    }
-
-    markerLayer.on('contextmenu', function() {
-        removeMarker(marker);
-    });
-}
-
-// Function to remove a marker from the map
-function removeMarker(marker, recordAction = true) {
-    const { id } = marker;
-    const markerLayer = markers.find(m => m._leaflet_id === id);
-    if (markerLayer) {
-        map.removeLayer(markerLayer);
-        const index = markers.indexOf(markerLayer);
-        if (index >= 0) {
-            markers.splice(index, 1);
-        }
-
-        if (recordAction) {
-            addAction({ type: 'removeMarker', data: marker });
-        }
-    }
-}
-
-// Function to save hexagons and markers to GeoJSON
+// Function to save hexagons and lines to GeoJSON
 function saveGeoJSON() {
     const geoJson = {
         type: "FeatureCollection",
@@ -570,19 +473,6 @@ function saveGeoJSON() {
                     }
                 };
             }),
-            ...markers.map(marker => {
-                const { lat, lng } = marker.getLatLng();
-                return {
-                    type: "Feature",
-                    geometry: {
-                        type: "Point",
-                        coordinates: [lng, lat]
-                    },
-                    properties: {
-                        name: marker.getPopup().getContent()
-                    }
-                };
-            })
         ]
     };
 
@@ -595,7 +485,7 @@ function saveGeoJSON() {
     URL.revokeObjectURL(url);
 }
 
-// Function to load hexagons and markers from GeoJSON
+// Function to load hexagons and lines from GeoJSON
 function loadGeoJSON(event) {
     const file = event.target.files[0];
     if (file) {
@@ -619,10 +509,6 @@ function loadGeoJSON(event) {
             // Clear existing drawn lines
             drawnLines.forEach(line => map.removeLayer(line));
             drawnLines.length = 0;
-
-            // Clear existing markers
-            markers.forEach(marker => map.removeLayer(marker));
-            markers.length = 0;
 
             // Clear action stacks
             actionStack = [];
@@ -652,20 +538,6 @@ function loadGeoJSON(event) {
                         }).addTo(map);
                         drawnLines.push(line);
                     }
-                } else if (feature.geometry.type === "Point") {
-                    const [lng, lat] = feature.geometry.coordinates;
-                    const marker = L.marker([lat, lng]).addTo(map)
-                        .bindPopup(feature.properties.name)
-                        .openPopup();
-                    markers.push(marker);
-
-                    marker.on('contextmenu', function() {
-                        map.removeLayer(marker);
-                        const index = markers.indexOf(marker);
-                        if (index >= 0) {
-                            markers.splice(index, 1);
-                        }
-                    });
                 }
             });
             // Reset the file input value to allow reloading the same file
@@ -681,3 +553,534 @@ document.getElementById('load-btn').addEventListener('click', function() {
     document.getElementById('load-file').click();
 });
 document.getElementById('load-file').addEventListener('change', loadGeoJSON);
+
+// ==========================================
+// PARTNER MANAGEMENT
+// ==========================================
+
+// Partner state
+const partnersById = {};
+let currentPopupPartnerId = null;
+let editMode = {
+    isActive: false,
+    partnerId: null
+};
+
+// Partner constants
+const PARTNER_CONSTANTS = {
+    DEFAULT_OPACITY: 0.1,
+    DEFAULT_COLOR: '#0000ff',
+    DEFAULT_PRIMARY_RESOLUTION: 9,
+    DEFAULT_PRIMARY_ZONES: 18,
+    DEFAULT_SECONDARY_RESOLUTION: 6,
+    DEFAULT_SECONDARY_ZONES: 8
+};
+
+// Add a partner to the map
+function addPartnerToMap(partner) {
+    const { partnerId, latitude, longitude, h3Resolution, numZones, h3Resolution2, numZones2, color: partnerColor, color2 } = partner;
+    const actualColor = partnerColor || PARTNER_CONSTANTS.DEFAULT_COLOR;
+
+    // Create partner object with elements structure
+    const partnerObject = {
+        partnerId,
+        latitude,
+        longitude,
+        h3Resolution,
+        numZones,
+        h3Resolution2,
+        numZones2,
+        color: partnerColor,
+        color2,
+        elements: {
+            primaryHexagons: [],
+            secondaryHexagons: []
+        }
+    };
+
+    // Add marker
+    const marker = L.marker([latitude, longitude]).addTo(map);
+    partnerObject.marker = marker;
+    
+    // Add click event listener to show popup
+    marker.on('click', function() {
+        showPartnerPopup(partnerId);
+    });
+
+    // Draw primary hexagons
+    const centerCell = h3.latLngToCell(latitude, longitude, h3Resolution);
+    const disk = h3.gridDisk(centerCell, numZones - 1);
+    disk.forEach((cell, index) => {
+        const boundary = h3.cellToBoundary(cell);
+        const polygon = L.polygon(boundary, {
+            color: actualColor,
+            fillColor: actualColor,
+            weight: 2,
+            fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY
+        }).addTo(map);
+        
+        const hexagonObject = {
+            h3Index: cell,
+            polygon: polygon,
+            center: { lat: latitude, lng: longitude },
+            layerType: 'primary',
+            h3Resolution: h3Resolution,
+            zoneNumber: index + 1
+        };
+        partnerObject.elements.primaryHexagons.push(hexagonObject);
+    });
+
+    // Draw secondary hexagons if provided
+    if (h3Resolution2 !== undefined && numZones2 !== undefined) {
+        const actualColor2 = color2 || actualColor;
+        const centerCell2 = h3.latLngToCell(latitude, longitude, h3Resolution2);
+        const disk2 = h3.gridDisk(centerCell2, numZones2 - 1);
+        disk2.forEach((cell, index) => {
+            const boundary = h3.cellToBoundary(cell);
+            const polygon = L.polygon(boundary, {
+                color: actualColor2,
+                fillColor: actualColor2,
+                weight: 2,
+                fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY
+            }).addTo(map);
+            
+            const hexagonObject = {
+                h3Index: cell,
+                polygon: polygon,
+                center: { lat: latitude, lng: longitude },
+                layerType: 'secondary',
+                h3Resolution: h3Resolution2,
+                zoneNumber: index + 1
+            };
+            partnerObject.elements.secondaryHexagons.push(hexagonObject);
+        });
+    }
+
+    // Store partner in the main structure
+    partnersById[partnerId] = partnerObject;
+
+    // Move map view to the partner's location
+    map.setView([latitude, longitude], map.getZoom());
+}
+
+// Delete a partner from the map
+function deletePartner(partnerId) {
+    const partner = partnersById[partnerId];
+    if (!partner) return;
+
+    // Remove primary hexagons from map
+    partner.elements.primaryHexagons.forEach(hexagon => {
+        map.removeLayer(hexagon.polygon);
+    });
+
+    // Remove secondary hexagons from map
+    partner.elements.secondaryHexagons.forEach(hexagon => {
+        map.removeLayer(hexagon.polygon);
+    });
+
+    // Remove marker from map
+    if (partner.marker) {
+        map.removeLayer(partner.marker);
+    }
+
+    // Remove partner from the data structure
+    delete partnersById[partnerId];
+}
+
+// Update a partner with new data
+function updatePartner(oldPartnerId, newPartnerData) {
+    const oldPartner = partnersById[oldPartnerId];
+    if (!oldPartner) return;
+
+    // If partner ID changed, remove the old entry
+    if (oldPartnerId !== newPartnerData.partnerId) {
+        delete partnersById[oldPartnerId];
+    }
+
+    // Remove old elements from map
+    oldPartner.elements.primaryHexagons.forEach(hexagon => {
+        map.removeLayer(hexagon.polygon);
+    });
+    oldPartner.elements.secondaryHexagons.forEach(hexagon => {
+        map.removeLayer(hexagon.polygon);
+    });
+    if (oldPartner.marker) {
+        map.removeLayer(oldPartner.marker);
+    }
+
+    // Add the updated partner
+    addPartnerToMap(newPartnerData);
+}
+
+// Toggle primary hexagons visibility for a partner
+function togglePrimaryHexagonsVisibility(partnerId, visible) {
+    const partner = partnersById[partnerId];
+    if (!partner || partner.elements.primaryHexagons.length === 0) return;
+
+    if (visible) {
+        partner.elements.primaryHexagons.forEach(hexagon => {
+            hexagon.polygon.setStyle({
+                fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
+                opacity: 1
+            });
+        });
+    } else {
+        partner.elements.primaryHexagons.forEach(hexagon => {
+            hexagon.polygon.setStyle({
+                fillOpacity: 0,
+                opacity: 0
+            });
+        });
+    }
+}
+
+// Toggle secondary hexagons visibility for a partner
+function toggleSecondaryHexagonsVisibility(partnerId, visible) {
+    const partner = partnersById[partnerId];
+    if (!partner || partner.elements.secondaryHexagons.length === 0) return;
+
+    if (visible) {
+        partner.elements.secondaryHexagons.forEach(hexagon => {
+            hexagon.polygon.setStyle({
+                fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
+                opacity: 1
+            });
+        });
+    } else {
+        partner.elements.secondaryHexagons.forEach(hexagon => {
+            hexagon.polygon.setStyle({
+                fillOpacity: 0,
+                opacity: 0
+            });
+        });
+    }
+}
+
+// Show partner popup slide window
+function showPartnerPopup(partnerId) {
+    const partner = partnersById[partnerId];
+    if (!partner) return;
+
+    // Update slide window content
+    document.getElementById('slide-partner-id').textContent = partnerId;
+
+    // Update partner statistics table
+    const tableBody = document.getElementById('partner-stats-table').querySelector('tbody');
+    tableBody.innerHTML = '';
+
+    const primaryCount = partner.elements.primaryHexagons.length;
+    const secondaryCount = partner.elements.secondaryHexagons.length;
+
+    // Primary zones row
+    const primaryRow = document.createElement('tr');
+    primaryRow.innerHTML = `
+        <td class="py-1 pr-2 font-medium text-gray-700">Primary</td>
+        <td class="py-1 text-gray-600">Resolution: ${partner.h3Resolution}<br>Zones: ${partner.numZones} (${primaryCount} hexagons)</td>
+    `;
+    tableBody.appendChild(primaryRow);
+
+    // Secondary zones row (if exists)
+    if (secondaryCount > 0 && partner.numZones2 !== undefined) {
+        const secondaryRow = document.createElement('tr');
+        secondaryRow.innerHTML = `
+            <td class="py-1 pr-2 font-medium text-gray-700">Secondary</td>
+            <td class="py-1 text-gray-600">Resolution: ${partner.h3Resolution2}<br>Zones: ${partner.numZones2} (${secondaryCount} hexagons)</td>
+        `;
+        tableBody.appendChild(secondaryRow);
+    }
+
+    // Set initial toggle states
+    const primaryVisible = partner.elements.primaryHexagons.length > 0 && partner.elements.primaryHexagons[0].polygon.options.fillOpacity > 0;
+    const secondaryVisible = partner.elements.secondaryHexagons.length > 0 && partner.elements.secondaryHexagons[0].polygon.options.fillOpacity > 0;
+    const hasSecondaryHexagons = partner.elements.secondaryHexagons.length > 0;
+
+    document.getElementById('toggle-primary-zones').checked = primaryVisible;
+    document.getElementById('toggle-secondary-zone').checked = secondaryVisible;
+
+    // Configure secondary toggle based on availability
+    const secondaryToggle = document.getElementById('toggle-secondary-zone');
+    const secondaryContainer = secondaryToggle.closest('.flex');
+
+    if (hasSecondaryHexagons) {
+        secondaryToggle.disabled = false;
+        secondaryContainer.classList.remove('opacity-50', 'cursor-not-allowed');
+        secondaryContainer.style.pointerEvents = 'auto';
+    } else {
+        secondaryToggle.disabled = true;
+        secondaryContainer.classList.add('opacity-50', 'cursor-not-allowed');
+        secondaryContainer.style.pointerEvents = 'none';
+    }
+
+    // Show slide window
+    const slideWindow = document.getElementById('partner-slide-window');
+    slideWindow.classList.remove('hidden');
+    slideWindow.classList.remove('translate-x-full');
+
+    currentPopupPartnerId = partnerId;
+}
+
+// Close partner popup slide window
+function closePartnerPopup() {
+    const slideWindow = document.getElementById('partner-slide-window');
+    slideWindow.classList.add('translate-x-full');
+    
+    setTimeout(() => {
+        slideWindow.classList.add('hidden');
+    }, 300);
+    
+    currentPopupPartnerId = null;
+}
+
+// Reset sidebar form
+function resetSidebarForm() {
+    document.getElementById('add-partner-form').reset();
+    document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
+    document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_ZONES.toString();
+    document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
+    document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_ZONES.toString();
+    document.getElementById('secondary-fields').classList.add('hidden');
+    
+    editMode.isActive = false;
+    editMode.partnerId = null;
+    
+    document.querySelector('#add-partner-sidebar h2').textContent = 'Add Partner';
+    const submitButton = document.querySelector('#add-partner-form button[type="submit"]');
+    submitButton.textContent = 'Add';
+}
+
+// Open sidebar for editing a partner
+function openSidebarForEdit(partner) {
+    editMode.isActive = true;
+    editMode.partnerId = partner.partnerId;
+
+    document.querySelector('#add-partner-sidebar h2').textContent = 'Edit Partner';
+    const submitButton = document.querySelector('#add-partner-form button[type="submit"]');
+    submitButton.textContent = 'Update';
+
+    // Pre-fill form fields
+    document.getElementById('sidebar-partnerId').value = partner.partnerId;
+    document.getElementById('sidebar-latitude').value = partner.latitude;
+    document.getElementById('sidebar-longitude').value = partner.longitude;
+    document.getElementById('sidebar-h3Resolution').value = partner.h3Resolution;
+    document.getElementById('sidebar-numZones').value = partner.numZones;
+    document.getElementById('sidebar-color').value = partner.color || PARTNER_CONSTANTS.DEFAULT_COLOR;
+
+    document.getElementById('sidebar-resolution-value').textContent = partner.h3Resolution.toString();
+    document.getElementById('sidebar-zones-value').textContent = partner.numZones.toString();
+
+    // Handle secondary fields
+    if (partner.h3Resolution2 !== undefined && partner.numZones2 !== undefined) {
+        document.getElementById('sidebar-enable-secondary').checked = true;
+        document.getElementById('sidebar-h3Resolution2').value = partner.h3Resolution2;
+        document.getElementById('sidebar-numZones2').value = partner.numZones2;
+        document.getElementById('sidebar-color2').value = partner.color2 || partner.color || PARTNER_CONSTANTS.DEFAULT_COLOR;
+        document.getElementById('sidebar-resolution2-value').textContent = partner.h3Resolution2.toString();
+        document.getElementById('sidebar-zones2-value').textContent = partner.numZones2.toString();
+    } else {
+        document.getElementById('sidebar-enable-secondary').checked = false;
+        document.getElementById('sidebar-color2').value = partner.color || PARTNER_CONSTANTS.DEFAULT_COLOR;
+    }
+    
+    // Toggle secondary fields visibility
+    const enableSecondary = document.getElementById('sidebar-enable-secondary').checked;
+    if (enableSecondary) {
+        document.getElementById('secondary-fields').classList.remove('hidden');
+    } else {
+        document.getElementById('secondary-fields').classList.add('hidden');
+    }
+
+    document.getElementById('add-partner-sidebar').classList.remove('hidden');
+}
+
+// Validate partner data
+function validatePartner(partner) {
+    if (!partner || typeof partner !== 'object') {
+        alert("Partner must be an object");
+        return false;
+    }
+    if (typeof partner.partnerId !== 'string' || partner.partnerId.trim() === '') {
+        alert("partnerId must be a non-empty string");
+        return false;
+    }
+    if (typeof partner.latitude !== 'number' || isNaN(partner.latitude) || partner.latitude < -90 || partner.latitude > 90) {
+        alert("latitude must be a number between -90 and 90");
+        return false;
+    }
+    if (typeof partner.longitude !== 'number' || isNaN(partner.longitude) || partner.longitude < -180 || partner.longitude > 180) {
+        alert("longitude must be a number between -180 and 180");
+        return false;
+    }
+    if (typeof partner.h3Resolution !== 'number' || !Number.isInteger(partner.h3Resolution) || partner.h3Resolution < 0 || partner.h3Resolution > 15) {
+        alert("h3Resolution must be an integer between 0 and 15");
+        return false;
+    }
+    if (typeof partner.numZones !== 'number' || !Number.isInteger(partner.numZones) || partner.numZones < 1 || partner.numZones > 50) {
+        alert("numZones must be an integer between 1 and 50");
+        return false;
+    }
+    if (partner.h3Resolution2 !== undefined && (typeof partner.h3Resolution2 !== 'number' || !Number.isInteger(partner.h3Resolution2) || partner.h3Resolution2 < 0 || partner.h3Resolution2 > 15)) {
+        alert("h3Resolution2 must be an integer between 0 and 15 if provided");
+        return false;
+    }
+    if (partner.numZones2 !== undefined && (typeof partner.numZones2 !== 'number' || !Number.isInteger(partner.numZones2) || partner.numZones2 < 1 || partner.numZones2 > 50)) {
+        alert("numZones2 must be an integer between 1 and 50 if provided");
+        return false;
+    }
+    return true;
+}
+
+// ==========================================
+// PARTNER EVENT LISTENERS
+// ==========================================
+
+// Add Partner sidebar button
+document.getElementById('add-partner-sidebar-btn').addEventListener('click', function() {
+    closePartnerPopup();
+    const sidebar = document.getElementById('add-partner-sidebar');
+    if (sidebar.classList.contains('hidden')) {
+        editMode.isActive = false;
+        editMode.partnerId = null;
+        document.querySelector('#add-partner-sidebar h2').textContent = 'Add Partner';
+        const submitButton = document.querySelector('#add-partner-form button[type="submit"]');
+        submitButton.textContent = 'Add';
+        document.getElementById('add-partner-form').reset();
+        document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
+        document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_ZONES.toString();
+        document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
+        document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_ZONES.toString();
+        document.getElementById('secondary-fields').classList.add('hidden');
+        sidebar.classList.remove('hidden');
+    } else {
+        sidebar.classList.add('hidden');
+    }
+});
+
+// Sidebar close button
+document.getElementById('sidebar-close-btn').addEventListener('click', function() {
+    document.getElementById('add-partner-sidebar').classList.add('hidden');
+    resetSidebarForm();
+});
+
+// Sidebar cancel button
+document.getElementById('sidebar-cancel-add').addEventListener('click', function() {
+    document.getElementById('add-partner-sidebar').classList.add('hidden');
+    resetSidebarForm();
+});
+
+// Sidebar resolution slider
+document.getElementById('sidebar-h3Resolution').addEventListener('input', function() {
+    document.getElementById('sidebar-resolution-value').textContent = this.value;
+});
+
+// Sidebar zones slider
+document.getElementById('sidebar-numZones').addEventListener('input', function() {
+    document.getElementById('sidebar-zones-value').textContent = this.value;
+});
+
+// Sidebar resolution2 slider
+document.getElementById('sidebar-h3Resolution2').addEventListener('input', function() {
+    document.getElementById('sidebar-resolution2-value').textContent = this.value;
+});
+
+// Sidebar zones2 slider
+document.getElementById('sidebar-numZones2').addEventListener('input', function() {
+    document.getElementById('sidebar-zones2-value').textContent = this.value;
+});
+
+// Enable secondary checkbox
+document.getElementById('sidebar-enable-secondary').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('secondary-fields').classList.remove('hidden');
+    } else {
+        document.getElementById('secondary-fields').classList.add('hidden');
+    }
+});
+
+// Primary color change to sync secondary color
+document.getElementById('sidebar-color').addEventListener('input', function() {
+    if (document.getElementById('sidebar-enable-secondary').checked) {
+        document.getElementById('sidebar-color2').value = this.value;
+    }
+});
+
+// Add/Edit partner form submission
+document.getElementById('add-partner-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const partnerId = document.getElementById('sidebar-partnerId').value.trim();
+    const latitude = parseFloat(document.getElementById('sidebar-latitude').value);
+    const longitude = parseFloat(document.getElementById('sidebar-longitude').value);
+    const h3Resolution = parseInt(document.getElementById('sidebar-h3Resolution').value);
+    const numZones = parseInt(document.getElementById('sidebar-numZones').value);
+    const color = document.getElementById('sidebar-color').value;
+
+    const enableSecondary = document.getElementById('sidebar-enable-secondary').checked;
+    const h3Resolution2 = enableSecondary ? parseInt(document.getElementById('sidebar-h3Resolution2').value) : undefined;
+    const numZones2 = enableSecondary ? parseInt(document.getElementById('sidebar-numZones2').value) : undefined;
+    const color2 = enableSecondary ? document.getElementById('sidebar-color2').value : undefined;
+
+    const partner = { partnerId, latitude, longitude, h3Resolution, numZones, h3Resolution2, numZones2, color, color2 };
+
+    if (!validatePartner(partner)) {
+        return;
+    }
+
+    if (editMode.isActive) {
+        // Update existing partner
+        updatePartner(editMode.partnerId, partner);
+    } else {
+        // Check if partner ID already exists
+        if (partnersById[partnerId]) {
+            alert(`Partner with ID "${partnerId}" already exists. Please use a different ID.`);
+            return;
+        }
+        // Add new partner
+        addPartnerToMap(partner);
+    }
+
+    // Close sidebar and reset form
+    document.getElementById('add-partner-sidebar').classList.add('hidden');
+    resetSidebarForm();
+});
+
+// Partner slide window close button
+document.getElementById('slide-close-btn').addEventListener('click', closePartnerPopup);
+
+// Edit partner button
+document.getElementById('edit-partner-btn').addEventListener('click', function() {
+    const partnerId = currentPopupPartnerId;
+    if (!partnerId) return;
+
+    const partner = partnersById[partnerId];
+    if (!partner) return;
+
+    closePartnerPopup();
+    openSidebarForEdit(partner);
+});
+
+// Delete partner button
+document.getElementById('delete-partner-btn').addEventListener('click', function() {
+    const partnerId = currentPopupPartnerId;
+    if (!partnerId) return;
+
+    const partner = partnersById[partnerId];
+    if (!partner) return;
+
+    const confirmed = confirm(`Are you sure you want to delete partner "${partnerId}"? This action cannot be undone.`);
+    if (confirmed) {
+        deletePartner(partnerId);
+        closePartnerPopup();
+    }
+});
+
+// Toggle primary zones
+document.getElementById('toggle-primary-zones').addEventListener('change', function() {
+    if (!currentPopupPartnerId) return;
+    togglePrimaryHexagonsVisibility(currentPopupPartnerId, this.checked);
+});
+
+// Toggle secondary zones
+document.getElementById('toggle-secondary-zone').addEventListener('change', function() {
+    if (!currentPopupPartnerId) return;
+    toggleSecondaryHexagonsVisibility(currentPopupPartnerId, this.checked);
+});

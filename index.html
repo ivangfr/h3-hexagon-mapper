@@ -42,6 +42,7 @@
         <button id="draw-toggle" class="w-full bg-green-500 text-white py-2 px-4 rounded mb-2 hover:bg-green-600">Start Drawing</button>
         <button id="measurement-toggle" class="w-full bg-green-500 text-white py-2 px-4 rounded mb-2 hover:bg-green-600">Start Measurement</button>
         <button id="hexagon-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded mb-2 hover:bg-gray-600">Hexagon IDs</button>
+        <button id="add-partner-sidebar-btn" class="w-full bg-purple-500 text-white py-2 px-4 rounded mb-2 hover:bg-purple-600">Add Partner</button>
         <button id="help-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Help</button>
         <hr class="my-4 border-t border-gray-300">
         <label>Ivan Franchin © 2025</label>
@@ -61,16 +62,18 @@
         <ul class="list-disc pl-5">
             <li><strong>Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.</li>
             <li><strong>Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.</li>
-            <li><strong>Add a Marker:</strong> Right-click on the map to open a popup where you can enter a marker name and add it to the map.</li>
-            <li><strong>Remove a Marker:</strong> Right-click on an existing marker to remove it.</li>
             <li><strong>Adjust Hexagon Resolution:</strong> Use the resolution slider in the controls section to adjust the resolution of the hexagons.</li>
             <li><strong>Change Hexagon Color:</strong> Use the color picker in the controls section to change the color of the hexagons.</li>
             <li><strong>Change Hexagon Opacity:</strong> Use the opacity slider in the controls section to change the opacity of the hexagons.</li>
             <li><strong>Free Drawing Mode:</strong> Click the "Start Drawing" button to enter free drawing mode. Click on the map to draw. Click the "Stop Drawing" button to exit free drawing mode.</li>
             <li><strong>Measurement Mode:</strong> Click the "Start Measurement" button to enter measurement mode. Click once to set the starting point, then move the mouse to see a black dashed measurement line and distance in km displayed prominently at the bottom-center of the screen. Click again to clear the measurement.</li>
-            <li><strong>Undo/Redo:</strong> Use the "Undo" and "Redo" buttons to undo or redo your last actions (adding/removing hexagons, markers, or drawings).</li>
-            <li><strong>Save Hexagons and Markers:</strong> Click the "Save" button to download the current hexagons and markers as a GeoJSON file.</li>
-            <li><strong>Load Hexagons and Markers:</strong> Click the "Load" button and select a GeoJSON file to load hexagons and markers from the file.</li>
+            <li><strong>Undo/Redo:</strong> Use the "Undo" and "Redo" buttons to undo or redo your last actions (adding/removing hexagons or drawings).</li>
+            <li><strong>Save Hexagons and Lines:</strong> Click the "Save" button to download the current hexagons and lines as a GeoJSON file.</li>
+            <li><strong>Load Hexagons and Lines:</strong> Click the "Load" button and select a GeoJSON file to load hexagons and lines from the file.</li>
+            <li><strong>Add Partner:</strong> Click the "Add Partner" button to open a form for creating a partner with H3 hexagonal zones.</li>
+            <li><strong>Edit Partner:</strong> Click on a partner marker on the map, then click "Edit Partner" to modify its settings.</li>
+            <li><strong>Delete Partner:</strong> Click on a partner marker and use "Delete Partner" to remove it.</li>
+            <li><strong>Partner Layer Toggles:</strong> Use the toggles in the partner panel to show/hide primary and secondary hexagonal zones.</li>
         </ul>
         <hr class="my-4 border-t border-gray-300">
         <h3 class="text-lg font-bold mt-4">Source-code:</h3>
@@ -90,14 +93,124 @@
             <li>Ivan Franchin © 2025</li>
         </ul>
     </div>
-    <div id="marker-popup" class="popup absolute bg-white p-4 border border-gray-300 rounded-lg shadow-lg hidden z-50" style="z-index: 9999;">
-        <label for="marker-name" class="block mb-2">Marker name:</label>
-        <input type="text" id="marker-name" class="w-full mb-4 p-2 border border-gray-300 rounded">
-        <div class="flex space-x-2">
-            <button id="add-marker-btn" class="flex-1 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">OK</button>
-            <button id="cancel-marker-btn" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Cancel</button>
+
+    <!-- Add Partner Sidebar -->
+    <div id="add-partner-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white border-l border-gray-300 overflow-y-auto hidden shadow-lg" style="z-index: 9999;">
+        <div class="p-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold">Add Partner</h2>
+                <button id="sidebar-close-btn" class="text-gray-500 hover:text-gray-700 text-xl bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors">&times;</button>
+            </div>
+        </div>
+        <div class="p-4">
+        <form id="add-partner-form">
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Partner ID</label>
+                <input type="text" id="sidebar-partnerId" placeholder="Partner ID" value="12345" required class="w-full p-2 border border-gray-300 rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Latitude (-90 to 90)</label>
+                <input type="number" id="sidebar-latitude" placeholder="Latitude" value="52.52" step="any" required class="w-full p-2 border border-gray-300 rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Longitude (-180 to 180)</label>
+                <input type="number" id="sidebar-longitude" placeholder="Longitude" value="13.4" step="any" required class="w-full p-2 border border-gray-300 rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">H3 Resolution: <span id="sidebar-resolution-value">9</span></label>
+                <input type="range" id="sidebar-h3Resolution" min="0" max="15" value="9" required class="w-full">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Number of Zones: <span id="sidebar-zones-value">18</span></label>
+                <input type="range" id="sidebar-numZones" min="1" max="50" value="18" required class="w-full">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Color</label>
+                <input type="color" id="sidebar-color" value="#0000ff" required class="w-full h-10 border border-gray-300 rounded">
+            </div>
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" id="sidebar-enable-secondary" class="mr-2">
+                    Enable Secondary H3 Layer
+                </label>
+            </div>
+            <div id="secondary-fields" class="hidden">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1">Secondary H3 Resolution: <span id="sidebar-resolution2-value">6</span></label>
+                    <input type="range" id="sidebar-h3Resolution2" min="0" max="15" value="6" class="w-full">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1">Secondary Number of Zones: <span id="sidebar-zones2-value">8</span></label>
+                    <input type="range" id="sidebar-numZones2" min="1" max="50" value="8" class="w-full">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1">Color 2</label>
+                    <input type="color" id="sidebar-color2" value="#0000ff" class="w-full h-10 border border-gray-300 rounded">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Add</button>
+                <button type="button" id="sidebar-cancel-add" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
+            </div>
+        </form>
         </div>
     </div>
+
+    <!-- Partner Layer Control Slide Window -->
+    <div id="partner-slide-window" class="fixed top-0 right-0 w-80 h-full bg-white shadow-xl border-l border-gray-300 transform translate-x-full transition-transform duration-300 ease-in-out hidden" style="z-index: 10000;">
+        <div class="p-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h3 id="slide-partner-title" class="text-lg font-semibold text-gray-800">Partner: <span id="slide-partner-id">Unknown</span></h3>
+                <button id="slide-close-btn" class="text-gray-500 hover:text-gray-700 text-xl bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors">&times;</button>
+            </div>
+        </div>
+        <div class="p-4 space-y-4 overflow-y-auto max-h-[calc(100%-80px)]">
+            <!-- Primary Zones Toggle -->
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                    <div class="font-medium text-gray-800">Primary Zones</div>
+                    <div class="text-sm text-gray-600">Primary H3 hexagons</div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-primary-zones" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+            
+            <!-- Secondary Zone Toggle -->
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                    <div class="font-medium text-gray-800">Secondary Zone</div>
+                    <div class="text-sm text-gray-600">Secondary H3 hexagons</div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-secondary-zone" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+
+            <!-- Partner Stats -->
+            <div class="p-3 bg-gray-50 rounded-lg">
+                <div class="font-medium text-gray-800 mb-3">Statistics</div>
+                <table id="partner-stats-table" class="w-full text-sm">
+                    <tbody class="divide-y divide-gray-200">
+                        <!-- Stats rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Partner Edit -->
+            <div class="p-3 bg-blue-50 rounded-lg mb-3">
+                <button id="edit-partner-btn" class="w-full px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded hover:bg-blue-600 transition-colors">Edit Partner</button>
+            </div>
+
+            <!-- Partner Delete -->
+            <div class="p-3 bg-red-50 rounded-lg">
+                <button id="delete-partner-btn" class="w-full px-4 py-2 bg-red-500 text-white text-sm font-medium rounded hover:bg-red-600 transition-colors">Delete Partner</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/h3-js"></script>
     <script src="script.js"></script>

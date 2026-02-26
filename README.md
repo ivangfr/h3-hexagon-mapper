@@ -1,6 +1,6 @@
 # H3 Hexagon Mapper
 
-This project is a web tool that helps you see and interact with H3 hexagons on a map. You can add or remove hexagons, change their size, color, and transparency, add or remove markers, measure distances between points, draw free-form lines, and save or load everything as a GeoJSON file.
+This project is a web tool that helps you see and interact with H3 hexagons on a map. You can add or remove hexagons, change their size, color, and transparency, manage partners with their own hexagonal zones, measure distances between points, draw free-form lines, and save or load everything as a GeoJSON file.
 
 ![Screenshot](documentation/demo.gif)
 
@@ -19,16 +19,25 @@ You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mappe
 
 - **Add a Hexagon**: Click on the map to add a hexagon at the clicked location.
 - **Remove a Hexagon**: Click on an existing hexagon to remove it. Ensure the resolution of the hexagon matches the resolution slider value.
-- **Add a Marker**: Right-click on the map to open a popup where you can enter a marker name and add it to the map.
-- **Remove a Marker**: Right-click on an existing marker to remove it.
 - **Adjust Hexagon Resolution**: Use the resolution slider in the controls section to adjust the resolution of the hexagons.
 - **Change Hexagon Color**: Use the color picker in the controls section to change the color of the hexagons.
 - **Change Hexagon Opacity**: Use the opacity slider in the controls section to adjust the opacity of the hexagons.
 - **Free Drawing**: Click the "Start Drawing" button to enter free drawing mode. Click on the map to draw. Click the "Stop Drawing" button to exit free drawing mode.
 - **Measurement Mode**: Click the "Start Measurement" button to enter measurement mode. Click once to set the starting point, then move the mouse to see a black dashed measurement line and distance in km displayed at the bottom-center. Click again to clear the measurement.
-- **Undo/Redo**: Use the "Undo" and "Redo" buttons to undo or redo your last actions (adding/removing hexagons, markers, or drawings).
-- **Save Hexagons and Markers**: Click the "Save" button to download the current hexagons and markers as a GeoJSON file.
-- **Load Hexagons and Markers**: Click the "Load" button and select a GeoJSON file to load hexagons and markers from the file.
+- **Undo/Redo**: Use the "Undo" and "Redo" buttons to undo or redo your last actions (adding/removing hexagons or drawings).
+- **Save Hexagons and Lines**: Click the "Save" button to download the current hexagons and lines as a GeoJSON file.
+- **Load Hexagons and Lines**: Click the "Load" button and select a GeoJSON file to load hexagons and lines from the file.
+
+## Partner Management
+
+Partners allow you to create and manage H3 hexagonal zones around specific locations:
+
+- **Add Partner**: Click the "Add Partner" button to open the sidebar form. Enter a Partner ID, coordinates (latitude/longitude), H3 resolution, number of zones, and color. You can also enable a secondary H3 layer with different settings.
+- **Edit Partner**: Click on any partner marker on the map to open the partner panel, then click "Edit Partner" to modify the partner's settings.
+- **Delete Partner**: Click on a partner marker and use the "Delete Partner" button to remove it from the map.
+- **Primary Zones Toggle**: Show/hide the primary H3 hexagonal zones for a selected partner.
+- **Secondary Zones Toggle**: Show/hide the secondary H3 hexagonal zones for a selected partner (if configured).
+- **Partner Statistics**: View the resolution, number of zones, and hexagon count for both primary and secondary zones.
 
 ## How to Run Locally
 
