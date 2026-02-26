@@ -32,34 +32,6 @@ html, body {
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
-#hexagon-sidebar {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 250px;
-    height: 100%;
-    background: white;
-    padding: 10px;
-    border-left: 1px solid #ccc;
-    overflow-y: auto;
-    z-index: 1000;
-    display: none;
-    box-shadow: -2px 0 6px rgba(0,0,0,0.3);
-}
-
-.hexagon-list-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.hexagon-color {
-    width: 16px;
-    height: 16px;
-    margin-right: 8px;
-    border: 1px solid #ccc;
-}
-
 #help-sidebar {
     position: absolute;
     top: 0;
@@ -87,27 +59,3 @@ html, body {
     width: 200px;
 }
 
-.hexagon-list-item {
-    cursor: pointer;
-}
-
-/* Enhanced disabled button styling for undo and redo buttons */
-#undo-btn:disabled,
-#redo-btn:disabled {
-    background-color: #d1d5db !important; /* Light gray background */
-    color: #9ca3af !important; /* Muted text color */
-    cursor: not-allowed !important;
-    opacity: 0.6 !important;
-    border: 0px solid #e5e7eb !important;
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-#undo-btn:disabled:hover,
-#redo-btn:disabled:hover {
-    /* No hover effects when disabled */
-    background-color: #d1d5db !important;
-    color: #9ca3af !important;
-    transform: none !important;
-    box-shadow: none !important;
-}

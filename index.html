@@ -14,13 +14,12 @@
     <title>H3 Hexagon Mapper</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" />
     <link rel="stylesheet" href="style.css" />
 </head>
 <body class="font-roboto">
     <div id="map" class="h-screen"></div>
     <div id="drawing-overlay" class="fixed inset-0 bg-black bg-opacity-20 hidden" style="z-index: 9997; pointer-events: none;"></div>
-    <div id="drawing-mode-indicator" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white font-bold py-1 px-3 text-sm rounded-lg shadow-lg hidden" style="z-index: 9998; opacity: 0.8;">
+        <div id="drawing-mode-indicator" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white font-bold py-1 px-3 text-sm rounded-lg shadow-lg hidden" style="z-index: 9998; opacity: 0.8;">
         Drawing Mode Active
     </div>
     <div id="controls" class="absolute top-24 left-4 z-50 bg-white p-4 rounded-lg shadow-lg" style="z-index: 9998;">
@@ -30,19 +29,12 @@
         <input type="color" id="color-picker" value="#0000ff" class="w-full mb-4">
         <label for="opacity" class="block mb-2">Opacity: <span id="opacity-value">0.3</span></label>
         <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3" class="w-full mb-4">
-                <div class="flex space-x-2 mb-2">
-            <button id="undo-btn" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Undo</button>
-            <button id="redo-btn" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Redo</button>
-        </div>
-        <hr class="my-4 border-t border-gray-300">
         <button id="save-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Save</button>
         <input type="file" id="load-file" accept=".geojson" style="display: none;">
         <button id="load-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Load</button>
         <hr class="my-4 border-t border-gray-300">
-        <button id="draw-toggle" class="w-full bg-green-500 text-white py-2 px-4 rounded mb-2 hover:bg-green-600">Start Drawing</button>
-        <button id="measurement-toggle" class="w-full bg-green-500 text-white py-2 px-4 rounded mb-2 hover:bg-green-600">Start Measurement</button>
-        <button id="hexagon-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded mb-2 hover:bg-gray-600">Hexagon IDs</button>
         <button id="add-partner-sidebar-btn" class="w-full bg-purple-500 text-white py-2 px-4 rounded mb-2 hover:bg-purple-600">Add Partner</button>
+        <button id="measurement-toggle" class="w-full bg-green-500 text-white py-2 px-4 rounded mb-2 hover:bg-green-600">Start Measurement</button>
         <button id="help-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Help</button>
         <hr class="my-4 border-t border-gray-300">
         <label>Ivan Franchin © 2025</label>
@@ -50,13 +42,6 @@
     </div>
     <div id="cursor-coordinates" class="absolute bottom-4 left-4 z-50 bg-white p-2 rounded-lg shadow-lg" style="z-index: 9999;">Lat: 0, Lon: 0</div>
     <div id="measurement-display" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-white px-4 py-2 rounded-lg shadow-lg text-xl font-bold hidden" style="z-index: 9999;">0.00 km</div>
-    <div id="hexagon-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white p-4 border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg" style="z-index: 9999;">
-        <h2 class="text-xl font-bold mb-4">Hexagon IDs</h2>
-        <hr class="my-4 border-t border-gray-300">
-        <p class="text-sm mb-4"><strong>Note:</strong> You can select the color and opacity of an existing hexagon by clicking on it in the list below.</p>
-        <hr class="my-4 border-t border-gray-300">
-        <ul id="hexagon-list"></ul>
-    </div>
     <div id="help-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white p-4 border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg"  style="z-index: 9999;">
         <h2 class="text-xl font-bold mb-4">Help</h2>
         <ul class="list-disc pl-5">
@@ -65,11 +50,9 @@
             <li><strong>Adjust Hexagon Resolution:</strong> Use the resolution slider in the controls section to adjust the resolution of the hexagons.</li>
             <li><strong>Change Hexagon Color:</strong> Use the color picker in the controls section to change the color of the hexagons.</li>
             <li><strong>Change Hexagon Opacity:</strong> Use the opacity slider in the controls section to change the opacity of the hexagons.</li>
-            <li><strong>Free Drawing Mode:</strong> Click the "Start Drawing" button to enter free drawing mode. Click on the map to draw. Click the "Stop Drawing" button to exit free drawing mode.</li>
             <li><strong>Measurement Mode:</strong> Click the "Start Measurement" button to enter measurement mode. Click once to set the starting point, then move the mouse to see a black dashed measurement line and distance in km displayed prominently at the bottom-center of the screen. Click again to clear the measurement.</li>
-            <li><strong>Undo/Redo:</strong> Use the "Undo" and "Redo" buttons to undo or redo your last actions (adding/removing hexagons or drawings).</li>
-            <li><strong>Save Hexagons and Lines:</strong> Click the "Save" button to download the current hexagons and lines as a GeoJSON file.</li>
-            <li><strong>Load Hexagons and Lines:</strong> Click the "Load" button and select a GeoJSON file to load hexagons and lines from the file.</li>
+            <li><strong>Save Hexagons:</strong> Click the "Save" button to download the current hexagons as a GeoJSON file.</li>
+            <li><strong>Load Hexagons:</strong> Click the "Load" button and select a GeoJSON file to load hexagons from the file.</li>
             <li><strong>Add Partner:</strong> Click the "Add Partner" button to open a form for creating a partner with H3 hexagonal zones.</li>
             <li><strong>Edit Partner:</strong> Click on a partner marker on the map, then click "Edit Partner" to modify its settings.</li>
             <li><strong>Delete Partner:</strong> Click on a partner marker and use "Delete Partner" to remove it.</li>
@@ -131,7 +114,7 @@
             <div class="mb-4">
                 <label class="flex items-center">
                     <input type="checkbox" id="sidebar-enable-secondary" class="mr-2">
-                    Enable Secondary H3 Layer
+                    Enable Secondary Zone
                 </label>
             </div>
             <div id="secondary-fields" class="hidden">
@@ -165,14 +148,14 @@
             </div>
         </div>
         <div class="p-4 space-y-4 overflow-y-auto max-h-[calc(100%-80px)]">
-            <!-- Primary Zones Toggle -->
+            <!-- Primary Zone Toggle -->
             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>
-                    <div class="font-medium text-gray-800">Primary Zones</div>
+                    <div class="font-medium text-gray-800">Primary Zone</div>
                     <div class="text-sm text-gray-600">Primary H3 hexagons</div>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="toggle-primary-zones" class="sr-only peer" checked>
+                    <input type="checkbox" id="toggle-primary-zone" class="sr-only peer" checked>
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
             </div>
@@ -211,6 +194,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/h3-js"></script>
     <script src="script.js"></script>

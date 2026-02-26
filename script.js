@@ -8,101 +8,16 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 // Store generated hexagons and their polygons
 const hexagons = {};
-const drawnLines = [];
 
 // Default settings
 let resolution = 9;
 let color = '#0000ff';
 let opacity = 0.3;
 
-// Drawing settings
-let isDrawing = false;
-let currentLine = null;
-let currentLinePoints = [];
-
 // Measurement settings
 let isMeasuring = false;
 let measurementStart = null;
 let measurementLine = null;
-
-// Action stacks for undo and redo
-let actionStack = [];
-let redoStack = [];
-
-function addAction(action) {
-    actionStack.push(action);
-    redoStack = []; // Clear redo stack on new action
-    updateUndoButtonState();
-    updateRedoButtonState();
-}
-
-function undoAction() {
-    if (actionStack.length > 0) {
-        const action = actionStack.pop();
-        redoStack.push(action);
-        if (action.type === 'addHexagon') {
-            removeHexagon(action.data, false);
-        } else if (action.type === 'removeHexagon') {
-            addHexagon(action.data, false);
-        } else if (action.type === 'drawLine') {
-            if (drawnLines.length > 0) {
-                const line = drawnLines.pop();
-                map.removeLayer(line);
-            }
-        }
-        updateUndoButtonState();
-        updateRedoButtonState();
-    }
-}
-
-function redoAction() {
-    if (redoStack.length > 0) {
-        const action = redoStack.pop();
-        actionStack.push(action);
-        if (action.type === 'addHexagon') {
-            addHexagon(action.data, false);
-        } else if (action.type === 'removeHexagon') {
-            removeHexagon(action.data, false);
-        } else if (action.type === 'drawLine') {
-            const line = L.polyline(action.data.points, {
-                color: color,
-                weight: 8,
-                opacity: 1.0
-            }).addTo(map);
-            drawnLines.push(line);
-        }
-        updateUndoButtonState();
-        updateRedoButtonState();
-    }
-}
-
-document.getElementById('undo-btn').addEventListener('click', undoAction);
-document.getElementById('redo-btn').addEventListener('click', redoAction);
-
-// Button state management functions
-function updateUndoButtonState() {
-    const undoBtn = document.getElementById('undo-btn');
-    if (actionStack.length === 0) {
-        undoBtn.disabled = true;
-    } else {
-        undoBtn.disabled = false;
-    }
-}
-
-function updateRedoButtonState() {
-    const redoBtn = document.getElementById('redo-btn');
-    if (redoStack.length === 0) {
-        redoBtn.disabled = true;
-    } else {
-        redoBtn.disabled = false;
-    }
-}
-
-// Initialize button states
-updateUndoButtonState();
-updateRedoButtonState();
-
-
 
 // Function to generate and display H3 grid cells
 function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
@@ -119,7 +34,7 @@ function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
 }
 
 // Function to add a hexagon to the map
-function addHexagon(hexagon, recordAction = true) {
+function addHexagon(hexagon) {
     const { h3Index, latitude, longitude, resolution, color, opacity } = hexagon;
     const hexagonBoundary = h3.cellToBoundary(h3Index);
     const polygon = L.polygon(hexagonBoundary, {
@@ -130,103 +45,15 @@ function addHexagon(hexagon, recordAction = true) {
     }).addTo(map);
 
     hexagons[h3Index] = { polygon, latitude, longitude };
-    addHexagonToList(h3Index, color, opacity);
-
-    if (recordAction) {
-        addAction({ type: 'addHexagon', data: hexagon });
-    }
 }
 
 // Function to remove a hexagon from the map
-function removeHexagon(hexagon, recordAction = true) {
+function removeHexagon(hexagon) {
     const { h3Index } = hexagon;
     if (hexagons[h3Index]) {
         map.removeLayer(hexagons[h3Index].polygon);
         delete hexagons[h3Index];
-        removeHexagonFromList(h3Index);
-
-        if (recordAction) {
-            addAction({ type: 'removeHexagon', data: hexagon });
-        }
     }
-}
-
-// Function to add hexagon ID to the list
-function addHexagonToList(h3Index, fillColor, fillOpacity) {
-    const hexagonList = document.getElementById('hexagon-list');
-    const listItem = document.createElement('li');
-    listItem.id = h3Index;
-    listItem.classList.add('hexagon-list-item');
-
-    const colorSquare = document.createElement('div');
-    colorSquare.className = 'hexagon-color';
-    colorSquare.style.backgroundColor = fillColor;
-    colorSquare.style.opacity = fillOpacity;
-
-    const hexagonText = document.createElement('span');
-    hexagonText.textContent = h3Index;
-
-    listItem.appendChild(colorSquare);
-    listItem.appendChild(hexagonText);
-
-    listItem.addEventListener('mouseover', function() {
-        hexagons[h3Index].polygon.setStyle({ fillOpacity: 1.0 });
-    });
-
-    listItem.addEventListener('mouseout', function() {
-        const originalFillOpacity = hexagons[h3Index].polygon.options.originalFillOpacity;
-        hexagons[h3Index].polygon.setStyle({ fillOpacity: originalFillOpacity });
-    });
-
-    listItem.addEventListener('click', function() {
-        const hexagon = hexagons[h3Index];
-        color = hexagon.polygon.options.color;
-        opacity = hexagon.polygon.options.originalFillOpacity;
-        document.getElementById('color-picker').value = color;
-        document.getElementById('opacity').value = opacity;
-        document.getElementById('opacity-value').textContent = opacity;
-    });
-
-    hexagonList.appendChild(listItem);
-}
-
-// Function to remove hexagon ID from the list
-function removeHexagonFromList(h3Index) {
-    const listItem = document.getElementById(h3Index);
-    if (listItem) {
-        listItem.remove();
-    }
-}
-
-// Drawing functions
-function startDrawing() {
-    isDrawing = true;
-    currentLinePoints = [];
-    currentLine = null;
-    
-    // Show drawing mode indicator and overlay
-    document.getElementById('drawing-overlay').classList.remove('hidden');
-    document.getElementById('drawing-mode-indicator').classList.remove('hidden');
-}
-
-function stopDrawing() {
-    isDrawing = false;
-    currentLine = null;
-    currentLinePoints = []
-    
-    // Hide drawing mode indicator and overlay
-    document.getElementById('drawing-overlay').classList.add('hidden');
-    document.getElementById('drawing-mode-indicator').classList.add('hidden');
-}
-
-function finalizeLine() {
-    if (currentLinePoints.length > 1 && currentLine) {
-        drawnLines.push(currentLine);
-        const points = currentLinePoints.map(p => [p[0], p[1]]);
-        addAction({ type: 'drawLine', data: { points: points } });
-    }
-    currentLinePoints = [];
-    currentLine = null;
 }
 
 // Measurement functions
@@ -270,9 +97,6 @@ function calculateDistance(start, end) {
 
 // Add event listener to the map for click events
 map.on('click', function(e) {
-    if (isDrawing) {
-        return; // Don't add hexagons while drawing
-    }
     if (isMeasuring) {
         const { lat, lng } = e.latlng;
         if (!measurementStart) {
@@ -289,32 +113,6 @@ map.on('click', function(e) {
     }
     const { lat, lng } = e.latlng;
     generateH3Grid(lat, lng, resolution, color, opacity, map);
-});
-
-// Drawing mode: mouse down to start drawing
-map.on('mousedown', function(e) {
-    if (!isDrawing) return;
-    const { lat, lng } = e.latlng;
-    currentLinePoints = [[lat, lng]];
-    currentLine = L.polyline([[lat, lng]], {
-        color: color,
-        weight: 8,
-        opacity: 1.0
-    }).addTo(map);
-});
-
-// Drawing mode: mouse move to draw
-map.on('mousemove', function(e) {
-    if (!isDrawing || !currentLine) return;
-    const { lat, lng } = e.latlng;
-    currentLinePoints.push([lat, lng]);
-    currentLine.setLatLngs(currentLinePoints);
-});
-
-// Drawing mode: mouse up to finish the stroke
-map.on('mouseup', function() {
-    if (!isDrawing || !currentLine) return;
-    finalizeLine();
 });
 
 // Add event listener to the resolution slider
@@ -371,58 +169,20 @@ map.on('mousemove', function(e) {
     }
 });
 
-// Function to toggle sidebars
-function toggleSidebar(sidebarId) {
-    const sidebars = ['hexagon-sidebar', 'help-sidebar'];
-    sidebars.forEach(function(id) {
-        const sidebar = document.getElementById(id);
-        if (id === sidebarId) {
-            sidebar.style.display = (sidebar.style.display === 'block') ? 'none' : 'block';
-        } else {
-            sidebar.style.display = 'none';
-        }
-    });
+// Function to toggle help sidebar
+function toggleHelpSidebar() {
+    const sidebar = document.getElementById('help-sidebar');
+    sidebar.style.display = (sidebar.style.display === 'block') ? 'none' : 'block';
 }
-
-// Add event listener to toggle the hexagon sidebar
-const sidebarToggle = document.getElementById('hexagon-sidebar-toggle');
-sidebarToggle.addEventListener('click', function() {
-    toggleSidebar('hexagon-sidebar');
-});
 
 // Add event listener to toggle the help sidebar
 const helpSidebarToggle = document.getElementById('help-sidebar-toggle');
-helpSidebarToggle.addEventListener('click', function() {
-    toggleSidebar('help-sidebar');
-});
-
-// Add event listener to toggle drawing mode
-const drawToggle = document.getElementById('draw-toggle');
-drawToggle.addEventListener('click', function() {
-    if (!isDrawing) {
-        startDrawing();
-        drawToggle.textContent = 'Stop Drawing';
-        drawToggle.style.backgroundColor = '#16a34a';
-        map.dragging.disable();
-    } else {
-        stopDrawing();
-        drawToggle.textContent = 'Start Drawing';
-        drawToggle.style.backgroundColor = '';
-        map.dragging.enable();
-    }
-});
+helpSidebarToggle.addEventListener('click', toggleHelpSidebar);
 
 // Add event listener to toggle measurement mode
 const measurementToggle = document.getElementById('measurement-toggle');
 measurementToggle.addEventListener('click', function() {
     if (!isMeasuring) {
-        // Stop drawing mode if active
-        if (isDrawing) {
-            stopDrawing();
-            drawToggle.textContent = 'Start Drawing';
-            drawToggle.style.backgroundColor = '';
-            map.dragging.enable();
-        }
         startMeasurement();
         measurementToggle.textContent = 'Stop Measurement';
         measurementToggle.style.backgroundColor = '#16a34a';
@@ -433,7 +193,7 @@ measurementToggle.addEventListener('click', function() {
     }
 });
 
-// Function to save hexagons and lines to GeoJSON
+// Function to save hexagons to GeoJSON
 function saveGeoJSON() {
     const geoJson = {
         type: "FeatureCollection",
@@ -457,22 +217,6 @@ function saveGeoJSON() {
                     }
                 };
             }),
-            ...drawnLines.map((line, index) => {
-                const coordinates = line.getLatLngs().map(latlng => [latlng.lng, latlng.lat]);
-                return {
-                    type: "Feature",
-                    geometry: {
-                        type: "LineString",
-                        coordinates: coordinates
-                    },
-                    properties: {
-                        type: "drawnLine",
-                        lineIndex: index,
-                        color: line.options.color,
-                        weight: line.options.weight
-                    }
-                };
-            }),
         ]
     };
 
@@ -485,7 +229,7 @@ function saveGeoJSON() {
     URL.revokeObjectURL(url);
 }
 
-// Function to load hexagons and lines from GeoJSON
+// Function to load hexagons from GeoJSON
 function loadGeoJSON(event) {
     const file = event.target.files[0];
     if (file) {
@@ -502,19 +246,10 @@ function loadGeoJSON(event) {
             // Clear existing hexagons
             Object.keys(hexagons).forEach(h3Index => {
                 map.removeLayer(hexagons[h3Index].polygon);
-                removeHexagonFromList(h3Index);
                 delete hexagons[h3Index];
             });
 
-            // Clear existing drawn lines
-            drawnLines.forEach(line => map.removeLayer(line));
-            drawnLines.length = 0;
-
-            // Clear action stacks
-            actionStack = [];
-            redoStack = [];
-
-            // Load new hexagons, lines and markers
+            // Load new hexagons
             geoJson.features.forEach(feature => {
                 if (feature.geometry.type === "Polygon") {
                     const { h3Index, color, fillColor, fillOpacity, latitude, longitude } = feature.properties;
@@ -527,17 +262,6 @@ function loadGeoJSON(event) {
                     }).addTo(map);
 
                     hexagons[h3Index] = { polygon, latitude, longitude };
-                    addHexagonToList(h3Index, color, opacity);
-                } else if (feature.geometry.type === "LineString") {
-                    if (feature.properties.type === "drawnLine") {
-                        const coordinates = feature.geometry.coordinates;
-                        const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
-                        const line = L.polyline(latLngs, {
-                            color: feature.properties.color,
-                            weight: feature.properties.weight
-                        }).addTo(map);
-                        drawnLines.push(line);
-                    }
                 }
             });
             // Reset the file input value to allow reloading the same file
@@ -571,9 +295,9 @@ const PARTNER_CONSTANTS = {
     DEFAULT_OPACITY: 0.1,
     DEFAULT_COLOR: '#0000ff',
     DEFAULT_PRIMARY_RESOLUTION: 9,
-    DEFAULT_PRIMARY_ZONES: 18,
+    DEFAULT_PRIMARY_NUMBER_ZONES: 18,
     DEFAULT_SECONDARY_RESOLUTION: 6,
-    DEFAULT_SECONDARY_ZONES: 8
+    DEFAULT_SECONDARY_NUMBER_ZONES: 8
 };
 
 // Add a partner to the map
@@ -771,7 +495,7 @@ function showPartnerPopup(partnerId) {
     const primaryCount = partner.elements.primaryHexagons.length;
     const secondaryCount = partner.elements.secondaryHexagons.length;
 
-    // Primary zones row
+    // Primary zone row
     const primaryRow = document.createElement('tr');
     primaryRow.innerHTML = `
         <td class="py-1 pr-2 font-medium text-gray-700">Primary</td>
@@ -779,7 +503,7 @@ function showPartnerPopup(partnerId) {
     `;
     tableBody.appendChild(primaryRow);
 
-    // Secondary zones row (if exists)
+    // Secondary zone row (if exists)
     if (secondaryCount > 0 && partner.numZones2 !== undefined) {
         const secondaryRow = document.createElement('tr');
         secondaryRow.innerHTML = `
@@ -794,7 +518,7 @@ function showPartnerPopup(partnerId) {
     const secondaryVisible = partner.elements.secondaryHexagons.length > 0 && partner.elements.secondaryHexagons[0].polygon.options.fillOpacity > 0;
     const hasSecondaryHexagons = partner.elements.secondaryHexagons.length > 0;
 
-    document.getElementById('toggle-primary-zones').checked = primaryVisible;
+    document.getElementById('toggle-primary-zone').checked = primaryVisible;
     document.getElementById('toggle-secondary-zone').checked = secondaryVisible;
 
     // Configure secondary toggle based on availability
@@ -835,9 +559,9 @@ function closePartnerPopup() {
 function resetSidebarForm() {
     document.getElementById('add-partner-form').reset();
     document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
-    document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_ZONES.toString();
+    document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
     document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
-    document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_ZONES.toString();
+    document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
     document.getElementById('secondary-fields').classList.add('hidden');
     
     editMode.isActive = false;
@@ -945,9 +669,9 @@ document.getElementById('add-partner-sidebar-btn').addEventListener('click', fun
         submitButton.textContent = 'Add';
         document.getElementById('add-partner-form').reset();
         document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
-        document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_ZONES.toString();
+        document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
         document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
-        document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_ZONES.toString();
+        document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
         document.getElementById('secondary-fields').classList.add('hidden');
         sidebar.classList.remove('hidden');
     } else {
@@ -1073,13 +797,13 @@ document.getElementById('delete-partner-btn').addEventListener('click', function
     }
 });
 
-// Toggle primary zones
-document.getElementById('toggle-primary-zones').addEventListener('change', function() {
+// Toggle primary zone
+document.getElementById('toggle-primary-zone').addEventListener('change', function() {
     if (!currentPopupPartnerId) return;
     togglePrimaryHexagonsVisibility(currentPopupPartnerId, this.checked);
 });
 
-// Toggle secondary zones
+// Toggle secondary zone
 document.getElementById('toggle-secondary-zone').addEventListener('change', function() {
     if (!currentPopupPartnerId) return;
     toggleSecondaryHexagonsVisibility(currentPopupPartnerId, this.checked);
