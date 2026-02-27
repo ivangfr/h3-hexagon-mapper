@@ -279,6 +279,20 @@ function loadData(event) {
     }
 }
 
+// Update partner counter based on existing partners (used after loading)
+function updatePartnerCounterFromPartners() {
+    let maxNum = 0;
+    Object.keys(partnersById).forEach(partnerId => {
+        // Check if partnerId matches pattern "partner{number}"
+        const match = partnerId.match(/^partner(\d+)$/);
+        if (match) {
+            const num = parseInt(match[1]);
+            if (num > maxNum) maxNum = num;
+        }
+    });
+    partnerIdCounter = maxNum + 1;
+}
+
 // Load HexagonMapperData format (new unified format)
 function loadHexagonMapperData(data) {
     // Clear existing hexagons
@@ -319,6 +333,9 @@ function loadHexagonMapperData(data) {
         data.partners.forEach(partnerData => {
             addPartnerToMap(partnerData);
         });
+        
+        // Update counter to prevent ID conflicts
+        updatePartnerCounterFromPartners();
     }
 }
 
@@ -336,6 +353,7 @@ document.getElementById('load-file').addEventListener('change', loadData);
 // Partner state
 const partnersById = {};
 let currentPopupPartnerId = null;
+let partnerIdCounter = 1;
 let editMode = {
     isActive: false,
     partnerId: null
@@ -609,11 +627,12 @@ function closePartnerPopup() {
 // Reset sidebar form
 function resetSidebarForm() {
     document.getElementById('add-partner-form').reset();
+    document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
     document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
     document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
     document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
     document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
-    document.getElementById('secondary-fields').classList.add('hidden');
+    document.getElementById('secondary-fields').classList.remove('hidden');
     
     editMode.isActive = false;
     editMode.partnerId = null;
@@ -719,11 +738,12 @@ document.getElementById('add-partner-sidebar-btn').addEventListener('click', fun
         const submitButton = document.querySelector('#add-partner-form button[type="submit"]');
         submitButton.textContent = 'Add';
         document.getElementById('add-partner-form').reset();
+        document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
         document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
         document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
         document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
         document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
-        document.getElementById('secondary-fields').classList.add('hidden');
+        document.getElementById('secondary-fields').classList.remove('hidden');
         sidebar.classList.remove('hidden');
     } else {
         sidebar.classList.add('hidden');
@@ -811,6 +831,8 @@ document.getElementById('add-partner-form').addEventListener('submit', function(
         }
         // Add new partner
         addPartnerToMap(partner);
+        // Increment counter after successful add
+        partnerIdCounter++;
     }
 
     // Close sidebar and reset form
