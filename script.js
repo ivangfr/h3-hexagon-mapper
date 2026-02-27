@@ -97,6 +97,13 @@ function calculateDistance(start, end) {
 
 // Add event listener to the map for click events
 map.on('click', function(e) {
+    // Check if context menu is open - if so, just close it and don't create hexagon
+    const contextMenu = document.getElementById('context-menu');
+    if (!contextMenu.classList.contains('hidden')) {
+        hideContextMenu();
+        return;
+    }
+    
     if (isMeasuring) {
         const { lat, lng } = e.latlng;
         if (!measurementStart) {
@@ -418,7 +425,7 @@ function addPartnerToMap(partner) {
             center: { lat: latitude, lng: longitude },
             layerType: 'primary',
             h3Resolution: h3Resolution,
-            zoneNumber: index + 1
+            zoneNumber: h3.gridDistance(centerCell, cell)
         };
         partnerObject.elements.primaryHexagons.push(hexagonObject);
     });
@@ -443,7 +450,7 @@ function addPartnerToMap(partner) {
                 center: { lat: latitude, lng: longitude },
                 layerType: 'secondary',
                 h3Resolution: h3Resolution2,
-                zoneNumber: index + 1
+                zoneNumber: h3.gridDistance(centerCell2, cell)
             };
             partnerObject.elements.secondaryHexagons.push(hexagonObject);
         });
@@ -880,4 +887,343 @@ document.getElementById('toggle-primary-zone').addEventListener('change', functi
 document.getElementById('toggle-secondary-zone').addEventListener('change', function() {
     if (!currentPopupPartnerId) return;
     toggleSecondaryHexagonsVisibility(currentPopupPartnerId, this.checked);
+});
+
+// ==========================================
+// RIGHT-CLICK CONTEXT MENU
+// ==========================================
+
+// Context menu state
+let contextMenuState = {
+    latitude: null,
+    longitude: null,
+    crossMarker: null,
+    detectedHexagons: []
+};
+
+// Create cross marker icon
+function createCrossMarkerIcon() {
+    return L.divIcon({
+        className: 'cross-marker',
+        html: '<div class="cross-marker-icon"></div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
+}
+
+// Place cross marker on map
+function placeCrossMarker(lat, lng) {
+    removeCrossMarker();
+    contextMenuState.crossMarker = L.marker([lat, lng], {
+        icon: createCrossMarkerIcon(),
+        zIndexOffset: 1000
+    }).addTo(map);
+}
+
+// Remove cross marker from map
+function removeCrossMarker() {
+    if (contextMenuState.crossMarker) {
+        map.removeLayer(contextMenuState.crossMarker);
+        contextMenuState.crossMarker = null;
+    }
+}
+
+// Check if a point is inside a hexagon polygon
+function isPointInHexagon(lat, lng, hexagonPolygon) {
+    const point = L.latLng(lat, lng);
+    const bounds = hexagonPolygon.getBounds();
+    
+    // Quick bounds check
+    if (!bounds.contains(point)) {
+        return false;
+    }
+    
+    // Detailed point-in-polygon check using ray casting
+    const latlngs = hexagonPolygon.getLatLngs()[0];
+    const n = latlngs.length;
+    let inside = false;
+    
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+        const xi = latlngs[i].lat;
+        const yi = latlngs[i].lng;
+        const xj = latlngs[j].lat;
+        const yj = latlngs[j].lng;
+        
+        if (((yi > lng) !== (yj > lng)) && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi)) {
+            inside = !inside;
+        }
+    }
+    
+    return inside;
+}
+
+// Find all hexagons at a given location
+function findHexagonsAtLocation(lat, lng) {
+    const detectedHexagons = [];
+    
+    // Check standalone hexagons
+    Object.keys(hexagons).forEach(h3Index => {
+        const hexagonData = hexagons[h3Index];
+        if (isPointInHexagon(lat, lng, hexagonData.polygon)) {
+            detectedHexagons.push({
+                h3Index: h3Index,
+                resolution: h3.getResolution(h3Index),
+                source: 'standalone',
+                color: hexagonData.polygon.options.color,
+                zoneNumber: null
+            });
+        }
+    });
+    
+    // Check partner hexagons
+    Object.keys(partnersById).forEach(partnerId => {
+        const partner = partnersById[partnerId];
+        
+        // Check primary hexagons
+        partner.elements.primaryHexagons.forEach(hexagon => {
+            if (isPointInHexagon(lat, lng, hexagon.polygon)) {
+                detectedHexagons.push({
+                    h3Index: hexagon.h3Index,
+                    resolution: hexagon.h3Resolution,
+                    partnerId: partnerId,
+                    layerType: 'primary',
+                    color: hexagon.polygon.options.color,
+                    zoneNumber: hexagon.zoneNumber
+                });
+            }
+        });
+        
+        // Check secondary hexagons
+        partner.elements.secondaryHexagons.forEach(hexagon => {
+            if (isPointInHexagon(lat, lng, hexagon.polygon)) {
+                detectedHexagons.push({
+                    h3Index: hexagon.h3Index,
+                    resolution: hexagon.h3Resolution,
+                    partnerId: partnerId,
+                    layerType: 'secondary',
+                    color: hexagon.polygon.options.color,
+                    zoneNumber: hexagon.zoneNumber
+                });
+            }
+        });
+    });
+    
+    // Sort by resolution (highest first)
+    detectedHexagons.sort((a, b) => b.resolution - a.resolution);
+    
+    return detectedHexagons;
+}
+
+// Show context menu
+function showContextMenu(x, y, lat, lng) {
+    const contextMenu = document.getElementById('context-menu');
+    const contextMenuHeader = document.getElementById('context-menu-header');
+    const contextMenuCoords = document.getElementById('context-menu-coords');
+    const contextMenuHexagonSection = document.getElementById('context-menu-hexagon-section');
+    const contextMenuHexagonList = document.getElementById('context-menu-hexagon-list');
+    
+    // Store coordinates
+    contextMenuState.latitude = lat;
+    contextMenuState.longitude = lng;
+    
+    // Find hexagons at location
+    contextMenuState.detectedHexagons = findHexagonsAtLocation(lat, lng);
+    
+    // Update coordinates display
+    contextMenuCoords.textContent = `Lat: ${lat.toFixed(6)}, Lon: ${lng.toFixed(6)}`;
+    contextMenuHeader.classList.remove('hidden');
+    
+    // Update hexagon section
+    if (contextMenuState.detectedHexagons.length > 0) {
+        contextMenuHexagonSection.classList.remove('hidden');
+        contextMenuHexagonList.innerHTML = '';
+        
+        // Group hexagons by H3 index
+        const groupedHexagons = {};
+        contextMenuState.detectedHexagons.forEach(hexagon => {
+            if (!groupedHexagons[hexagon.h3Index]) {
+                groupedHexagons[hexagon.h3Index] = {
+                    h3Index: hexagon.h3Index,
+                    resolution: hexagon.resolution,
+                    color: hexagon.color,
+                    partners: [],
+                    isStandalone: false
+                };
+            }
+            
+            if (hexagon.source === 'standalone') {
+                groupedHexagons[hexagon.h3Index].isStandalone = true;
+            } else {
+                groupedHexagons[hexagon.h3Index].partners.push({
+                    partnerId: hexagon.partnerId,
+                    layerType: hexagon.layerType,
+                    zoneNumber: hexagon.zoneNumber
+                });
+            }
+        });
+        
+        // Convert to array and sort by resolution (highest first)
+        const groupedArray = Object.values(groupedHexagons).sort((a, b) => b.resolution - a.resolution);
+        
+        groupedArray.forEach(group => {
+            const hexagonItem = document.createElement('div');
+            hexagonItem.className = 'hexagon-item px-4 py-2 cursor-pointer';
+            
+            // Build partners list HTML
+            let partnersHtml = '';
+            if (group.partners.length > 0) {
+                const partnerLines = group.partners.map(p => 
+                    `<span class="text-gray-600">- ${p.partnerId} (${p.layerType}, zone${p.zoneNumber})</span>`
+                ).join('<br>');
+                partnersHtml = `
+                    <div class="text-xs mt-1">
+                        <span class="text-gray-500">partners:</span><br>
+                        ${partnerLines}
+                    </div>
+                `;
+            }
+            
+            // Build standalone indicator
+            let standaloneHtml = '';
+            if (group.isStandalone && group.partners.length === 0) {
+                standaloneHtml = '<div class="text-xs text-gray-500 mt-1">standalone</div>';
+            } else if (group.isStandalone) {
+                standaloneHtml = '<div class="text-xs text-gray-500 mt-1">also: standalone</div>';
+            }
+            
+            hexagonItem.innerHTML = `
+                <div class="flex items-start gap-2">
+                    <div class="w-3 h-3 rounded-sm flex-shrink-0 mt-1" style="background-color: ${group.color}"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-mono text-gray-700 truncate" title="${group.h3Index}">${group.h3Index} <span class="text-gray-500">(Res: ${group.resolution})</span></div>
+                        ${partnersHtml}
+                        ${standaloneHtml}
+                    </div>
+                </div>
+            `;
+            
+            // Click to copy H3 index
+            hexagonItem.addEventListener('click', function() {
+                navigator.clipboard.writeText(group.h3Index).then(() => {
+                    // Visual feedback
+                    hexagonItem.classList.add('bg-green-100');
+                    setTimeout(() => {
+                        hexagonItem.classList.remove('bg-green-100');
+                    }, 200);
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                });
+            });
+            
+            contextMenuHexagonList.appendChild(hexagonItem);
+        });
+    } else {
+        contextMenuHexagonSection.classList.add('hidden');
+    }
+    
+    // Position the menu
+    contextMenu.style.left = `${x}px`;
+    contextMenu.style.top = `${y}px`;
+    contextMenu.classList.remove('hidden');
+    
+    // Adjust position if menu goes off screen
+    const menuRect = contextMenu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    if (menuRect.right > viewportWidth) {
+        contextMenu.style.left = `${x - menuRect.width}px`;
+    }
+    if (menuRect.bottom > viewportHeight) {
+        contextMenu.style.top = `${y - menuRect.height}px`;
+    }
+}
+
+// Hide context menu
+function hideContextMenu() {
+    const contextMenu = document.getElementById('context-menu');
+    contextMenu.classList.add('hidden');
+}
+
+// Open partner sidebar with coordinates filled
+function openPartnerSidebarWithCoords(lat, lng) {
+    // Close any open partner popup
+    closePartnerPopup();
+    
+    // Reset form and set edit mode to false
+    editMode.isActive = false;
+    editMode.partnerId = null;
+    document.querySelector('#add-partner-sidebar h2').textContent = 'Add Partner';
+    const submitButton = document.querySelector('#add-partner-form button[type="submit"]');
+    submitButton.textContent = 'Add';
+    
+    // Pre-fill coordinates
+    document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
+    document.getElementById('sidebar-latitude').value = lat.toFixed(6);
+    document.getElementById('sidebar-longitude').value = lng.toFixed(6);
+    document.getElementById('sidebar-h3Resolution').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION;
+    document.getElementById('sidebar-numZones').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES;
+    document.getElementById('sidebar-color').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
+    document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
+    document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
+    document.getElementById('sidebar-enable-secondary').checked = true;
+    document.getElementById('secondary-fields').classList.remove('hidden');
+    document.getElementById('sidebar-h3Resolution2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION;
+    document.getElementById('sidebar-numZones2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES;
+    document.getElementById('sidebar-color2').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
+    document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
+    document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
+    
+    // Place cross marker
+    placeCrossMarker(lat, lng);
+    
+    // Show sidebar
+    document.getElementById('add-partner-sidebar').classList.remove('hidden');
+}
+
+// Right-click event handler
+map.on('contextmenu', function(e) {
+    e.originalEvent.preventDefault();
+    const { lat, lng } = e.latlng;
+    const x = e.containerPoint.x;
+    const y = e.containerPoint.y;
+    showContextMenu(x, y, lat, lng);
+});
+
+// Hide context menu on map click
+map.on('click', function(e) {
+    const contextMenu = document.getElementById('context-menu');
+    if (!contextMenu.classList.contains('hidden')) {
+        hideContextMenu();
+        return;
+    }
+});
+
+// Hide context menu on document click (outside menu)
+document.addEventListener('click', function(e) {
+    const contextMenu = document.getElementById('context-menu');
+    if (!contextMenu.contains(e.target)) {
+        hideContextMenu();
+    }
+});
+
+// Context menu "Add Partner Here" button
+document.getElementById('context-menu-add-partner').addEventListener('click', function() {
+    hideContextMenu();
+    if (contextMenuState.latitude !== null && contextMenuState.longitude !== null) {
+        openPartnerSidebarWithCoords(contextMenuState.latitude, contextMenuState.longitude);
+    }
+});
+
+// Remove cross marker when partner form is submitted or cancelled
+document.getElementById('add-partner-form').addEventListener('submit', function() {
+    removeCrossMarker();
+});
+
+document.getElementById('sidebar-cancel-add').addEventListener('click', function() {
+    removeCrossMarker();
+});
+
+document.getElementById('sidebar-close-btn').addEventListener('click', function() {
+    removeCrossMarker();
 });

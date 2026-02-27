@@ -28,7 +28,7 @@ You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mappe
 
 ## Partner Management
 
-Partners allow you to create and manage H3 hexagonal zones around specific locations:
+Partners allow you to add and manage H3 hexagonal zones around specific locations:
 
 - **Add Partner**: Click the "Add Partner" button to open the sidebar form. Enter a Partner ID, coordinates (latitude/longitude), H3 resolution, number of zones, and color. You can also enable a secondary H3 layer with different settings.
 - **Edit Partner**: Click on any partner marker on the map to open the partner panel, then click "Edit Partner" to modify the partner's settings.

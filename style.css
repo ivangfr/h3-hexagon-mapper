@@ -59,3 +59,48 @@ html, body {
     width: 200px;
 }
 
+/* Cross marker for partner creation */
+.cross-marker {
+    background: transparent;
+    border: none;
+}
+
+.cross-marker-icon {
+    width: 30px;
+    height: 30px;
+    position: relative;
+}
+
+.cross-marker-icon::before,
+.cross-marker-icon::after {
+    content: '';
+    position: absolute;
+    background-color: #000000;
+    border-radius: 2px;
+}
+
+.cross-marker-icon::before {
+    width: 4px;
+    height: 30px;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+}
+
+.cross-marker-icon::after {
+    width: 30px;
+    height: 4px;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+}
+
+/* Hexagon item hover effect */
+.hexagon-item {
+    transition: background-color 0.15s ease;
+}
+
+.hexagon-item:hover {
+    background-color: #f3f4f6;
+}
+
