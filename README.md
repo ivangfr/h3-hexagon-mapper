@@ -1,6 +1,6 @@
 # H3 Hexagon Mapper
 
-This project is a web tool that helps you see and interact with H3 hexagons on a map. You can add or remove hexagons, change their size, color, and transparency, manage partners with their own hexagonal zones, measure distances between points, and save or load everything as a GeoJSON file.
+This project is a web tool that helps you see and interact with H3 hexagons on a map. You can add or remove hexagons, change their size, color, and transparency, manage partners with their own hexagonal zones, measure distances between points, and save or load everything as a JSON file.
 
 ![Screenshot](documentation/demo.gif)
 
@@ -23,8 +23,8 @@ You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mappe
 - **Change Hexagon Color**: Use the color picker in the controls section to change the color of the hexagons.
 - **Change Hexagon Opacity**: Use the opacity slider in the controls section to adjust the opacity of the hexagons.
 - **Measurement Mode**: Click the "Start Measurement" button to enter measurement mode. Click once to set the starting point, then move the mouse to see a black dashed measurement line and distance in km displayed at the bottom-center. Click again to clear the measurement.
-- **Save Hexagons**: Click the "Save" button to download the current hexagons as a GeoJSON file.
-- **Load Hexagons**: Click the "Load" button and select a GeoJSON file to load hexagons from the file.
+- **Save**: Click the "Save" button to download both hexagons and partners as a JSON file.
+- **Load**: Click the "Load" button and select a JSON file to load hexagons and partners.
 
 ## Partner Management
 

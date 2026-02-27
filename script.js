@@ -193,77 +193,85 @@ measurementToggle.addEventListener('click', function() {
     }
 });
 
-// Function to save hexagons to GeoJSON
-function saveGeoJSON() {
-    const geoJson = {
-        type: "FeatureCollection",
+// Function to save hexagons and partners to JSON
+function saveData() {
+    // Check if there's anything to save
+    if (Object.keys(hexagons).length === 0 && Object.keys(partnersById).length === 0) {
+        alert("No hexagons or partners to save.");
+        return;
+    }
+
+    // Build hexagons array (compact format)
+    const hexagonsData = Object.keys(hexagons).map(h3Index => {
+        const { polygon } = hexagons[h3Index];
+        return {
+            h3Index,
+            color: polygon.options.color,
+            fillOpacity: polygon.options.fillOpacity
+        };
+    });
+
+    // Build partners array (similar to h3-wkt-viewer format)
+    const partnersData = Object.values(partnersById).map(partner => ({
+        partnerId: partner.partnerId,
+        latitude: partner.latitude,
+        longitude: partner.longitude,
+        h3Resolution: partner.h3Resolution,
+        numZones: partner.numZones,
+        h3Resolution2: partner.h3Resolution2,
+        numZones2: partner.numZones2,
+        color: partner.color || PARTNER_CONSTANTS.DEFAULT_COLOR,
+        color2: partner.color2
+    }));
+
+    // Create unified data structure
+    const data = {
+        type: "HexagonMapperData",
+        version: "1.0",
         timestamp: new Date().toISOString(),
-        features: [
-            ...Object.keys(hexagons).map(h3Index => {
-                const { polygon, latitude, longitude } = hexagons[h3Index];
-                return {
-                    type: "Feature",
-                    geometry: {
-                        type: "Polygon",
-                        coordinates: [polygon.getLatLngs()[0].map(latlng => [latlng.lng, latlng.lat])]
-                    },
-                    properties: {
-                        h3Index,
-                        color: polygon.options.color,
-                        fillColor: polygon.options.fillColor,
-                        fillOpacity: polygon.options.fillOpacity,
-                        latitude,
-                        longitude
-                    }
-                };
-            }),
-        ]
+        hexagons: hexagonsData,
+        partners: partnersData
     };
 
-    const blob = new Blob([JSON.stringify(geoJson)], { type: "application/json" });
+    // Download as JSON file
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "hexagons.geojson";
+    a.download = "hexagon-mapper-data.json";
     a.click();
     URL.revokeObjectURL(url);
 }
 
-// Function to load hexagons from GeoJSON
-function loadGeoJSON(event) {
+// Function to load hexagons and partners from JSON
+function loadData(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            let geoJson;
+            let data;
             try {
-                geoJson = JSON.parse(e.target.result);
+                data = JSON.parse(e.target.result);
             } catch (error) {
-                alert("Invalid GeoJSON format. Please select a valid GeoJSON file.");
+                alert("Invalid JSON format. Please select a valid JSON file.");
                 return;
             }
 
-            // Clear existing hexagons
-            Object.keys(hexagons).forEach(h3Index => {
-                map.removeLayer(hexagons[h3Index].polygon);
-                delete hexagons[h3Index];
-            });
+            // Validate data structure
+            if (!data || typeof data !== 'object') {
+                alert("Invalid data structure. Please select a valid HexagonMapper data file.");
+                event.target.value = '';
+                return;
+            }
 
-            // Load new hexagons
-            geoJson.features.forEach(feature => {
-                if (feature.geometry.type === "Polygon") {
-                    const { h3Index, color, fillColor, fillOpacity, latitude, longitude } = feature.properties;
-                    const hexagonBoundary = h3.cellToBoundary(h3Index);
-                    const polygon = L.polygon(hexagonBoundary, {
-                        color,
-                        fillColor,
-                        fillOpacity,
-                        originalFillOpacity: fillOpacity
-                    }).addTo(map);
+            // Check for HexagonMapperData format
+            if (data.type === "HexagonMapperData" && data.version) {
+                loadHexagonMapperData(data);
+            } else {
+                alert("Unknown file format. Please select a valid HexagonMapper data file.");
+            }
 
-                    hexagons[h3Index] = { polygon, latitude, longitude };
-                }
-            });
             // Reset the file input value to allow reloading the same file
             event.target.value = '';
         };
@@ -271,12 +279,55 @@ function loadGeoJSON(event) {
     }
 }
 
+// Load HexagonMapperData format (new unified format)
+function loadHexagonMapperData(data) {
+    // Clear existing hexagons
+    Object.keys(hexagons).forEach(h3Index => {
+        map.removeLayer(hexagons[h3Index].polygon);
+        delete hexagons[h3Index];
+    });
+
+    // Clear existing partners
+    Object.keys(partnersById).forEach(partnerId => {
+        deletePartner(partnerId);
+    });
+
+    // Load hexagons
+    if (data.hexagons && Array.isArray(data.hexagons)) {
+        data.hexagons.forEach(hexagonData => {
+            const { h3Index, color, fillOpacity } = hexagonData;
+            const hexagonBoundary = h3.cellToBoundary(h3Index);
+            const polygon = L.polygon(hexagonBoundary, {
+                color: color || '#0000ff',
+                fillColor: color || '#0000ff',
+                fillOpacity: fillOpacity || 0.3,
+                originalFillOpacity: fillOpacity || 0.3
+            }).addTo(map);
+
+            // Get center coordinates from h3Index
+            const cellToLatLng = h3.cellToLatLng(h3Index);
+            hexagons[h3Index] = { 
+                polygon, 
+                latitude: cellToLatLng.lat, 
+                longitude: cellToLatLng.lng 
+            };
+        });
+    }
+
+    // Load partners
+    if (data.partners && Array.isArray(data.partners)) {
+        data.partners.forEach(partnerData => {
+            addPartnerToMap(partnerData);
+        });
+    }
+}
+
 // Add event listeners for save and load buttons
-document.getElementById('save-btn').addEventListener('click', saveGeoJSON);
+document.getElementById('save-btn').addEventListener('click', saveData);
 document.getElementById('load-btn').addEventListener('click', function() {
     document.getElementById('load-file').click();
 });
-document.getElementById('load-file').addEventListener('change', loadGeoJSON);
+document.getElementById('load-file').addEventListener('change', loadData);
 
 // ==========================================
 // PARTNER MANAGEMENT
