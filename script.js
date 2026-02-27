@@ -1,5 +1,5 @@
 // Initialize the map centered on a specific location (e.g., Berlin)
-const map = L.map('map').setView([52.5200, 13.4050], 15);
+const map = L.map('map', { zoomControl: false }).setView([52.5200, 13.4050], 15);
 
 // Add OpenStreetMap tile layer
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -66,10 +66,10 @@ function startMeasurement() {
     }
     measurementStart = null;
 
-    // Show drawing mode indicator and overlay
-    document.getElementById('drawing-overlay').classList.remove('hidden');
-    document.getElementById('drawing-mode-indicator').textContent = 'Measurement Mode Active';
-    document.getElementById('drawing-mode-indicator').classList.remove('hidden');
+    // Show measurement mode indicator and overlay
+    document.getElementById('measurement-overlay').classList.remove('hidden');
+    document.getElementById('measurement-mode-indicator').textContent = 'Measurement Mode Active';
+    document.getElementById('measurement-mode-indicator').classList.remove('hidden');
     const measurementDisplay = document.getElementById('measurement-display');
     measurementDisplay.textContent = '0.00 km';
     measurementDisplay.classList.remove('hidden');
@@ -83,9 +83,9 @@ function stopMeasurement() {
     }
     measurementStart = null;
 
-    // Hide drawing mode indicator, overlay, and measurement display
-    document.getElementById('drawing-overlay').classList.add('hidden');
-    document.getElementById('drawing-mode-indicator').classList.add('hidden');
+    // Hide measurement mode indicator, overlay, and measurement display
+    document.getElementById('measurement-overlay').classList.add('hidden');
+    document.getElementById('measurement-mode-indicator').classList.add('hidden');
     document.getElementById('measurement-display').classList.add('hidden');
 }
 
@@ -148,8 +148,8 @@ opacitySlider.addEventListener('input', function() {
 const cursorCoordinates = document.getElementById('cursor-coordinates');
 const measurementDisplay = document.getElementById('measurement-display');
 map.on('mousemove', function(e) {
-    const lat = e.latlng.lat.toFixed(4);
-    const lng = e.latlng.lng.toFixed(4);
+    const lat = e.latlng.lat.toFixed(6);
+    const lng = e.latlng.lng.toFixed(6);
 
     if (isMeasuring && measurementStart) {
         // Update measurement line and show distance
@@ -582,8 +582,19 @@ function showPartnerPopup(partnerId) {
     const partner = partnersById[partnerId];
     if (!partner) return;
 
-    // Update slide window content
-    document.getElementById('slide-partner-id').textContent = partnerId;
+    // Close other sidebars when opening partner popup
+    closeHelpSidebar();
+    document.getElementById('add-partner-sidebar').classList.add('hidden');
+
+    // Update slide window content and show
+    updatePartnerPopupContent(partner);
+    document.getElementById('partner-slide-window').classList.remove('hidden');
+    currentPopupPartnerId = partnerId;
+}
+
+// Update partner popup content
+function updatePartnerPopupContent(partner) {
+    document.getElementById('slide-partner-id').textContent = partner.partnerId;
 
     // Update partner statistics table
     const tableBody = document.getElementById('partner-stats-table').querySelector('tbody');
@@ -620,35 +631,27 @@ function showPartnerPopup(partnerId) {
 
     // Configure secondary toggle based on availability
     const secondaryToggle = document.getElementById('toggle-secondary-zone');
-    const secondaryContainer = secondaryToggle.closest('.flex');
+    const secondaryContainer = secondaryToggle.closest('.zone-toggle');
 
     if (hasSecondaryHexagons) {
         secondaryToggle.disabled = false;
-        secondaryContainer.classList.remove('opacity-50', 'cursor-not-allowed');
-        secondaryContainer.style.pointerEvents = 'auto';
+        if (secondaryContainer) {
+            secondaryContainer.classList.remove('opacity-50', 'cursor-not-allowed');
+            secondaryContainer.style.pointerEvents = 'auto';
+        }
     } else {
         secondaryToggle.disabled = true;
-        secondaryContainer.classList.add('opacity-50', 'cursor-not-allowed');
-        secondaryContainer.style.pointerEvents = 'none';
+        if (secondaryContainer) {
+            secondaryContainer.classList.add('opacity-50', 'cursor-not-allowed');
+            secondaryContainer.style.pointerEvents = 'none';
+        }
     }
-
-    // Show slide window
-    const slideWindow = document.getElementById('partner-slide-window');
-    slideWindow.classList.remove('hidden');
-    slideWindow.classList.remove('translate-x-full');
-
-    currentPopupPartnerId = partnerId;
 }
 
 // Close partner popup slide window
 function closePartnerPopup() {
     const slideWindow = document.getElementById('partner-slide-window');
-    slideWindow.classList.add('translate-x-full');
-    
-    setTimeout(() => {
-        slideWindow.classList.add('hidden');
-    }, 300);
-    
+    slideWindow.classList.add('hidden');
     currentPopupPartnerId = null;
 }
 
@@ -665,8 +668,8 @@ function resetSidebarForm() {
     editMode.isActive = false;
     editMode.partnerId = null;
     
-    document.querySelector('#add-partner-sidebar h2').textContent = 'Add Partner';
-    const submitButton = document.querySelector('#add-partner-form button[type="submit"]');
+    document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
+    const submitButton = document.getElementById('partner-submit-btn');
     submitButton.textContent = 'Add';
 }
 
@@ -675,8 +678,8 @@ function openSidebarForEdit(partner) {
     editMode.isActive = true;
     editMode.partnerId = partner.partnerId;
 
-    document.querySelector('#add-partner-sidebar h2').textContent = 'Edit Partner';
-    const submitButton = document.querySelector('#add-partner-form button[type="submit"]');
+    document.getElementById('partner-sidebar-title').textContent = 'Edit Partner';
+    const submitButton = document.getElementById('partner-submit-btn');
     submitButton.textContent = 'Update';
 
     // Pre-fill form fields
@@ -763,8 +766,8 @@ document.getElementById('add-partner-sidebar-btn').addEventListener('click', fun
     if (sidebar.classList.contains('hidden')) {
         editMode.isActive = false;
         editMode.partnerId = null;
-        document.querySelector('#add-partner-sidebar h2').textContent = 'Add Partner';
-        const submitButton = document.querySelector('#add-partner-form button[type="submit"]');
+        document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
+        const submitButton = document.getElementById('partner-submit-btn');
         submitButton.textContent = 'Add';
         document.getElementById('add-partner-form').reset();
         document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
@@ -1079,7 +1082,8 @@ function showContextMenu(x, y, lat, lng) {
                 groupedHexagons[hexagon.h3Index].partners.push({
                     partnerId: hexagon.partnerId,
                     layerType: hexagon.layerType,
-                    zoneNumber: hexagon.zoneNumber
+                    zoneNumber: hexagon.zoneNumber,
+                    color: hexagon.color
                 });
             }
         });
@@ -1095,11 +1099,10 @@ function showContextMenu(x, y, lat, lng) {
             let partnersHtml = '';
             if (group.partners.length > 0) {
                 const partnerLines = group.partners.map(p => 
-                    `<span class="text-gray-600">- ${p.partnerId} (${p.layerType}, zone${p.zoneNumber})</span>`
+                    `<span class="text-gray-600">- ${p.partnerId}: ${p.layerType}, zone${p.zoneNumber}, </span><span class="inline-block w-3 h-3 rounded-sm align-middle" style="background-color: ${p.color}"></span><span class="text-gray-600"></span>`
                 ).join('<br>');
                 partnersHtml = `
                     <div class="text-xs mt-1">
-                        <span class="text-gray-500">partners:</span><br>
                         ${partnerLines}
                     </div>
                 `;
@@ -1114,13 +1117,10 @@ function showContextMenu(x, y, lat, lng) {
             }
             
             hexagonItem.innerHTML = `
-                <div class="flex items-start gap-2">
-                    <div class="w-3 h-3 rounded-sm flex-shrink-0 mt-1" style="background-color: ${group.color}"></div>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-xs font-mono text-gray-700 truncate" title="${group.h3Index}">${group.h3Index} <span class="text-gray-500">(Res: ${group.resolution})</span></div>
-                        ${partnersHtml}
-                        ${standaloneHtml}
-                    </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-xs font-mono text-gray-700 truncate" title="${group.h3Index}">• ${group.h3Index} <span class="text-gray-500">(Res: ${group.resolution})</span></div>
+                    ${partnersHtml}
+                    ${standaloneHtml}
                 </div>
             `;
             
@@ -1169,14 +1169,15 @@ function hideContextMenu() {
 
 // Open partner sidebar with coordinates filled
 function openPartnerSidebarWithCoords(lat, lng) {
-    // Close any open partner popup
+    // Close any open sidebars
     closePartnerPopup();
+    closeHelpSidebar();
     
     // Reset form and set edit mode to false
     editMode.isActive = false;
     editMode.partnerId = null;
-    document.querySelector('#add-partner-sidebar h2').textContent = 'Add Partner';
-    const submitButton = document.querySelector('#add-partner-form button[type="submit"]');
+    document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
+    const submitButton = document.getElementById('partner-submit-btn');
     submitButton.textContent = 'Add';
     
     // Pre-fill coordinates

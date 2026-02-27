@@ -13,174 +13,267 @@
 
     <title>H3 Hexagon Mapper</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" />
     <link rel="stylesheet" href="style.css" />
 </head>
 <body class="font-roboto">
     <div id="map" class="h-screen"></div>
-    <div id="drawing-overlay" class="fixed inset-0 bg-black bg-opacity-20 hidden" style="z-index: 9997; pointer-events: none;"></div>
-        <div id="drawing-mode-indicator" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white font-bold py-1 px-3 text-sm rounded-lg shadow-lg hidden" style="z-index: 9998; opacity: 0.8;">
-        Drawing Mode Active
-    </div>
-    <div id="controls" class="absolute top-24 left-4 z-50 bg-white p-4 rounded-lg shadow-lg" style="z-index: 9998;">
-        <label for="resolution" class="block mb-2">Resolution: <span id="resolution-value">9</span></label>
-        <input type="range" id="resolution" min="0" max="15" value="9" class="w-full mb-4">
-        <label for="color-picker" class="block mb-2">Color:</label>
-        <input type="color" id="color-picker" value="#0000ff" class="w-full mb-4">
-        <label for="opacity" class="block mb-2">Opacity: <span id="opacity-value">0.3</span></label>
-        <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3" class="w-full mb-4">
-        <button id="save-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Save</button>
-        <input type="file" id="load-file" accept=".json" style="display: none;">
-        <button id="load-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Load</button>
-        <hr class="my-4 border-t border-gray-300">
-        <button id="add-partner-sidebar-btn" class="w-full bg-purple-500 text-white py-2 px-4 rounded mb-2 hover:bg-purple-600">Add Partner</button>
-        <button id="measurement-toggle" class="w-full bg-green-500 text-white py-2 px-4 rounded mb-2 hover:bg-green-600">Start Measurement</button>
-        <button id="help-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Help</button>
-        <hr class="my-4 border-t border-gray-300">
-        <label>Ivan Franchin © 2025</label>
-        <a href="https://github.com/ivangfr/h3-hexagon-mapper/blob/main/LICENSE" class="text-blue-500 hover:underline">BSD 3-Clause License</a>
-    </div>
-    <div id="cursor-coordinates" class="absolute bottom-4 left-4 z-50 bg-white p-2 rounded-lg shadow-lg" style="z-index: 9999;">Lat: 0, Lon: 0</div>
+    <div id="measurement-overlay" class="fixed inset-0 bg-black bg-opacity-20 hidden" style="z-index: 9997; pointer-events: none;"></div>
     
-    <!-- Right-Click Context Menu -->
-    <div id="context-menu" class="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-2 hidden min-w-80" style="z-index: 10001;">
-        <div id="context-menu-header" class="px-4 py-2 border-b border-gray-100 hidden">
-            <div class="text-xs text-gray-500">Coordinates</div>
-            <div id="context-menu-coords" class="text-sm font-medium text-gray-800"></div>
-        </div>
-        <div id="context-menu-partner-section" class="border-b border-gray-100 pb-2 mb-2">
-            <button id="context-menu-add-partner" class="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-3 transition-colors">
-                <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                <span class="text-gray-700">Add Partner Here</span>
-            </button>
-        </div>
-        <div id="context-menu-hexagon-section" class="hidden">
-            <div class="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Hexagons at Location</div>
-            <div id="context-menu-hexagon-list" class="max-h-40 overflow-y-auto"></div>
-        </div>
+    <div id="measurement-mode-indicator" class="fixed top-4 left-1/2 transform -translate-x-1/2 hidden" style="z-index: 9998;">
+        <span>Measurement Mode Active</span>
     </div>
-    <div id="measurement-display" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-white px-4 py-2 rounded-lg shadow-lg text-xl font-bold hidden" style="z-index: 9999;">0.00 km</div>
-    <div id="help-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg"  style="z-index: 9999;">
-        <div class="p-4 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold">Help</h2>
-                <button id="help-close-btn" class="text-gray-500 hover:text-gray-700 text-xl bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors">&times;</button>
+    
+    <!-- Controls Panel -->
+    <div id="controls" style="z-index: 9998;">
+        <div class="controls-header">
+            <h2>H3 Hexagon Mapper</h2>
+        </div>
+        
+        <div class="controls-body">
+            <!-- Hexagon Settings Section -->
+            <div class="control-section">
+                <div class="section-title">Hexagon Settings</div>
+                
+                <div class="control-group">
+                    <label for="resolution">Resolution <span id="resolution-value">9</span></label>
+                    <input type="range" id="resolution" min="0" max="15" value="9" class="w-full">
+                </div>
+                
+                <div class="control-group">
+                    <label for="color-picker">Color</label>
+                    <input type="color" id="color-picker" value="#0000ff" class="w-full">
+                </div>
+                
+                <div class="control-group">
+                    <label for="opacity">Opacity <span id="opacity-value">0.3</span></label>
+                    <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3" class="w-full">
+                </div>
+            </div>
+            
+            <!-- Data Section -->
+            <div class="control-section">
+                <div class="section-title">Data</div>
+                
+                <div class="btn-group">
+                    <button id="save-btn" class="btn btn-primary">Save</button>
+                    <button id="load-btn" class="btn btn-primary">Load</button>
+                </div>
+                <input type="file" id="load-file" accept=".json" style="display: none;">
+            </div>
+            
+            <!-- Tools Section -->
+            <div class="control-section">
+                <div class="section-title">Tools</div>
+                
+                <button id="add-partner-sidebar-btn" class="btn btn-purple" style="margin-bottom: 8px;">Add Partner</button>
+                
+                <button id="measurement-toggle" class="btn btn-success" style="margin-bottom: 8px;">Start Measurement</button>
+                
+                <button id="help-sidebar-toggle" class="btn btn-gray">Help</button>
             </div>
         </div>
-        <div class="p-4">
-            <ul class="list-disc pl-5">
-                <li><strong>Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.</li>
-                <li><strong>Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.</li>
-                <li><strong>Adjust Hexagon Resolution:</strong> Use the resolution slider in the controls section to adjust the resolution of the hexagons.</li>
-                <li><strong>Change Hexagon Color:</strong> Use the color picker in the controls section to change the color of the hexagons.</li>
-                <li><strong>Change Hexagon Opacity:</strong> Use the opacity slider in the controls section to change the opacity of the hexagons.</li>
-                <li><strong>Measurement Mode:</strong> Click the "Start Measurement" button to enter measurement mode. Click once to set the starting point, then move the mouse to see a black dashed measurement line and distance in km displayed prominently at the bottom-center of the screen. Click again to clear the measurement.</li>
-                <li><strong>Save:</strong> Click the "Save" button to download both hexagons and partners as a JSON file.</li>
-                <li><strong>Load:</strong> Click the "Load" button and select a JSON file to load hexagons and partners.</li>
-                <li><strong>Add Partner:</strong> Click the "Add Partner" button to open a form for creating a partner with H3 hexagonal zones.</li>
-                <li><strong>Edit Partner:</strong> Click on a partner marker on the map, then click "Edit Partner" to modify its settings.</li>
-                <li><strong>Delete Partner:</strong> Click on a partner marker and use "Delete Partner" to remove it.</li>
-                <li><strong>Partner Layer Toggles:</strong> Use the toggles in the partner panel to show/hide primary and secondary hexagonal zones.</li>
-                <li><strong>Right-Click Context Menu:</strong> Right-click on the map to open a context menu. You can add a partner at that location (a cross marker will indicate the position) or view H3 indices of hexagons at the clicked location (click on a hexagon ID to copy it).</li>
-            </ul>
-            <hr class="my-4 border-t border-gray-300">
-            <h3 class="text-lg font-bold mt-4">Source-code:</h3>
-            <ul class="list-disc pl-5">
-                <li><strong><a href="https://github.com/ivangfr/h3-hexagon-mapper" class="text-blue-500 hover:underline">ivangfr/h3-hexagon-mapper</a></strong></li>
-            </ul>
-            <hr class="my-4 border-t border-gray-300">
-            <h3 class="text-lg font-bold mt-4">Open-source libraries used:</h3>
-            <ul class="list-disc pl-5">
-                <li><strong><a href="https://github.com/Leaflet/Leaflet" class="text-blue-500 hover:underline">Leaflet</a></strong>: Licence <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" class="text-blue-500 hover:underline">BSD 2-Clause "Simplified" License</a></li>
-                <li><strong><a href="https://github.com/uber/h3" class="text-blue-500 hover:underline">H3-js</a></strong>: Licence <a href="https://github.com/uber/h3-js/blob/master/LICENSE" class="text-blue-500 hover:underline">Apache License 2.0</a></li>
-                <li><strong><a href="https://www.openstreetmap.org" class="text-blue-500 hover:underline">OpenStreetMap</a></strong>: Licence <a href="https://www.openstreetmap.org/copyright" class="text-blue-500 hover:underline">Open Database License (ODbL)</a></li>
-                <li><strong><a href="https://tailwindcss.com/" class="text-blue-500 hover:underline">Tailwind CSS</a></strong>: Licence <a href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" class="text-blue-500 hover:underline">MIT License</a></li>
-            </ul>
-            <hr class="my-4 border-t border-gray-300">
-            <ul>
-                <li>Ivan Franchin © 2025</li>
-            </ul>
+        
+        <div class="controls-footer">
+            <label>Ivan Franchin © 2026</label>
+            <a href="https://github.com/ivangfr/h3-hexagon-mapper/blob/main/LICENSE" target="_blank">BSD 3-Clause License</a>
+        </div>
+    </div>
+    
+    <div id="cursor-coordinates" style="z-index: 9999;">Lat: 0, Lon: 0</div>
+    
+    <!-- Right-Click Context Menu -->
+    <div id="context-menu" class="fixed hidden" style="z-index: 10001;">
+        <div id="context-menu-header" class="hidden">
+            <div class="context-menu-label">Coordinates</div>
+            <div id="context-menu-coords"></div>
+        </div>
+        <div id="context-menu-partner-section">
+            <button id="context-menu-add-partner" class="btn btn-purple">Add Partner Here</button>
+        </div>
+        <div id="context-menu-hexagon-section" class="hidden">
+            <div class="context-menu-section-title">Hexagons at Location</div>
+            <div id="context-menu-hexagon-list"></div>
+        </div>
+    </div>
+    
+    <div id="measurement-display" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 hidden" style="z-index: 9999;">0.00 km</div>
+    
+    <!-- Help Sidebar -->
+    <div id="help-sidebar" class="sidebar hidden" style="z-index: 9999;">
+        <div class="sidebar-header">
+            <div class="sidebar-header-content">
+                <h2>Help</h2>
+                <button id="help-close-btn" class="sidebar-close">&times;</button>
+            </div>
+        </div>
+        <div class="sidebar-body">
+            <!-- Getting Started -->
+            <div class="help-category">
+                <div class="help-category-title">Getting Started</div>
+                <ul class="help-list">
+                    <li><strong>Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.</li>
+                    <li><strong>Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.</li>
+                </ul>
+            </div>
+            
+            <!-- Hexagon Controls -->
+            <div class="help-category">
+                <div class="help-category-title">Hexagon Controls</div>
+                <ul class="help-list">
+                    <li><strong>Adjust Resolution:</strong> Use the resolution slider to adjust the H3 resolution of the hexagons (0-15).</li>
+                    <li><strong>Change Color:</strong> Use the color picker to change the color of the hexagons.</li>
+                    <li><strong>Change Opacity:</strong> Use the opacity slider to change the opacity of the hexagons.</li>
+                </ul>
+            </div>
+            
+            <!-- Measurement -->
+            <div class="help-category">
+                <div class="help-category-title">Measurement Mode</div>
+                <ul class="help-list">
+                    <li>Click the "Start Measurement" button to enter measurement mode.</li>
+                    <li>Click once to set the starting point, then move the mouse to see a black dashed measurement line and distance in km.</li>
+                    <li>Click again to clear the measurement.</li>
+                </ul>
+            </div>
+            
+            <!-- Data Management -->
+            <div class="help-category">
+                <div class="help-category-title">Data Management</div>
+                <ul class="help-list">
+                    <li><strong>Save:</strong> Click the "Save" button to download both hexagons and partners as a JSON file.</li>
+                    <li><strong>Load:</strong> Click the "Load" button and select a JSON file to load hexagons and partners.</li>
+                </ul>
+            </div>
+            
+            <!-- Partner Management -->
+            <div class="help-category">
+                <div class="help-category-title">Partner Management</div>
+                <ul class="help-list">
+                    <li><strong>Add Partner:</strong> Click the "Add Partner" button to open a form for creating a partner with H3 hexagonal zones.</li>
+                    <li><strong>Edit Partner:</strong> Click on a partner marker on the map, then click "Edit Partner" to modify its settings.</li>
+                    <li><strong>Delete Partner:</strong> Click on a partner marker and use "Delete Partner" to remove it.</li>
+                    <li><strong>Layer Toggles:</strong> Use the toggles in the partner panel to show/hide primary and secondary hexagonal zones.</li>
+                </ul>
+            </div>
+            
+            <!-- Context Menu -->
+            <div class="help-category">
+                <div class="help-category-title">Right-Click Context Menu</div>
+                <ul class="help-list">
+                    <li>Right-click on the map to open a context menu.</li>
+                    <li>Add a partner at that location (a cross marker will indicate the position).</li>
+                    <li>View H3 indices of hexagons at the clicked location (click on a hexagon ID to copy it).</li>
+                </ul>
+            </div>
+            
+            <!-- Source & Libraries -->
+            <div class="help-category">
+                <div class="help-category-title">Source & Libraries</div>
+                <ul class="help-list">
+                    <li><strong><a href="https://github.com/ivangfr/h3-hexagon-mapper" target="_blank">ivangfr/h3-hexagon-mapper</a></strong></li>
+                    <li><strong><a href="https://github.com/Leaflet/Leaflet" target="_blank">Leaflet</a></strong> - <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" target="_blank">BSD 2-Clause License</a></li>
+                    <li><strong><a href="https://github.com/uber/h3" target="_blank">H3-js</a></strong> - <a href="https://github.com/uber/h3-js/blob/master/LICENSE" target="_blank">Apache License 2.0</a></li>
+                    <li><strong><a href="https://www.openstreetmap.org" target="_blank">OpenStreetMap</a></strong> - <a href="https://www.openstreetmap.org/copyright" target="_blank">ODbL License</a></li>
+                    <li><strong><a href="https://tailwindcss.com/" target="_blank">Tailwind CSS</a></strong> - <a href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" target="_blank">MIT License</a></li>
+                </ul>
+            </div>
+            
+            <div class="help-footer">
+                <p>Ivan Franchin © 2026</p>
+            </div>
         </div>
     </div>
 
     <!-- Add Partner Sidebar -->
-    <div id="add-partner-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white border-l border-gray-300 overflow-y-auto hidden shadow-lg" style="z-index: 9999;">
-        <div class="p-4 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold">Add Partner</h2>
-                <button id="sidebar-close-btn" class="text-gray-500 hover:text-gray-700 text-xl bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors">&times;</button>
+    <div id="add-partner-sidebar" class="sidebar hidden" style="z-index: 9999;">
+        <div class="sidebar-header">
+            <div class="sidebar-header-content">
+                <h2><span id="partner-sidebar-title">Add Partner</span></h2>
+                <button id="sidebar-close-btn" class="sidebar-close">&times;</button>
             </div>
         </div>
-        <div class="p-4">
-        <form id="add-partner-form">
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">Partner ID</label>
-                <input type="text" id="sidebar-partnerId" placeholder="Partner ID" value="partner1" required class="w-full p-2 border border-gray-300 rounded">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">Latitude (-90 to 90)</label>
-                <input type="number" id="sidebar-latitude" placeholder="Latitude" value="52.52" step="any" required class="w-full p-2 border border-gray-300 rounded">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">Longitude (-180 to 180)</label>
-                <input type="number" id="sidebar-longitude" placeholder="Longitude" value="13.4" step="any" required class="w-full p-2 border border-gray-300 rounded">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">H3 Resolution: <span id="sidebar-resolution-value">9</span></label>
-                <input type="range" id="sidebar-h3Resolution" min="0" max="15" value="9" required class="w-full">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">Number of Zones: <span id="sidebar-zones-value">18</span></label>
-                <input type="range" id="sidebar-numZones" min="1" max="50" value="18" required class="w-full">
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">Color</label>
-                <input type="color" id="sidebar-color" value="#0000ff" required class="w-full h-10 border border-gray-300 rounded">
-            </div>
-            <div class="mb-4">
-                <label class="flex items-center">
-                    <input type="checkbox" id="sidebar-enable-secondary" class="mr-2" checked>
-                    Enable Secondary Zone
-                </label>
-            </div>
-            <div id="secondary-fields" class="hidden">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-1">Secondary H3 Resolution: <span id="sidebar-resolution2-value">6</span></label>
-                    <input type="range" id="sidebar-h3Resolution2" min="0" max="15" value="6" class="w-full">
+        <div class="sidebar-body">
+            <form id="add-partner-form">
+                <div class="form-group">
+                    <label for="sidebar-partnerId">Partner ID</label>
+                    <input type="text" id="sidebar-partnerId" placeholder="Enter partner ID" value="partner1" required>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-1">Secondary Number of Zones: <span id="sidebar-zones2-value">8</span></label>
-                    <input type="range" id="sidebar-numZones2" min="1" max="50" value="8" class="w-full">
+                
+                <div class="form-group">
+                    <label for="sidebar-latitude">Latitude (-90 to 90)</label>
+                    <input type="number" id="sidebar-latitude" placeholder="Enter latitude (-90 to 90)" step="any" required>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-1">Color 2</label>
-                    <input type="color" id="sidebar-color2" value="#0000ff" class="w-full h-10 border border-gray-300 rounded">
+                
+                <div class="form-group">
+                    <label for="sidebar-longitude">Longitude (-180 to 180)</label>
+                    <input type="number" id="sidebar-longitude" placeholder="Enter longitude (-180 to 180)" step="any" required>
                 </div>
-            </div>
-            <div class="flex justify-end space-x-2">
-                <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Add</button>
-                <button type="button" id="sidebar-cancel-add" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
-            </div>
-        </form>
+                
+                <div class="form-group">
+                    <label>H3 Resolution <span id="sidebar-resolution-value">9</span></label>
+                    <input type="range" id="sidebar-h3Resolution" min="0" max="15" value="9" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Number of Zones <span id="sidebar-zones-value">18</span></label>
+                    <input type="range" id="sidebar-numZones" min="1" max="50" value="18" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sidebar-color">Color</label>
+                    <input type="color" id="sidebar-color" value="#0000ff" required>
+                </div>
+                
+                <div class="toggle-group">
+                    <label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="sidebar-enable-secondary" checked>
+                            <span class="toggle-slider"></span>
+                        </div>
+                        Enable Secondary Zone
+                    </label>
+                </div>
+                
+                <div id="secondary-fields">
+                    <div class="form-group">
+                        <label>Secondary H3 Resolution <span id="sidebar-resolution2-value">6</span></label>
+                        <input type="range" id="sidebar-h3Resolution2" min="0" max="15" value="6">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Secondary Number of Zones <span id="sidebar-zones2-value">8</span></label>
+                        <input type="range" id="sidebar-numZones2" min="1" max="50" value="8">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sidebar-color2">Secondary Color</label>
+                        <input type="color" id="sidebar-color2" value="#0000ff">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="partner-submit-btn">Add</button>
+                    <button type="button" id="sidebar-cancel-add" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Partner Layer Control Slide Window -->
-    <div id="partner-slide-window" class="fixed top-0 right-0 w-80 h-full bg-white shadow-xl border-l border-gray-300 transform translate-x-full transition-transform duration-300 ease-in-out hidden" style="z-index: 10000;">
-        <div class="p-4 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-                <h3 id="slide-partner-title" class="text-lg font-semibold text-gray-800">Partner: <span id="slide-partner-id">Unknown</span></h3>
-                <button id="slide-close-btn" class="text-gray-500 hover:text-gray-700 text-xl bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors">&times;</button>
+    <div id="partner-slide-window" class="sidebar hidden" style="z-index: 10000;">
+        <div class="sidebar-header">
+            <div class="sidebar-header-content">
+                <h2><span id="slide-partner-id">Unknown</span></h2>
+                <button id="slide-close-btn" class="sidebar-close">&times;</button>
             </div>
         </div>
-        <div class="p-4 space-y-4 overflow-y-auto max-h-[calc(100%-80px)]">
+        <div class="sidebar-body" style="padding: 16px;">
             <!-- Primary Zone Toggle -->
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                    <div class="font-medium text-gray-800">Primary Zone</div>
-                    <div class="text-sm text-gray-600">Primary H3 hexagons</div>
+            <div class="zone-toggle" style="margin-bottom: 12px;">
+                <div class="zone-toggle-info">
+                    <h4>Primary Zone</h4>
+                    <p>Primary H3 hexagons</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-primary-zone" class="sr-only peer" checked>
@@ -189,10 +282,10 @@
             </div>
             
             <!-- Secondary Zone Toggle -->
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                    <div class="font-medium text-gray-800">Secondary Zone</div>
-                    <div class="text-sm text-gray-600">Secondary H3 hexagons</div>
+            <div class="zone-toggle" style="margin-bottom: 16px;">
+                <div class="zone-toggle-info">
+                    <h4>Secondary Zone</h4>
+                    <p>Secondary H3 hexagons</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-secondary-zone" class="sr-only peer" checked>
@@ -201,9 +294,9 @@
             </div>
 
             <!-- Partner Stats -->
-            <div class="p-3 bg-gray-50 rounded-lg">
-                <div class="font-medium text-gray-800 mb-3">Statistics</div>
-                <table id="partner-stats-table" class="w-full text-sm">
+            <div class="stats-card" style="margin-bottom: 16px;">
+                <h4>Statistics</h4>
+                <table id="partner-stats-table">
                     <tbody class="divide-y divide-gray-200">
                         <!-- Stats rows will be populated by JavaScript -->
                     </tbody>
@@ -211,14 +304,10 @@
             </div>
 
             <!-- Partner Edit -->
-            <div class="p-3 bg-blue-50 rounded-lg mb-3">
-                <button id="edit-partner-btn" class="w-full px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded hover:bg-blue-600 transition-colors">Edit Partner</button>
-            </div>
+            <button id="edit-partner-btn" class="btn btn-primary" style="margin-bottom: 8px;">Edit Partner</button>
 
             <!-- Partner Delete -->
-            <div class="p-3 bg-red-50 rounded-lg">
-                <button id="delete-partner-btn" class="w-full px-4 py-2 bg-red-500 text-white text-sm font-medium rounded hover:bg-red-600 transition-colors">Delete Partner</button>
-            </div>
+            <button id="delete-partner-btn" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);">Delete Partner</button>
         </div>
     </div>
 
