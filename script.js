@@ -176,15 +176,36 @@ map.on('mousemove', function(e) {
     }
 });
 
+// Function to close help sidebar
+function closeHelpSidebar() {
+    document.getElementById('help-sidebar').classList.add('hidden');
+}
+
+// Function to open help sidebar (closes other sidebars first)
+function openHelpSidebar() {
+    // Close partner sidebar if open
+    document.getElementById('add-partner-sidebar').classList.add('hidden');
+    closePartnerPopup();
+    // Open help sidebar
+    document.getElementById('help-sidebar').classList.remove('hidden');
+}
+
 // Function to toggle help sidebar
 function toggleHelpSidebar() {
     const sidebar = document.getElementById('help-sidebar');
-    sidebar.style.display = (sidebar.style.display === 'block') ? 'none' : 'block';
+    if (sidebar.classList.contains('hidden')) {
+        openHelpSidebar();
+    } else {
+        closeHelpSidebar();
+    }
 }
 
 // Add event listener to toggle the help sidebar
 const helpSidebarToggle = document.getElementById('help-sidebar-toggle');
 helpSidebarToggle.addEventListener('click', toggleHelpSidebar);
+
+// Add event listener for help close button
+document.getElementById('help-close-btn').addEventListener('click', closeHelpSidebar);
 
 // Add event listener to toggle measurement mode
 const measurementToggle = document.getElementById('measurement-toggle');
@@ -737,6 +758,7 @@ function validatePartner(partner) {
 // Add Partner sidebar button
 document.getElementById('add-partner-sidebar-btn').addEventListener('click', function() {
     closePartnerPopup();
+    closeHelpSidebar(); // Close help sidebar when opening partner sidebar
     const sidebar = document.getElementById('add-partner-sidebar');
     if (sidebar.classList.contains('hidden')) {
         editMode.isActive = false;

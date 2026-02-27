@@ -62,40 +62,47 @@
         </div>
     </div>
     <div id="measurement-display" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-white px-4 py-2 rounded-lg shadow-lg text-xl font-bold hidden" style="z-index: 9999;">0.00 km</div>
-    <div id="help-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white p-4 border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg"  style="z-index: 9999;">
-        <h2 class="text-xl font-bold mb-4">Help</h2>
-        <ul class="list-disc pl-5">
-            <li><strong>Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.</li>
-            <li><strong>Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.</li>
-            <li><strong>Adjust Hexagon Resolution:</strong> Use the resolution slider in the controls section to adjust the resolution of the hexagons.</li>
-            <li><strong>Change Hexagon Color:</strong> Use the color picker in the controls section to change the color of the hexagons.</li>
-            <li><strong>Change Hexagon Opacity:</strong> Use the opacity slider in the controls section to change the opacity of the hexagons.</li>
-            <li><strong>Measurement Mode:</strong> Click the "Start Measurement" button to enter measurement mode. Click once to set the starting point, then move the mouse to see a black dashed measurement line and distance in km displayed prominently at the bottom-center of the screen. Click again to clear the measurement.</li>
-            <li><strong>Save:</strong> Click the "Save" button to download both hexagons and partners as a JSON file.</li>
-            <li><strong>Load:</strong> Click the "Load" button and select a JSON file to load hexagons and partners.</li>
-            <li><strong>Add Partner:</strong> Click the "Add Partner" button to open a form for creating a partner with H3 hexagonal zones.</li>
-            <li><strong>Edit Partner:</strong> Click on a partner marker on the map, then click "Edit Partner" to modify its settings.</li>
-            <li><strong>Delete Partner:</strong> Click on a partner marker and use "Delete Partner" to remove it.</li>
-            <li><strong>Partner Layer Toggles:</strong> Use the toggles in the partner panel to show/hide primary and secondary hexagonal zones.</li>
-            <li><strong>Right-Click Context Menu:</strong> Right-click on the map to open a context menu. You can add a partner at that location (a cross marker will indicate the position) or view H3 indices of hexagons at the clicked location (click on a hexagon ID to copy it).</li>
-        </ul>
-        <hr class="my-4 border-t border-gray-300">
-        <h3 class="text-lg font-bold mt-4">Source-code:</h3>
-        <ul class="list-disc pl-5">
-            <li><strong><a href="https://github.com/ivangfr/h3-hexagon-mapper" class="text-blue-500 hover:underline">ivangfr/h3-hexagon-mapper</a></strong></li>
-        </ul>
-        <hr class="my-4 border-t border-gray-300">
-        <h3 class="text-lg font-bold mt-4">Open-source libraries used:</h3>
-        <ul class="list-disc pl-5">
-            <li><strong><a href="https://github.com/Leaflet/Leaflet" class="text-blue-500 hover:underline">Leaflet</a></strong>: Licence <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" class="text-blue-500 hover:underline">BSD 2-Clause "Simplified" License</a></li>
-            <li><strong><a href="https://github.com/uber/h3" class="text-blue-500 hover:underline">H3-js</a></strong>: Licence <a href="https://github.com/uber/h3-js/blob/master/LICENSE" class="text-blue-500 hover:underline">Apache License 2.0</a></li>
-            <li><strong><a href="https://www.openstreetmap.org" class="text-blue-500 hover:underline">OpenStreetMap</a></strong>: Licence <a href="https://www.openstreetmap.org/copyright" class="text-blue-500 hover:underline">Open Database License (ODbL)</a></li>
-            <li><strong><a href="https://tailwindcss.com/" class="text-blue-500 hover:underline">Tailwind CSS</a></strong>: Licence <a href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" class="text-blue-500 hover:underline">MIT License</a></li>
-        </ul>
-        <hr class="my-4 border-t border-gray-300">
-        <ul>
-            <li>Ivan Franchin © 2025</li>
-        </ul>
+    <div id="help-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg"  style="z-index: 9999;">
+        <div class="p-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold">Help</h2>
+                <button id="help-close-btn" class="text-gray-500 hover:text-gray-700 text-xl bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors">&times;</button>
+            </div>
+        </div>
+        <div class="p-4">
+            <ul class="list-disc pl-5">
+                <li><strong>Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.</li>
+                <li><strong>Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.</li>
+                <li><strong>Adjust Hexagon Resolution:</strong> Use the resolution slider in the controls section to adjust the resolution of the hexagons.</li>
+                <li><strong>Change Hexagon Color:</strong> Use the color picker in the controls section to change the color of the hexagons.</li>
+                <li><strong>Change Hexagon Opacity:</strong> Use the opacity slider in the controls section to change the opacity of the hexagons.</li>
+                <li><strong>Measurement Mode:</strong> Click the "Start Measurement" button to enter measurement mode. Click once to set the starting point, then move the mouse to see a black dashed measurement line and distance in km displayed prominently at the bottom-center of the screen. Click again to clear the measurement.</li>
+                <li><strong>Save:</strong> Click the "Save" button to download both hexagons and partners as a JSON file.</li>
+                <li><strong>Load:</strong> Click the "Load" button and select a JSON file to load hexagons and partners.</li>
+                <li><strong>Add Partner:</strong> Click the "Add Partner" button to open a form for creating a partner with H3 hexagonal zones.</li>
+                <li><strong>Edit Partner:</strong> Click on a partner marker on the map, then click "Edit Partner" to modify its settings.</li>
+                <li><strong>Delete Partner:</strong> Click on a partner marker and use "Delete Partner" to remove it.</li>
+                <li><strong>Partner Layer Toggles:</strong> Use the toggles in the partner panel to show/hide primary and secondary hexagonal zones.</li>
+                <li><strong>Right-Click Context Menu:</strong> Right-click on the map to open a context menu. You can add a partner at that location (a cross marker will indicate the position) or view H3 indices of hexagons at the clicked location (click on a hexagon ID to copy it).</li>
+            </ul>
+            <hr class="my-4 border-t border-gray-300">
+            <h3 class="text-lg font-bold mt-4">Source-code:</h3>
+            <ul class="list-disc pl-5">
+                <li><strong><a href="https://github.com/ivangfr/h3-hexagon-mapper" class="text-blue-500 hover:underline">ivangfr/h3-hexagon-mapper</a></strong></li>
+            </ul>
+            <hr class="my-4 border-t border-gray-300">
+            <h3 class="text-lg font-bold mt-4">Open-source libraries used:</h3>
+            <ul class="list-disc pl-5">
+                <li><strong><a href="https://github.com/Leaflet/Leaflet" class="text-blue-500 hover:underline">Leaflet</a></strong>: Licence <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" class="text-blue-500 hover:underline">BSD 2-Clause "Simplified" License</a></li>
+                <li><strong><a href="https://github.com/uber/h3" class="text-blue-500 hover:underline">H3-js</a></strong>: Licence <a href="https://github.com/uber/h3-js/blob/master/LICENSE" class="text-blue-500 hover:underline">Apache License 2.0</a></li>
+                <li><strong><a href="https://www.openstreetmap.org" class="text-blue-500 hover:underline">OpenStreetMap</a></strong>: Licence <a href="https://www.openstreetmap.org/copyright" class="text-blue-500 hover:underline">Open Database License (ODbL)</a></li>
+                <li><strong><a href="https://tailwindcss.com/" class="text-blue-500 hover:underline">Tailwind CSS</a></strong>: Licence <a href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" class="text-blue-500 hover:underline">MIT License</a></li>
+            </ul>
+            <hr class="my-4 border-t border-gray-300">
+            <ul>
+                <li>Ivan Franchin © 2025</li>
+            </ul>
+        </div>
     </div>
 
     <!-- Add Partner Sidebar -->

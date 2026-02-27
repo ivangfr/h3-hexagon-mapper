@@ -36,14 +36,12 @@ html, body {
     position: absolute;
     top: 0;
     right: 0;
-    width: 480px;
+    width: 320px;
     height: 100%;
     background: white;
-    padding: 10px;
     border-left: 1px solid #ccc;
     overflow-y: auto;
     z-index: 1000;
-    display: none;
     box-shadow: -2px 0 6px rgba(0,0,0,0.3);
 }
 
