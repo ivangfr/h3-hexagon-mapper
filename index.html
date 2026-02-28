@@ -197,29 +197,36 @@
                     <input type="text" id="sidebar-partnerId" placeholder="Enter partner ID" value="partner1" required>
                 </div>
                 
-                <div class="form-group">
-                    <label for="sidebar-latitude">Latitude (-90 to 90)</label>
-                    <input type="number" id="sidebar-latitude" placeholder="Enter latitude (-90 to 90)" value="52.52" step="any" required>
+                <!-- Latitude and Longitude on same line -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="form-group">
+                        <label for="sidebar-latitude">Latitude</label>
+                        <input type="number" id="sidebar-latitude" placeholder="-90 to 90" value="52.52" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sidebar-longitude">Longitude</label>
+                        <input type="number" id="sidebar-longitude" placeholder="-180 to 180" value="13.4" step="any" required>
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="sidebar-longitude">Longitude (-180 to 180)</label>
-                    <input type="number" id="sidebar-longitude" placeholder="Enter longitude (-180 to 180)" value="13.4" step="any" required>
+                <!-- Primary Resolution and Zones on same line -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="form-group">
+                        <label>Res. <span id="sidebar-resolution-value">9</span></label>
+                        <input type="range" id="sidebar-h3Resolution" min="0" max="15" value="9" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Zones <span id="sidebar-zones-value">18</span></label>
+                        <input type="range" id="sidebar-numZones" min="1" max="50" value="18" required>
+                    </div>
                 </div>
                 
+                <!-- Primary Color - Inline compact layout -->
                 <div class="form-group">
-                    <label>Primary H3 Resolution <span id="sidebar-resolution-value">9</span></label>
-                    <input type="range" id="sidebar-h3Resolution" min="0" max="15" value="9" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Primary Number of Zones <span id="sidebar-zones-value">18</span></label>
-                    <input type="range" id="sidebar-numZones" min="1" max="50" value="18" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="sidebar-color">Primary Color</label>
-                    <input type="color" id="sidebar-color" value="#0000ff" required>
+                    <div class="flex items-center justify-between">
+                        <label class="mb-0">Primary Color</label>
+                        <input type="color" id="sidebar-color" value="#0000ff" class="color-picker-compact" required>
+                    </div>
                 </div>
                     
                 <div class="toggle-group">
@@ -233,19 +240,24 @@
                 </div>
                 
                 <div id="secondary-fields">
-                    <div class="form-group">
-                        <label>Secondary H3 Resolution <span id="sidebar-resolution2-value">6</span></label>
-                        <input type="range" id="sidebar-h3Resolution2" min="0" max="15" value="6">
+                    <!-- Secondary Resolution and Zones on same line -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="form-group">
+                            <label>Res. <span id="sidebar-resolution2-value">6</span></label>
+                            <input type="range" id="sidebar-h3Resolution2" min="0" max="15" value="6">
+                        </div>
+                        <div class="form-group">
+                            <label>Zones <span id="sidebar-zones2-value">8</span></label>
+                            <input type="range" id="sidebar-numZones2" min="1" max="50" value="8">
+                        </div>
                     </div>
                     
+                    <!-- Secondary Color - Inline compact layout -->
                     <div class="form-group">
-                        <label>Secondary Number of Zones <span id="sidebar-zones2-value">8</span></label>
-                        <input type="range" id="sidebar-numZones2" min="1" max="50" value="8">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="sidebar-color2">Secondary Color</label>
-                        <input type="color" id="sidebar-color2" value="#0000ff">
+                        <div class="flex items-center justify-between">
+                            <label class="mb-0">Secondary Color</label>
+                            <input type="color" id="sidebar-color2" value="#0000ff" class="color-picker-compact">
+                        </div>
                     </div>
                 </div>
                 

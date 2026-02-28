@@ -529,6 +529,43 @@ input[type="color"]::-webkit-color-swatch {
     border-color: #3b82f6;
 }
 
+/* Compact Color Picker - Inline layout */
+.color-picker-compact {
+    -webkit-appearance: none;
+    width: 44px !important;
+    height: 36px !important;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 2px;
+    background: #f9fafb;
+    flex-shrink: 0;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.color-picker-compact:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.color-picker-compact::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-picker-compact::-webkit-color-swatch {
+    border: none;
+    border-radius: 5px;
+}
+
+.color-picker-compact::-moz-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-picker-compact::-moz-color-swatch {
+    border: none;
+    border-radius: 5px;
+}
+
 /* Toggle Switch */
 .toggle-group {
     display: flex;
