@@ -1270,6 +1270,12 @@ function openPartnerSidebarWithCoords(lat, lng) {
 // Right-click event handler
 map.on('contextmenu', function(e) {
     e.originalEvent.preventDefault();
+    
+    // Disable context menu during measurement mode
+    if (isMeasuring) {
+        return;
+    }
+    
     const { lat, lng } = e.latlng;
     const x = e.containerPoint.x;
     const y = e.containerPoint.y;
