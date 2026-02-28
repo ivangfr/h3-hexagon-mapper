@@ -1,3 +1,6 @@
+// Initialize Lucide Icons
+lucide.createIcons();
+
 // Initialize the map centered on a specific location (e.g., Berlin)
 const map = L.map('map', { zoomControl: false }).setView([52.5200, 13.4050], 15);
 
@@ -113,8 +116,9 @@ map.on('click', function(e) {
             // Second click - clear measurement and reset button
             stopMeasurement();
             const measurementToggle = document.getElementById('measurement-toggle');
-            measurementToggle.textContent = 'Start Measurement';
+            measurementToggle.innerHTML = '<i data-lucide="ruler" class="icon-btn"></i> Start Measurement';
             measurementToggle.style.backgroundColor = '';
+            lucide.createIcons();
         }
         return;
     }
@@ -212,12 +216,14 @@ const measurementToggle = document.getElementById('measurement-toggle');
 measurementToggle.addEventListener('click', function() {
     if (!isMeasuring) {
         startMeasurement();
-        measurementToggle.textContent = 'Stop Measurement';
+        measurementToggle.innerHTML = '<i data-lucide="square" class="icon-btn"></i> Stop Measurement';
         measurementToggle.style.backgroundColor = '#16a34a';
+        lucide.createIcons();
     } else {
         stopMeasurement();
-        measurementToggle.textContent = 'Start Measurement';
+        measurementToggle.innerHTML = '<i data-lucide="ruler" class="icon-btn"></i> Start Measurement';
         measurementToggle.style.backgroundColor = '';
+        lucide.createIcons();
     }
 });
 
@@ -859,6 +865,14 @@ document.getElementById('add-partner-form').addEventListener('submit', function(
         // Check if partner ID already exists
         if (partnersById[partnerId]) {
             alert(`Partner with ID "${partnerId}" already exists. Please use a different ID.`);
+            return;
+        }
+        // Check if a partner already exists at this location
+        const existingPartnerAtLocation = Object.values(partnersById).find(p => 
+            p.latitude === latitude && p.longitude === longitude
+        );
+        if (existingPartnerAtLocation) {
+            alert(`Partner "${existingPartnerAtLocation.partnerId}" already exists at this location (Lat: ${latitude}, Lon: ${longitude}).`);
             return;
         }
         // Add new partner

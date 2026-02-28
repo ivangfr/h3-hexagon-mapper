@@ -12,9 +12,13 @@
     </script>
 
     <title>H3 Hexagon Mapper</title>
+    <!-- Favicon - Inline SVG Hexagon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%233b82f6'/></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" />
     <link rel="stylesheet" href="style.css" />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body class="font-roboto">
     <div id="map" class="h-screen"></div>
@@ -27,7 +31,7 @@
     <!-- Controls Panel -->
     <div id="controls" style="z-index: 9998;">
         <div class="controls-header">
-            <h2>H3 Hexagon Mapper</h2>
+            <h2><i data-lucide="hexagon" class="icon-header"></i> H3 Hexagon Mapper</h2>
         </div>
         
         <div class="controls-body">
@@ -56,8 +60,8 @@
                 <div class="section-title">Data</div>
                 
                 <div class="btn-group">
-                    <button id="save-btn" class="btn btn-primary">Save</button>
-                    <button id="load-btn" class="btn btn-primary">Load</button>
+                    <button id="save-btn" class="btn btn-primary"><i data-lucide="save" class="icon-btn"></i> Save</button>
+                    <button id="load-btn" class="btn btn-primary"><i data-lucide="folder-open" class="icon-btn"></i> Load</button>
                 </div>
                 <input type="file" id="load-file" accept=".json" style="display: none;">
             </div>
@@ -65,12 +69,9 @@
             <!-- Tools Section -->
             <div class="control-section">
                 <div class="section-title">Tools</div>
-                
-                <button id="add-partner-sidebar-btn" class="btn btn-purple" style="margin-bottom: 8px;">Add Partner</button>
-                
-                <button id="measurement-toggle" class="btn btn-success" style="margin-bottom: 8px;">Start Measurement</button>
-                
-                <button id="help-sidebar-toggle" class="btn btn-gray">Help</button>
+                <button id="add-partner-sidebar-btn" class="btn btn-purple" style="margin-bottom: 8px;"><i data-lucide="store" class="icon-btn"></i> Add Partner</button>
+                <button id="measurement-toggle" class="btn btn-success" style="margin-bottom: 8px;"><i data-lucide="ruler" class="icon-btn"></i> Start Measurement</button>
+                <button id="help-sidebar-toggle" class="btn btn-gray"><i data-lucide="help-circle" class="icon-btn"></i> Help</button>
             </div>
         </div>
         
@@ -89,7 +90,7 @@
             <div id="context-menu-coords"></div>
         </div>
         <div id="context-menu-partner-section">
-            <button id="context-menu-add-partner" class="btn btn-purple">Add Partner Here</button>
+            <button id="context-menu-add-partner" class="btn btn-purple"><i data-lucide="store" class="icon-btn"></i> Add Partner Here</button>
         </div>
         <div id="context-menu-hexagon-section" class="hidden">
             <div class="context-menu-section-title">Hexagons at Location</div>
@@ -103,14 +104,14 @@
     <div id="help-sidebar" class="sidebar hidden" style="z-index: 9999;">
         <div class="sidebar-header">
             <div class="sidebar-header-content">
-                <h2>Help</h2>
+                <h2><i data-lucide="help-circle" class="icon-header"></i> Help</h2>
                 <button id="help-close-btn" class="sidebar-close">&times;</button>
             </div>
         </div>
         <div class="sidebar-body">
             <!-- Getting Started -->
             <div class="help-category">
-                <div class="help-category-title">Getting Started</div>
+                <div class="help-category-title"><i data-lucide="play-circle" class="icon-header"></i> Getting Started</div>
                 <ul class="help-list">
                     <li><strong>Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.</li>
                     <li><strong>Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.</li>
@@ -119,7 +120,7 @@
             
             <!-- Hexagon Controls -->
             <div class="help-category">
-                <div class="help-category-title">Hexagon Controls</div>
+                <div class="help-category-title"><i data-lucide="sliders-horizontal" class="icon-header"></i> Hexagon Controls</div>
                 <ul class="help-list">
                     <li><strong>Adjust Resolution:</strong> Use the resolution slider to adjust the H3 resolution of the hexagons (0-15).</li>
                     <li><strong>Change Color:</strong> Use the color picker to change the color of the hexagons.</li>
@@ -129,17 +130,17 @@
             
             <!-- Measurement -->
             <div class="help-category">
-                <div class="help-category-title">Measurement Mode</div>
+                <div class="help-category-title"><i data-lucide="ruler" class="icon-header"></i> Measurement Mode</div>
                 <ul class="help-list">
-                    <li>Click the "Start Measurement" button to enter measurement mode.</li>
-                    <li>Click once to set the starting point, then move the mouse to see a black dashed measurement line and distance in km.</li>
-                    <li>Click again to clear the measurement.</li>
+                    <li><strong>Activate:</strong> Click the "Start Measurement" button to enable measurement mode. An overlay and indicator will appear.</li>
+                    <li><strong>Measure Distance:</strong> Click on the map to set a starting point, then move your mouse to see the distance in kilometers. A dashed line shows the measurement path.</li>
+                    <li><strong>Clear or Exit:</strong> Click again to clear the current measurement and start a new one, or click "Stop Measurement" to exit measurement mode.</li>
                 </ul>
             </div>
             
             <!-- Data Management -->
             <div class="help-category">
-                <div class="help-category-title">Data Management</div>
+                <div class="help-category-title"><i data-lucide="database" class="icon-header"></i> Data Management</div>
                 <ul class="help-list">
                     <li><strong>Save:</strong> Click the "Save" button to download both hexagons and partners as a JSON file.</li>
                     <li><strong>Load:</strong> Click the "Load" button and select a JSON file to load hexagons and partners.</li>
@@ -148,34 +149,34 @@
             
             <!-- Partner Management -->
             <div class="help-category">
-                <div class="help-category-title">Partner Management</div>
+                <div class="help-category-title"><i data-lucide="store" class="icon-header"></i> Partner Management</div>
                 <ul class="help-list">
                     <li><strong>Add Partner:</strong> Click the "Add Partner" button to open a form for creating a partner with H3 hexagonal zones.</li>
                     <li><strong>Edit Partner:</strong> Click on a partner marker on the map, then click "Edit Partner" to modify its settings.</li>
                     <li><strong>Delete Partner:</strong> Click on a partner marker and use "Delete Partner" to remove it.</li>
-                    <li><strong>Layer Toggles:</strong> Use the toggles in the partner panel to show/hide primary and secondary hexagonal zones.</li>
                 </ul>
             </div>
             
             <!-- Context Menu -->
             <div class="help-category">
-                <div class="help-category-title">Right-Click Context Menu</div>
+                <div class="help-category-title"><i data-lucide="mouse-pointer-click" class="icon-header"></i> Right-Click Context Menu</div>
                 <ul class="help-list">
-                    <li>Right-click on the map to open a context menu.</li>
-                    <li>Add a partner at that location (a cross marker will indicate the position).</li>
-                    <li>View H3 indices of hexagons at the clicked location (click on a hexagon ID to copy it).</li>
+                    <li><strong>Open Context Menu:</strong> Right-click anywhere on the map to open a context menu at that location.</li>
+                    <li><strong>Quick Add Partner:</strong> Click "Add Partner Here" to pre-fill the partner form with the clicked coordinates. A cross marker shows the selected position.</li>
+                    <li><strong>View Hexagon Indices:</strong> The context menu displays all H3 hexagon IDs at the clicked location across different resolutions.</li>
                 </ul>
             </div>
             
             <!-- Source & Libraries -->
             <div class="help-category">
-                <div class="help-category-title">Source & Libraries</div>
+                <div class="help-category-title"><i data-lucide="book-open" class="icon-header"></i> Source & Libraries</div>
                 <ul class="help-list">
                     <li><strong><a href="https://github.com/ivangfr/h3-hexagon-mapper" target="_blank">ivangfr/h3-hexagon-mapper</a></strong></li>
                     <li><strong><a href="https://github.com/Leaflet/Leaflet" target="_blank">Leaflet</a></strong> - <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" target="_blank">BSD 2-Clause License</a></li>
                     <li><strong><a href="https://github.com/uber/h3" target="_blank">H3-js</a></strong> - <a href="https://github.com/uber/h3-js/blob/master/LICENSE" target="_blank">Apache License 2.0</a></li>
                     <li><strong><a href="https://www.openstreetmap.org" target="_blank">OpenStreetMap</a></strong> - <a href="https://www.openstreetmap.org/copyright" target="_blank">ODbL License</a></li>
                     <li><strong><a href="https://tailwindcss.com/" target="_blank">Tailwind CSS</a></strong> - <a href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" target="_blank">MIT License</a></li>
+                    <li><strong><a href="https://lucide.dev/" target="_blank">Lucide Icons</a></strong> - <a href="https://github.com/lucide-icons/lucide/blob/main/LICENSE" target="_blank">ISC License</a></li>
                 </ul>
             </div>
             
@@ -189,7 +190,7 @@
     <div id="add-partner-sidebar" class="sidebar hidden" style="z-index: 9999;">
         <div class="sidebar-header">
             <div class="sidebar-header-content">
-                <h2><span id="partner-sidebar-title">Add Partner</span></h2>
+                <h2><i data-lucide="store" class="icon-header"></i> <span id="partner-sidebar-title">Add Partner</span></h2>
                 <button id="sidebar-close-btn" class="sidebar-close">&times;</button>
             </div>
         </div>
@@ -202,29 +203,29 @@
                 
                 <div class="form-group">
                     <label for="sidebar-latitude">Latitude (-90 to 90)</label>
-                    <input type="number" id="sidebar-latitude" placeholder="Enter latitude (-90 to 90)" step="any" required>
+                    <input type="number" id="sidebar-latitude" placeholder="Enter latitude (-90 to 90)" value="52.52" step="any" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="sidebar-longitude">Longitude (-180 to 180)</label>
-                    <input type="number" id="sidebar-longitude" placeholder="Enter longitude (-180 to 180)" step="any" required>
+                    <input type="number" id="sidebar-longitude" placeholder="Enter longitude (-180 to 180)" value="13.4" step="any" required>
                 </div>
                 
                 <div class="form-group">
-                    <label>H3 Resolution <span id="sidebar-resolution-value">9</span></label>
+                    <label>Primary H3 Resolution <span id="sidebar-resolution-value">9</span></label>
                     <input type="range" id="sidebar-h3Resolution" min="0" max="15" value="9" required>
                 </div>
                 
                 <div class="form-group">
-                    <label>Number of Zones <span id="sidebar-zones-value">18</span></label>
+                    <label>Primary Number of Zones <span id="sidebar-zones-value">18</span></label>
                     <input type="range" id="sidebar-numZones" min="1" max="50" value="18" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="sidebar-color">Color</label>
+                    <label for="sidebar-color">Primary Color</label>
                     <input type="color" id="sidebar-color" value="#0000ff" required>
                 </div>
-                
+                    
                 <div class="toggle-group">
                     <label>
                         <div class="toggle-switch">
@@ -264,7 +265,7 @@
     <div id="partner-slide-window" class="sidebar hidden" style="z-index: 10000;">
         <div class="sidebar-header">
             <div class="sidebar-header-content">
-                <h2><span id="slide-partner-id">Unknown</span></h2>
+                <h2><i data-lucide="store" class="icon-header"></i> <span id="slide-partner-id">Unknown</span></h2>
                 <button id="slide-close-btn" class="sidebar-close">&times;</button>
             </div>
         </div>
@@ -304,10 +305,10 @@
             </div>
 
             <!-- Partner Edit -->
-            <button id="edit-partner-btn" class="btn btn-primary" style="margin-bottom: 8px;">Edit Partner</button>
+            <button id="edit-partner-btn" class="btn btn-primary" style="margin-bottom: 8px;"><i data-lucide="pencil" class="icon-btn"></i> Edit Partner</button>
 
             <!-- Partner Delete -->
-            <button id="delete-partner-btn" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);">Delete Partner</button>
+            <button id="delete-partner-btn" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);"><i data-lucide="trash-2" class="icon-btn"></i> Delete Partner</button>
         </div>
     </div>
 

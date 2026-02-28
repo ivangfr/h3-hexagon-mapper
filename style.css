@@ -842,6 +842,23 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 /* ==========================================
+   LUCIDE ICONS
+   ========================================== */
+
+.icon-header {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+}
+
+.icon-btn {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+/* ==========================================
    RESPONSIVE ADJUSTMENTS
    ========================================== */
 
