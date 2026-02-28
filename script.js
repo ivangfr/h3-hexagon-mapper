@@ -811,7 +811,9 @@ function resetSidebarForm() {
     document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
     document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
     document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
-    document.getElementById('secondary-fields').classList.remove('hidden');
+    document.getElementById('secondary-fields').classList.add('hidden');
+    document.getElementById('sidebar-same-color').checked = true;
+    document.getElementById('sidebar-color2').disabled = true;
     
     editMode.isActive = false;
     editMode.partnerId = null;
@@ -842,24 +844,27 @@ function openSidebarForEdit(partner) {
     document.getElementById('sidebar-zones-value').textContent = partner.numZones.toString();
 
     // Handle secondary fields
+    const primaryColor = partner.color || PARTNER_CONSTANTS.DEFAULT_COLOR;
     if (partner.h3Resolution2 !== undefined && partner.numZones2 !== undefined) {
         document.getElementById('sidebar-enable-secondary').checked = true;
+        document.getElementById('secondary-fields').classList.remove('hidden');
         document.getElementById('sidebar-h3Resolution2').value = partner.h3Resolution2;
         document.getElementById('sidebar-numZones2').value = partner.numZones2;
-        document.getElementById('sidebar-color2').value = partner.color2 || partner.color || PARTNER_CONSTANTS.DEFAULT_COLOR;
         document.getElementById('sidebar-resolution2-value').textContent = partner.h3Resolution2.toString();
         document.getElementById('sidebar-zones2-value').textContent = partner.numZones2.toString();
+        
+        // Check if secondary color is different from primary
+        const secondaryColor = partner.color2 || primaryColor;
+        const colorsAreSame = secondaryColor.toLowerCase() === primaryColor.toLowerCase();
+        document.getElementById('sidebar-same-color').checked = colorsAreSame;
+        document.getElementById('sidebar-color2').value = secondaryColor;
+        document.getElementById('sidebar-color2').disabled = colorsAreSame;
     } else {
         document.getElementById('sidebar-enable-secondary').checked = false;
-        document.getElementById('sidebar-color2').value = partner.color || PARTNER_CONSTANTS.DEFAULT_COLOR;
-    }
-    
-    // Toggle secondary fields visibility
-    const enableSecondary = document.getElementById('sidebar-enable-secondary').checked;
-    if (enableSecondary) {
-        document.getElementById('secondary-fields').classList.remove('hidden');
-    } else {
         document.getElementById('secondary-fields').classList.add('hidden');
+        document.getElementById('sidebar-color2').value = primaryColor;
+        document.getElementById('sidebar-same-color').checked = true;
+        document.getElementById('sidebar-color2').disabled = true;
     }
 
     // Open sidebar with animation
@@ -958,10 +963,22 @@ document.getElementById('sidebar-enable-secondary').addEventListener('change', f
     }
 });
 
-// Primary color change to sync secondary color
+// Primary color change to sync secondary color (only if same color checkbox is checked)
 document.getElementById('sidebar-color').addEventListener('input', function() {
-    if (document.getElementById('sidebar-enable-secondary').checked) {
+    if (document.getElementById('sidebar-same-color').checked) {
         document.getElementById('sidebar-color2').value = this.value;
+    }
+});
+
+// Same color as primary checkbox
+document.getElementById('sidebar-same-color').addEventListener('change', function() {
+    if (this.checked) {
+        // Sync secondary color with primary and disable the color picker
+        document.getElementById('sidebar-color2').value = document.getElementById('sidebar-color').value;
+        document.getElementById('sidebar-color2').disabled = true;
+    } else {
+        // Enable the secondary color picker for independent selection
+        document.getElementById('sidebar-color2').disabled = false;
     }
 });
 
@@ -1241,13 +1258,15 @@ function setupAddPartnerForm(lat, lng) {
     document.getElementById('sidebar-color').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
     document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
     document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
-    document.getElementById('sidebar-enable-secondary').checked = true;
-    document.getElementById('secondary-fields').classList.remove('hidden');
+    document.getElementById('sidebar-enable-secondary').checked = false;
+    document.getElementById('secondary-fields').classList.add('hidden');
     document.getElementById('sidebar-h3Resolution2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION;
     document.getElementById('sidebar-numZones2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES;
     document.getElementById('sidebar-color2').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
     document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
     document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
+    document.getElementById('sidebar-same-color').checked = true;
+    document.getElementById('sidebar-color2').disabled = true;
 }
 
 // Open partner sidebar with coordinates filled
