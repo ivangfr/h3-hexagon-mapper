@@ -67,15 +67,26 @@ function switchToSidebar(sidebarElement, sidebarType) {
     // Remove cross marker when switching sidebars
     removeCrossMarker();
     
-    // Close current sidebar first
+    // Close current sidebar first and ensure hidden is added after animation
+    let closingSidebar = null;
     if (currentOpenSidebar === SIDEBAR_TYPES.HELP) {
-        helpSidebar.classList.add('sidebar-closed');
+        closingSidebar = helpSidebar;
     } else if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
-        addPartnerSidebar.classList.add('sidebar-closed');
+        closingSidebar = addPartnerSidebar;
     } else if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER) {
-        partnerSidebar.classList.add('sidebar-closed');
+        closingSidebar = partnerSidebar;
     } else if (currentOpenSidebar === SIDEBAR_TYPES.CUSTOMER_LOCATION) {
-        customerLocationSidebar.classList.add('sidebar-closed');
+        closingSidebar = customerLocationSidebar;
+    }
+    
+    if (closingSidebar) {
+        closingSidebar.classList.add('sidebar-closed');
+        // Add hidden class after animation completes to fully remove from rendering
+        setTimeout(() => {
+            if (closingSidebar.classList.contains('sidebar-closed')) {
+                closingSidebar.classList.add('hidden');
+            }
+        }, 300);
     }
     
     // Small delay before opening new sidebar for smoother transition
