@@ -4,101 +4,6 @@ lucide.createIcons();
 // Initialize the map centered on a specific location (e.g., Berlin)
 const map = L.map('map', { zoomControl: false }).setView([52.5200, 13.4050], 15);
 
-// ==========================================
-// SIDEBAR ANIMATION HELPERS
-// ==========================================
-
-// Track current open sidebar type for animation decisions
-let currentOpenSidebar = null; // 'help', 'add-partner', 'partner', or null
-
-// Sidebar type constants
-const SIDEBAR_TYPES = {
-    HELP: 'help',
-    ADD_PARTNER: 'add-partner',
-    PARTNER: 'partner',
-    CUSTOMER_LOCATION: 'customer-location'
-};
-
-// Helper function to close a sidebar with animation
-function closeSidebar(sidebarElement) {
-    sidebarElement.classList.add('sidebar-closed');
-    // Remove hidden class after animation completes (for accessibility)
-    setTimeout(() => {
-        if (sidebarElement.classList.contains('sidebar-closed')) {
-            sidebarElement.classList.add('hidden');
-        }
-    }, 300);
-}
-
-// Helper function to open a sidebar with animation
-function openSidebar(sidebarElement) {
-    // Remove hidden first if present
-    sidebarElement.classList.remove('hidden');
-    // Force reflow to ensure hidden removal takes effect
-    sidebarElement.offsetHeight;
-    // Then remove closed class to trigger animation
-    sidebarElement.classList.remove('sidebar-closed');
-}
-
-// Helper function to close all sidebars
-function closeAllSidebars() {
-    const helpSidebar = document.getElementById('help-sidebar');
-    const addPartnerSidebar = document.getElementById('add-partner-sidebar');
-    const partnerSidebar = document.getElementById('partner-sidebar');
-    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
-    
-    closeSidebar(helpSidebar);
-    closeSidebar(addPartnerSidebar);
-    closeSidebar(partnerSidebar);
-    closeSidebar(customerLocationSidebar);
-    currentOpenSidebar = null;
-    
-    // Remove cross marker when closing all sidebars
-    removeCrossMarker();
-}
-
-// Helper function to switch between sidebars with slide+fade animation
-function switchToSidebar(sidebarElement, sidebarType) {
-    const helpSidebar = document.getElementById('help-sidebar');
-    const addPartnerSidebar = document.getElementById('add-partner-sidebar');
-    const partnerSidebar = document.getElementById('partner-sidebar');
-    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
-    
-    // Remove cross marker when switching sidebars
-    removeCrossMarker();
-    
-    // Close current sidebar first and ensure hidden is added after animation
-    let closingSidebar = null;
-    if (currentOpenSidebar === SIDEBAR_TYPES.HELP) {
-        closingSidebar = helpSidebar;
-    } else if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
-        closingSidebar = addPartnerSidebar;
-    } else if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER) {
-        closingSidebar = partnerSidebar;
-    } else if (currentOpenSidebar === SIDEBAR_TYPES.CUSTOMER_LOCATION) {
-        closingSidebar = customerLocationSidebar;
-    }
-    
-    if (closingSidebar) {
-        closingSidebar.classList.add('sidebar-closed');
-        // Add hidden class after animation completes to fully remove from rendering
-        setTimeout(() => {
-            if (closingSidebar.classList.contains('sidebar-closed')) {
-                closingSidebar.classList.add('hidden');
-            }
-        }, 300);
-    }
-    
-    // Small delay before opening new sidebar for smoother transition
-    setTimeout(() => {
-        sidebarElement.classList.remove('hidden');
-        sidebarElement.offsetHeight; // Force reflow
-        sidebarElement.classList.remove('sidebar-closed');
-        currentOpenSidebar = sidebarType;
-    }, 50);
-}
-
-
 // Add OpenStreetMap tile layer
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -1528,3 +1433,97 @@ document.getElementById('context-menu-customer-location').addEventListener('clic
 
 // Customer location sidebar close button
 document.getElementById('customer-location-close-btn').addEventListener('click', closeCustomerLocationSidebar);
+
+// ==========================================
+// SIDEBAR ANIMATION HELPERS
+// ==========================================
+
+// Track current open sidebar type for animation decisions
+let currentOpenSidebar = null; // 'help', 'add-partner', 'partner', or null
+
+// Sidebar type constants
+const SIDEBAR_TYPES = {
+    HELP: 'help',
+    ADD_PARTNER: 'add-partner',
+    PARTNER: 'partner',
+    CUSTOMER_LOCATION: 'customer-location'
+};
+
+// Helper function to close a sidebar with animation
+function closeSidebar(sidebarElement) {
+    sidebarElement.classList.add('sidebar-closed');
+    // Remove hidden class after animation completes (for accessibility)
+    setTimeout(() => {
+        if (sidebarElement.classList.contains('sidebar-closed')) {
+            sidebarElement.classList.add('hidden');
+        }
+    }, 300);
+}
+
+// Helper function to open a sidebar with animation
+function openSidebar(sidebarElement) {
+    // Remove hidden first if present
+    sidebarElement.classList.remove('hidden');
+    // Force reflow to ensure hidden removal takes effect
+    sidebarElement.offsetHeight;
+    // Then remove closed class to trigger animation
+    sidebarElement.classList.remove('sidebar-closed');
+}
+
+// Helper function to close all sidebars
+function closeAllSidebars() {
+    const helpSidebar = document.getElementById('help-sidebar');
+    const addPartnerSidebar = document.getElementById('add-partner-sidebar');
+    const partnerSidebar = document.getElementById('partner-sidebar');
+    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
+    
+    closeSidebar(helpSidebar);
+    closeSidebar(addPartnerSidebar);
+    closeSidebar(partnerSidebar);
+    closeSidebar(customerLocationSidebar);
+    currentOpenSidebar = null;
+    
+    // Remove cross marker when closing all sidebars
+    removeCrossMarker();
+}
+
+// Helper function to switch between sidebars with slide+fade animation
+function switchToSidebar(sidebarElement, sidebarType) {
+    const helpSidebar = document.getElementById('help-sidebar');
+    const addPartnerSidebar = document.getElementById('add-partner-sidebar');
+    const partnerSidebar = document.getElementById('partner-sidebar');
+    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
+    
+    // Remove cross marker when switching sidebars
+    removeCrossMarker();
+    
+    // Close current sidebar first and ensure hidden is added after animation
+    let closingSidebar = null;
+    if (currentOpenSidebar === SIDEBAR_TYPES.HELP) {
+        closingSidebar = helpSidebar;
+    } else if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
+        closingSidebar = addPartnerSidebar;
+    } else if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER) {
+        closingSidebar = partnerSidebar;
+    } else if (currentOpenSidebar === SIDEBAR_TYPES.CUSTOMER_LOCATION) {
+        closingSidebar = customerLocationSidebar;
+    }
+    
+    if (closingSidebar) {
+        closingSidebar.classList.add('sidebar-closed');
+        // Add hidden class after animation completes to fully remove from rendering
+        setTimeout(() => {
+            if (closingSidebar.classList.contains('sidebar-closed')) {
+                closingSidebar.classList.add('hidden');
+            }
+        }, 300);
+    }
+    
+    // Small delay before opening new sidebar for smoother transition
+    setTimeout(() => {
+        sidebarElement.classList.remove('hidden');
+        sidebarElement.offsetHeight; // Force reflow
+        sidebarElement.classList.remove('sidebar-closed');
+        currentOpenSidebar = sidebarType;
+    }, 50);
+}
