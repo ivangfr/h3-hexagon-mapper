@@ -1127,6 +1127,14 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 /* ==========================================
+   GRAYSCALE MAP
+   ========================================== */
+
+.map-grayscale .leaflet-tile-pane {
+    filter: grayscale(100%);
+}
+
+/* ==========================================
    RESPONSIVE ADJUSTMENTS
    ========================================== */
 

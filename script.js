@@ -117,6 +117,9 @@ let isMeasuring = false;
 let measurementStart = null;
 let measurementLine = null;
 
+// Grayscale settings
+let isGrayscale = false;
+
 // Function to generate and display H3 grid cells
 function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
     const h3Index = h3.latLngToCell(latitude, longitude, resolution);
@@ -342,6 +345,19 @@ measurementToggle.addEventListener('click', function() {
     }
 });
 
+// Add event listener to toggle grayscale mode
+const grayscaleToggle = document.getElementById('grayscale-toggle');
+grayscaleToggle.addEventListener('change', function() {
+    isGrayscale = this.checked;
+    const mapElement = document.getElementById('map');
+    
+    if (isGrayscale) {
+        mapElement.classList.add('map-grayscale');
+    } else {
+        mapElement.classList.remove('map-grayscale');
+    }
+});
+
 // Function to save hexagons and partners to JSON
 function saveData() {
     // Check if there's anything to save
@@ -510,7 +526,7 @@ let editMode = {
 
 // Partner constants
 const PARTNER_CONSTANTS = {
-    DEFAULT_OPACITY: 0.1,
+    DEFAULT_OPACITY: 0.2,
     DEFAULT_COLOR: '#0000ff',
     DEFAULT_PRIMARY_RESOLUTION: 9,
     DEFAULT_PRIMARY_NUMBER_ZONES: 18,
@@ -557,7 +573,6 @@ function addPartnerToMap(partner) {
         const polygon = L.polygon(boundary, {
             color: actualColor,
             fillColor: actualColor,
-            weight: 2,
             fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY
         }).addTo(map);
         
@@ -582,7 +597,6 @@ function addPartnerToMap(partner) {
             const polygon = L.polygon(boundary, {
                 color: actualColor2,
                 fillColor: actualColor2,
-                weight: 2,
                 fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY
             }).addTo(map);
             
