@@ -898,40 +898,6 @@ function validatePartner(partner) {
 // PARTNER EVENT LISTENERS
 // ==========================================
 
-// Add Partner sidebar button
-document.getElementById('add-partner-sidebar-btn').addEventListener('click', function() {
-    const sidebar = document.getElementById('add-partner-sidebar');
-    
-    // If sidebar is open, close it
-    if (!sidebar.classList.contains('hidden') && !sidebar.classList.contains('sidebar-closed')) {
-        closeSidebar(sidebar);
-        if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
-            currentOpenSidebar = null;
-        }
-        removeCrossMarker();
-        return;
-    }
-    
-    // Close other sidebars and open add-partner sidebar
-    closeAllSidebars();
-    
-    editMode.isActive = false;
-    editMode.partnerId = null;
-    document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
-    const submitButton = document.getElementById('partner-submit-btn');
-    submitButton.textContent = 'Add';
-    document.getElementById('add-partner-form').reset();
-    document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
-    document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
-    document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
-    document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
-    document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
-    document.getElementById('secondary-fields').classList.remove('hidden');
-    
-    openSidebar(sidebar);
-    currentOpenSidebar = SIDEBAR_TYPES.ADD_PARTNER;
-});
-
 // Sidebar close button
 document.getElementById('sidebar-close-btn').addEventListener('click', function() {
     const sidebar = document.getElementById('add-partner-sidebar');

@@ -43,14 +43,14 @@ You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mappe
 ### Right-Click Context Menu
 
 - **Open Context Menu**: Right-click anywhere on the map to open a context menu at that location.
-- **Quick Add Partner**: Click "Add Partner Here" to pre-fill the partner form with the clicked coordinates. A cross marker shows the selected position.
-- **View Hexagon Indices**: The context menu displays all H3 hexagon IDs at the clicked location across different resolutions.
+- **Add Partner**: Click "Add Partner" to open the partner form pre-filled with the clicked coordinates. A cross marker shows the selected position.
+- **Customer Location**: Click "Customer Location" to view all H3 hexagon IDs at the clicked location in a dedicated sidebar.
 
 ## Partner Management
 
 Partners allow you to add and manage H3 hexagonal zones around specific locations:
 
-- **Add Partner**: Click the "Add Partner" button to open the sidebar form. Enter a Partner ID, coordinates (latitude/longitude), H3 resolution, number of zones, and color. You can also enable a secondary H3 layer with different settings.
+- **Add Partner**: Right-click on the map and click "Add Partner" to open the sidebar form pre-filled with the clicked coordinates. Enter a Partner ID, adjust coordinates (latitude/longitude), H3 resolution, number of zones, and color. You can also enable a secondary H3 layer with different settings.
 - **Edit Partner**: Click on any partner marker on the map to open the partner panel, then click "Edit Partner" to modify the partner's settings.
 - **Delete Partner**: Click on a partner marker and use the "Delete Partner" button to remove it from the map.
 - **Primary Zone Toggle**: Show/hide the primary H3 hexagonal zones for a selected partner.
