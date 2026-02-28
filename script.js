@@ -4,6 +4,84 @@ lucide.createIcons();
 // Initialize the map centered on a specific location (e.g., Berlin)
 const map = L.map('map', { zoomControl: false }).setView([52.5200, 13.4050], 15);
 
+// ==========================================
+// SIDEBAR ANIMATION HELPERS
+// ==========================================
+
+// Track current open sidebar type for animation decisions
+let currentOpenSidebar = null; // 'help', 'add-partner', 'partner', or null
+
+// Sidebar type constants
+const SIDEBAR_TYPES = {
+    HELP: 'help',
+    ADD_PARTNER: 'add-partner',
+    PARTNER: 'partner'
+};
+
+// Helper function to close a sidebar with animation
+function closeSidebar(sidebarElement) {
+    sidebarElement.classList.add('sidebar-closed');
+    // Remove hidden class after animation completes (for accessibility)
+    setTimeout(() => {
+        if (sidebarElement.classList.contains('sidebar-closed')) {
+            sidebarElement.classList.add('hidden');
+        }
+    }, 300);
+}
+
+// Helper function to open a sidebar with animation
+function openSidebar(sidebarElement) {
+    // Remove hidden first if present
+    sidebarElement.classList.remove('hidden');
+    // Force reflow to ensure hidden removal takes effect
+    sidebarElement.offsetHeight;
+    // Then remove closed class to trigger animation
+    sidebarElement.classList.remove('sidebar-closed');
+}
+
+// Helper function to close all sidebars
+function closeAllSidebars() {
+    const helpSidebar = document.getElementById('help-sidebar');
+    const addPartnerSidebar = document.getElementById('add-partner-sidebar');
+    const partnerSidebar = document.getElementById('partner-sidebar');
+    
+    closeSidebar(helpSidebar);
+    closeSidebar(addPartnerSidebar);
+    closeSidebar(partnerSidebar);
+    currentOpenSidebar = null;
+    
+    // Remove cross marker when closing all sidebars
+    removeCrossMarker();
+}
+
+// Helper function to switch between sidebars with slide+fade animation
+function switchToSidebar(sidebarElement, sidebarType) {
+    const helpSidebar = document.getElementById('help-sidebar');
+    const addPartnerSidebar = document.getElementById('add-partner-sidebar');
+    const partnerSidebar = document.getElementById('partner-sidebar');
+    
+    // Remove cross marker when switching sidebars
+    removeCrossMarker();
+    
+    // Close current sidebar first
+    if (currentOpenSidebar === SIDEBAR_TYPES.HELP) {
+        helpSidebar.classList.add('sidebar-closed');
+    } else if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
+        addPartnerSidebar.classList.add('sidebar-closed');
+    } else if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER) {
+        partnerSidebar.classList.add('sidebar-closed');
+    }
+    
+    // Small delay before opening new sidebar for smoother transition
+    setTimeout(() => {
+        sidebarElement.classList.remove('hidden');
+        sidebarElement.offsetHeight; // Force reflow
+        sidebarElement.classList.remove('sidebar-closed');
+        currentOpenSidebar = sidebarType;
+    }, 50);
+}
+
+
 // Add OpenStreetMap tile layer
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -61,6 +139,8 @@ function removeHexagon(hexagon) {
 
 // Measurement functions
 function startMeasurement() {
+    closeAllSidebars();
+
     isMeasuring = true;
     // Clean up any existing measurement line
     if (measurementLine) {
@@ -182,22 +262,33 @@ map.on('mousemove', function(e) {
 
 // Function to close help sidebar
 function closeHelpSidebar() {
-    document.getElementById('help-sidebar').classList.add('hidden');
+    const helpSidebar = document.getElementById('help-sidebar');
+    closeSidebar(helpSidebar);
+    if (currentOpenSidebar === SIDEBAR_TYPES.HELP) {
+        currentOpenSidebar = null;
+    }
+    // Remove cross marker when closing help sidebar
+    removeCrossMarker();
 }
 
 // Function to open help sidebar (closes other sidebars first)
 function openHelpSidebar() {
-    // Close partner sidebar if open
-    document.getElementById('add-partner-sidebar').classList.add('hidden');
-    closePartnerSidebar();
-    // Open help sidebar
-    document.getElementById('help-sidebar').classList.remove('hidden');
+    const helpSidebar = document.getElementById('help-sidebar');
+    
+    // If another sidebar is open, use switch animation
+    if (currentOpenSidebar && currentOpenSidebar !== SIDEBAR_TYPES.HELP) {
+        switchToSidebar(helpSidebar, SIDEBAR_TYPES.HELP);
+    } else {
+        // Just open help sidebar with animation
+        openSidebar(helpSidebar);
+        currentOpenSidebar = SIDEBAR_TYPES.HELP;
+    }
 }
 
 // Function to toggle help sidebar
 function toggleHelpSidebar() {
     const sidebar = document.getElementById('help-sidebar');
-    if (sidebar.classList.contains('hidden')) {
+    if (sidebar.classList.contains('sidebar-closed') || sidebar.classList.contains('hidden')) {
         openHelpSidebar();
     } else {
         closeHelpSidebar();
@@ -588,14 +679,38 @@ function showPartnerSidebar(partnerId) {
     const partner = partnersById[partnerId];
     if (!partner) return;
 
-    // Close other sidebars when opening partner sidebar
-    closeHelpSidebar();
-    document.getElementById('add-partner-sidebar').classList.add('hidden');
+    const partnerSidebar = document.getElementById('partner-sidebar');
 
-    // Update partner sidebar content and show
-    updatePartnerSidebarContent(partner);
-    document.getElementById('partner-sidebar').classList.remove('hidden');
-    currentPartnerId = partnerId;
+    // If the same partner is already being shown, do nothing
+    if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER && currentPartnerId === partnerId) {
+        return;
+    }
+
+    // Close partner sidebar first if it's open (with animation)
+    if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER) {
+        closeSidebar(partnerSidebar);
+        // Wait for close animation, then open with new content
+        setTimeout(() => {
+            updatePartnerSidebarContent(partner);
+            openSidebar(partnerSidebar);
+            currentPartnerId = partnerId;
+        }, 150);
+    } else if (currentOpenSidebar && currentOpenSidebar !== SIDEBAR_TYPES.PARTNER) {
+        // Another sidebar is open, close all and open partner sidebar
+        closeAllSidebars();
+        setTimeout(() => {
+            updatePartnerSidebarContent(partner);
+            openSidebar(partnerSidebar);
+            currentOpenSidebar = SIDEBAR_TYPES.PARTNER;
+            currentPartnerId = partnerId;
+        }, 50);
+    } else {
+        // No sidebar open, just open partner sidebar with animation
+        updatePartnerSidebarContent(partner);
+        openSidebar(partnerSidebar);
+        currentOpenSidebar = SIDEBAR_TYPES.PARTNER;
+        currentPartnerId = partnerId;
+    }
 }
 
 // Update partner sidebar content
@@ -657,7 +772,10 @@ function updatePartnerSidebarContent(partner) {
 // Close partner sidebar
 function closePartnerSidebar() {
     const slideWindow = document.getElementById('partner-sidebar');
-    slideWindow.classList.add('hidden');
+    closeSidebar(slideWindow);
+    if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER) {
+        currentOpenSidebar = null;
+    }
     currentPartnerId = null;
 }
 
@@ -720,7 +838,10 @@ function openSidebarForEdit(partner) {
         document.getElementById('secondary-fields').classList.add('hidden');
     }
 
-    document.getElementById('add-partner-sidebar').classList.remove('hidden');
+    // Open sidebar with animation
+    const sidebar = document.getElementById('add-partner-sidebar');
+    openSidebar(sidebar);
+    currentOpenSidebar = SIDEBAR_TYPES.ADD_PARTNER;
 }
 
 // Validate partner data
@@ -766,37 +887,55 @@ function validatePartner(partner) {
 
 // Add Partner sidebar button
 document.getElementById('add-partner-sidebar-btn').addEventListener('click', function() {
-    closePartnerSidebar();
-    closeHelpSidebar(); // Close help sidebar when opening partner sidebar
     const sidebar = document.getElementById('add-partner-sidebar');
-    if (sidebar.classList.contains('hidden')) {
-        editMode.isActive = false;
-        editMode.partnerId = null;
-        document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
-        const submitButton = document.getElementById('partner-submit-btn');
-        submitButton.textContent = 'Add';
-        document.getElementById('add-partner-form').reset();
-        document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
-        document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
-        document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
-        document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
-        document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
-        document.getElementById('secondary-fields').classList.remove('hidden');
-        sidebar.classList.remove('hidden');
-    } else {
-        sidebar.classList.add('hidden');
+    
+    // If sidebar is open, close it
+    if (!sidebar.classList.contains('hidden') && !sidebar.classList.contains('sidebar-closed')) {
+        closeSidebar(sidebar);
+        if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
+            currentOpenSidebar = null;
+        }
+        removeCrossMarker();
+        return;
     }
+    
+    // Close other sidebars and open add-partner sidebar
+    closeAllSidebars();
+    
+    editMode.isActive = false;
+    editMode.partnerId = null;
+    document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
+    const submitButton = document.getElementById('partner-submit-btn');
+    submitButton.textContent = 'Add';
+    document.getElementById('add-partner-form').reset();
+    document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
+    document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
+    document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
+    document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
+    document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
+    document.getElementById('secondary-fields').classList.remove('hidden');
+    
+    openSidebar(sidebar);
+    currentOpenSidebar = SIDEBAR_TYPES.ADD_PARTNER;
 });
 
 // Sidebar close button
 document.getElementById('sidebar-close-btn').addEventListener('click', function() {
-    document.getElementById('add-partner-sidebar').classList.add('hidden');
+    const sidebar = document.getElementById('add-partner-sidebar');
+    closeSidebar(sidebar);
+    if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
+        currentOpenSidebar = null;
+    }
     resetSidebarForm();
 });
 
 // Sidebar cancel button
 document.getElementById('sidebar-cancel-add').addEventListener('click', function() {
-    document.getElementById('add-partner-sidebar').classList.add('hidden');
+    const sidebar = document.getElementById('add-partner-sidebar');
+    closeSidebar(sidebar);
+    if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
+        currentOpenSidebar = null;
+    }
     resetSidebarForm();
 });
 
@@ -882,7 +1021,11 @@ document.getElementById('add-partner-form').addEventListener('submit', function(
     }
 
     // Close sidebar and reset form
-    document.getElementById('add-partner-sidebar').classList.add('hidden');
+    const sidebar = document.getElementById('add-partner-sidebar');
+    closeSidebar(sidebar);
+    if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
+        currentOpenSidebar = null;
+    }
     resetSidebarForm();
 });
 
@@ -1184,38 +1327,44 @@ function hideContextMenu() {
 // Open partner sidebar with coordinates filled
 function openPartnerSidebarWithCoords(lat, lng) {
     // Close any open sidebars
-    closePartnerSidebar();
-    closeHelpSidebar();
+    closeAllSidebars();
     
-    // Reset form and set edit mode to false
-    editMode.isActive = false;
-    editMode.partnerId = null;
-    document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
-    const submitButton = document.getElementById('partner-submit-btn');
-    submitButton.textContent = 'Add';
-    
-    // Pre-fill coordinates
-    document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
-    document.getElementById('sidebar-latitude').value = lat.toFixed(6);
-    document.getElementById('sidebar-longitude').value = lng.toFixed(6);
-    document.getElementById('sidebar-h3Resolution').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION;
-    document.getElementById('sidebar-numZones').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES;
-    document.getElementById('sidebar-color').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
-    document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
-    document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
-    document.getElementById('sidebar-enable-secondary').checked = true;
-    document.getElementById('secondary-fields').classList.remove('hidden');
-    document.getElementById('sidebar-h3Resolution2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION;
-    document.getElementById('sidebar-numZones2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES;
-    document.getElementById('sidebar-color2').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
-    document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
-    document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
-    
-    // Place cross marker
+    // Place cross marker immediately
     placeCrossMarker(lat, lng);
     
-    // Show sidebar
-    document.getElementById('add-partner-sidebar').classList.remove('hidden');
+    // Delay to allow closing animation to complete before reopening sidebar
+    setTimeout(() => {
+        // Reset form and set edit mode to false
+        editMode.isActive = false;
+        editMode.partnerId = null;
+        document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
+        const submitButton = document.getElementById('partner-submit-btn');
+        submitButton.textContent = 'Add';
+        
+        // Pre-fill coordinates
+        document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
+        document.getElementById('sidebar-latitude').value = lat.toFixed(6);
+        document.getElementById('sidebar-longitude').value = lng.toFixed(6);
+        document.getElementById('sidebar-h3Resolution').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION;
+        document.getElementById('sidebar-numZones').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES;
+        document.getElementById('sidebar-color').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
+        document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
+        document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
+        document.getElementById('sidebar-enable-secondary').checked = true;
+        document.getElementById('secondary-fields').classList.remove('hidden');
+        document.getElementById('sidebar-h3Resolution2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION;
+        document.getElementById('sidebar-numZones2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES;
+        document.getElementById('sidebar-color2').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
+        document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
+        document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
+        
+        // Show sidebar with animation
+        const sidebar = document.getElementById('add-partner-sidebar');
+        sidebar.classList.remove('hidden');
+        sidebar.offsetHeight; // Force reflow
+        sidebar.classList.remove('sidebar-closed');
+        currentOpenSidebar = SIDEBAR_TYPES.ADD_PARTNER;
+    }, 250);
 }
 
 // Right-click event handler
