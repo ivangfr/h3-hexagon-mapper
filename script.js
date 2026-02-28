@@ -189,7 +189,7 @@ function closeHelpSidebar() {
 function openHelpSidebar() {
     // Close partner sidebar if open
     document.getElementById('add-partner-sidebar').classList.add('hidden');
-    closePartnerPopup();
+    closePartnerSidebar();
     // Open help sidebar
     document.getElementById('help-sidebar').classList.remove('hidden');
 }
@@ -386,7 +386,7 @@ document.getElementById('load-file').addEventListener('change', loadData);
 
 // Partner state
 const partnersById = {};
-let currentPopupPartnerId = null;
+let currentPartnerId = null;
 let partnerIdCounter = 1;
 let editMode = {
     isActive: false,
@@ -429,9 +429,9 @@ function addPartnerToMap(partner) {
     const marker = L.marker([latitude, longitude]).addTo(map);
     partnerObject.marker = marker;
     
-    // Add click event listener to show popup
+    // Add click event listener to show partner sidebar
     marker.on('click', function() {
-        showPartnerPopup(partnerId);
+        showPartnerSidebar(partnerId);
     });
 
     // Draw primary hexagons
@@ -583,23 +583,23 @@ function toggleSecondaryHexagonsVisibility(partnerId, visible) {
     }
 }
 
-// Show partner popup slide window
-function showPartnerPopup(partnerId) {
+// Show partner sidebar
+function showPartnerSidebar(partnerId) {
     const partner = partnersById[partnerId];
     if (!partner) return;
 
-    // Close other sidebars when opening partner popup
+    // Close other sidebars when opening partner sidebar
     closeHelpSidebar();
     document.getElementById('add-partner-sidebar').classList.add('hidden');
 
-    // Update slide window content and show
-    updatePartnerPopupContent(partner);
-    document.getElementById('partner-slide-window').classList.remove('hidden');
-    currentPopupPartnerId = partnerId;
+    // Update partner sidebar content and show
+    updatePartnerSidebarContent(partner);
+    document.getElementById('partner-sidebar').classList.remove('hidden');
+    currentPartnerId = partnerId;
 }
 
-// Update partner popup content
-function updatePartnerPopupContent(partner) {
+// Update partner sidebar content
+function updatePartnerSidebarContent(partner) {
     document.getElementById('slide-partner-id').textContent = partner.partnerId;
 
     // Update partner statistics table
@@ -654,11 +654,11 @@ function updatePartnerPopupContent(partner) {
     }
 }
 
-// Close partner popup slide window
-function closePartnerPopup() {
-    const slideWindow = document.getElementById('partner-slide-window');
+// Close partner sidebar
+function closePartnerSidebar() {
+    const slideWindow = document.getElementById('partner-sidebar');
     slideWindow.classList.add('hidden');
-    currentPopupPartnerId = null;
+    currentPartnerId = null;
 }
 
 // Reset sidebar form
@@ -766,7 +766,7 @@ function validatePartner(partner) {
 
 // Add Partner sidebar button
 document.getElementById('add-partner-sidebar-btn').addEventListener('click', function() {
-    closePartnerPopup();
+    closePartnerSidebar();
     closeHelpSidebar(); // Close help sidebar when opening partner sidebar
     const sidebar = document.getElementById('add-partner-sidebar');
     if (sidebar.classList.contains('hidden')) {
@@ -886,24 +886,24 @@ document.getElementById('add-partner-form').addEventListener('submit', function(
     resetSidebarForm();
 });
 
-// Partner slide window close button
-document.getElementById('slide-close-btn').addEventListener('click', closePartnerPopup);
+// Partner sidebar close button
+document.getElementById('slide-close-btn').addEventListener('click', closePartnerSidebar);
 
 // Edit partner button
 document.getElementById('edit-partner-btn').addEventListener('click', function() {
-    const partnerId = currentPopupPartnerId;
+    const partnerId = currentPartnerId;
     if (!partnerId) return;
 
     const partner = partnersById[partnerId];
     if (!partner) return;
 
-    closePartnerPopup();
+    closePartnerSidebar();
     openSidebarForEdit(partner);
 });
 
 // Delete partner button
 document.getElementById('delete-partner-btn').addEventListener('click', function() {
-    const partnerId = currentPopupPartnerId;
+    const partnerId = currentPartnerId;
     if (!partnerId) return;
 
     const partner = partnersById[partnerId];
@@ -912,20 +912,20 @@ document.getElementById('delete-partner-btn').addEventListener('click', function
     const confirmed = confirm(`Are you sure you want to delete partner "${partnerId}"? This action cannot be undone.`);
     if (confirmed) {
         deletePartner(partnerId);
-        closePartnerPopup();
+        closePartnerSidebar();
     }
 });
 
 // Toggle primary zone
 document.getElementById('toggle-primary-zone').addEventListener('change', function() {
-    if (!currentPopupPartnerId) return;
-    togglePrimaryHexagonsVisibility(currentPopupPartnerId, this.checked);
+    if (!currentPartnerId) return;
+    togglePrimaryHexagonsVisibility(currentPartnerId, this.checked);
 });
 
 // Toggle secondary zone
 document.getElementById('toggle-secondary-zone').addEventListener('change', function() {
-    if (!currentPopupPartnerId) return;
-    toggleSecondaryHexagonsVisibility(currentPopupPartnerId, this.checked);
+    if (!currentPartnerId) return;
+    toggleSecondaryHexagonsVisibility(currentPartnerId, this.checked);
 });
 
 // ==========================================
@@ -1184,7 +1184,7 @@ function hideContextMenu() {
 // Open partner sidebar with coordinates filled
 function openPartnerSidebarWithCoords(lat, lng) {
     // Close any open sidebars
-    closePartnerPopup();
+    closePartnerSidebar();
     closeHelpSidebar();
     
     // Reset form and set edit mode to false
