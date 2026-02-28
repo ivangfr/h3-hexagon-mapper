@@ -91,10 +91,7 @@
         </div>
         <div id="context-menu-partner-section">
             <button id="context-menu-add-partner" class="btn btn-purple"><i data-lucide="store" class="icon-btn"></i> Add Partner Here</button>
-        </div>
-        <div id="context-menu-hexagon-section" class="hidden">
-            <div class="context-menu-section-title">Hexagons at Location</div>
-            <div id="context-menu-hexagon-list"></div>
+            <button id="context-menu-customer-location" class="btn btn-primary" style="margin-top: 8px;"><i data-lucide="map-pin" class="icon-btn"></i> Customer Location</button>
         </div>
     </div>
     
@@ -163,7 +160,7 @@
                 <ul class="help-list">
                     <li><strong>Open Context Menu:</strong> Right-click anywhere on the map to open a context menu at that location.</li>
                     <li><strong>Quick Add Partner:</strong> Click "Add Partner Here" to pre-fill the partner form with the clicked coordinates. A cross marker shows the selected position.</li>
-                    <li><strong>View Hexagon Indices:</strong> The context menu displays all H3 hexagon IDs at the clicked location across different resolutions.</li>
+                    <li><strong>Customer Location:</strong> Click "Customer Location" to view all H3 hexagon IDs at the clicked location in a dedicated sidebar.</li>
                 </ul>
             </div>
             
@@ -258,6 +255,40 @@
                     <button type="button" id="sidebar-cancel-add" class="btn btn-secondary">Cancel</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Customer Location Sidebar -->
+    <div id="customer-location-sidebar" class="sidebar hidden sidebar-closed" style="z-index: 9999;">
+        <div class="sidebar-header">
+            <div class="sidebar-header-content">
+                <h2><i data-lucide="map-pin" class="icon-header"></i> Customer Location</h2>
+                <button id="customer-location-close-btn" class="sidebar-close">&times;</button>
+            </div>
+        </div>
+        <div class="sidebar-body">
+            <!-- Coordinates Card -->
+            <div class="coords-card">
+                <div class="coords-label">Coordinates</div>
+                <div id="customer-location-coords" class="coords-value"></div>
+            </div>
+            
+            <!-- Summary Card -->
+            <div id="customer-location-summary" class="summary-card">
+                <div class="summary-item">
+                    <div class="summary-value" id="summary-hexagon-count">0</div>
+                    <div class="summary-label">Hexagons</div>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-item">
+                    <div class="summary-value" id="summary-partner-count">0</div>
+                    <div class="summary-label">Partners</div>
+                </div>
+            </div>
+            
+            <!-- Hexagon List -->
+            <div class="section-title" style="margin-bottom: 12px;">Hexagons at Location</div>
+            <div id="customer-location-hexagon-list"></div>
         </div>
     </div>
 

@@ -888,6 +888,208 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 /* ==========================================
+   CUSTOMER LOCATION SIDEBAR
+   ========================================== */
+
+#customer-location-sidebar {
+    width: 380px;
+}
+
+.coords-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+
+.coords-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #0284c7;
+    margin-bottom: 6px;
+}
+
+.coords-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0c4a6e;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.summary-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.summary-item {
+    flex: 1;
+    text-align: center;
+}
+
+.summary-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #3b82f6;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.summary-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-divider {
+    width: 1px;
+    height: 40px;
+    background: #e5e7eb;
+    margin: 0 16px;
+}
+
+/* Hexagon Card */
+.hexagon-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.hexagon-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.hexagon-card.highlighted {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.hexagon-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.hexagon-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.h3-index {
+    font-size: 12px;
+    font-family: 'Roboto Mono', monospace;
+    color: #374151;
+    word-break: break-all;
+    line-height: 1.4;
+    margin-bottom: 6px;
+}
+
+.resolution-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.partner-info {
+    padding: 10px 12px;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    border-left: 10px solid #3b82f6;
+    margin-bottom: 8px;
+}
+
+.partner-info:last-child {
+    margin-bottom: 0;
+}
+
+.partner-info.standalone {
+    background: #f3f4f6;
+    border-left-color: #9ca3af;
+}
+
+.partner-info-line {
+    font-size: 12px;
+    color: #374151;
+    margin-bottom: 4px;
+}
+
+.partner-info-line:last-child {
+    margin-bottom: 0;
+}
+
+.partner-info-line.standalone {
+    color: #6b7280;
+}
+
+.partner-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.partner-badge .zone-badge {
+    background: #e5e7eb;
+    color: #374151;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+.no-hexagons-msg {
+    text-align: center;
+    padding: 32px 16px;
+    color: #6b7280;
+}
+
+.no-hexagons-msg i {
+    width: 48px;
+    height: 48px;
+    color: #d1d5db;
+    margin-bottom: 12px;
+}
+
+.no-hexagons-msg p {
+    font-size: 14px;
+    margin: 0;
+}
+
+/* ==========================================
    RESPONSIVE ADJUSTMENTS
    ========================================== */
 

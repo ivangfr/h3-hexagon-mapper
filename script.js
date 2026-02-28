@@ -15,7 +15,8 @@ let currentOpenSidebar = null; // 'help', 'add-partner', 'partner', or null
 const SIDEBAR_TYPES = {
     HELP: 'help',
     ADD_PARTNER: 'add-partner',
-    PARTNER: 'partner'
+    PARTNER: 'partner',
+    CUSTOMER_LOCATION: 'customer-location'
 };
 
 // Helper function to close a sidebar with animation
@@ -44,10 +45,12 @@ function closeAllSidebars() {
     const helpSidebar = document.getElementById('help-sidebar');
     const addPartnerSidebar = document.getElementById('add-partner-sidebar');
     const partnerSidebar = document.getElementById('partner-sidebar');
+    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
     
     closeSidebar(helpSidebar);
     closeSidebar(addPartnerSidebar);
     closeSidebar(partnerSidebar);
+    closeSidebar(customerLocationSidebar);
     currentOpenSidebar = null;
     
     // Remove cross marker when closing all sidebars
@@ -59,6 +62,7 @@ function switchToSidebar(sidebarElement, sidebarType) {
     const helpSidebar = document.getElementById('help-sidebar');
     const addPartnerSidebar = document.getElementById('add-partner-sidebar');
     const partnerSidebar = document.getElementById('partner-sidebar');
+    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
     
     // Remove cross marker when switching sidebars
     removeCrossMarker();
@@ -70,6 +74,8 @@ function switchToSidebar(sidebarElement, sidebarType) {
         addPartnerSidebar.classList.add('sidebar-closed');
     } else if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER) {
         partnerSidebar.classList.add('sidebar-closed');
+    } else if (currentOpenSidebar === SIDEBAR_TYPES.CUSTOMER_LOCATION) {
+        customerLocationSidebar.classList.add('sidebar-closed');
     }
     
     // Small delay before opening new sidebar for smoother transition
@@ -184,6 +190,13 @@ map.on('click', function(e) {
     const contextMenu = document.getElementById('context-menu');
     if (!contextMenu.classList.contains('hidden')) {
         hideContextMenu();
+        return;
+    }
+    
+    // If cross marker is on the map, remove it and close sidebars
+    if (contextMenuState.crossMarker) {
+        removeCrossMarker();
+        closeAllSidebars();
         return;
     }
     
@@ -1079,8 +1092,7 @@ document.getElementById('toggle-secondary-zone').addEventListener('change', func
 let contextMenuState = {
     latitude: null,
     longitude: null,
-    crossMarker: null,
-    detectedHexagons: []
+    crossMarker: null
 };
 
 // Create cross marker icon
@@ -1201,104 +1213,14 @@ function showContextMenu(x, y, lat, lng) {
     const contextMenu = document.getElementById('context-menu');
     const contextMenuHeader = document.getElementById('context-menu-header');
     const contextMenuCoords = document.getElementById('context-menu-coords');
-    const contextMenuHexagonSection = document.getElementById('context-menu-hexagon-section');
-    const contextMenuHexagonList = document.getElementById('context-menu-hexagon-list');
     
     // Store coordinates
     contextMenuState.latitude = lat;
     contextMenuState.longitude = lng;
     
-    // Find hexagons at location
-    contextMenuState.detectedHexagons = findHexagonsAtLocation(lat, lng);
-    
     // Update coordinates display
     contextMenuCoords.textContent = `Lat: ${lat.toFixed(6)}, Lon: ${lng.toFixed(6)}`;
     contextMenuHeader.classList.remove('hidden');
-    
-    // Update hexagon section
-    if (contextMenuState.detectedHexagons.length > 0) {
-        contextMenuHexagonSection.classList.remove('hidden');
-        contextMenuHexagonList.innerHTML = '';
-        
-        // Group hexagons by H3 index
-        const groupedHexagons = {};
-        contextMenuState.detectedHexagons.forEach(hexagon => {
-            if (!groupedHexagons[hexagon.h3Index]) {
-                groupedHexagons[hexagon.h3Index] = {
-                    h3Index: hexagon.h3Index,
-                    resolution: hexagon.resolution,
-                    color: hexagon.color,
-                    partners: [],
-                    isStandalone: false
-                };
-            }
-            
-            if (hexagon.source === 'standalone') {
-                groupedHexagons[hexagon.h3Index].isStandalone = true;
-            } else {
-                groupedHexagons[hexagon.h3Index].partners.push({
-                    partnerId: hexagon.partnerId,
-                    layerType: hexagon.layerType,
-                    zoneNumber: hexagon.zoneNumber,
-                    color: hexagon.color
-                });
-            }
-        });
-        
-        // Convert to array and sort by resolution (highest first)
-        const groupedArray = Object.values(groupedHexagons).sort((a, b) => b.resolution - a.resolution);
-        
-        groupedArray.forEach(group => {
-            const hexagonItem = document.createElement('div');
-            hexagonItem.className = 'hexagon-item px-4 py-2 cursor-pointer';
-            
-            // Build partners list HTML
-            let partnersHtml = '';
-            if (group.partners.length > 0) {
-                const partnerLines = group.partners.map(p => 
-                    `<span class="text-gray-600">- ${p.partnerId}: ${p.layerType}, zone${p.zoneNumber}, </span><span class="inline-block w-3 h-3 rounded-sm align-middle" style="background-color: ${p.color}"></span><span class="text-gray-600"></span>`
-                ).join('<br>');
-                partnersHtml = `
-                    <div class="text-xs mt-1">
-                        ${partnerLines}
-                    </div>
-                `;
-            }
-            
-            // Build standalone indicator
-            let standaloneHtml = '';
-            if (group.isStandalone && group.partners.length === 0) {
-                standaloneHtml = '<div class="text-xs text-gray-500 mt-1">standalone</div>';
-            } else if (group.isStandalone) {
-                standaloneHtml = '<div class="text-xs text-gray-500 mt-1">also: standalone</div>';
-            }
-            
-            hexagonItem.innerHTML = `
-                <div class="flex-1 min-w-0">
-                    <div class="text-xs font-mono text-gray-700 truncate" title="${group.h3Index}">• ${group.h3Index} <span class="text-gray-500">(Res: ${group.resolution})</span></div>
-                    ${partnersHtml}
-                    ${standaloneHtml}
-                </div>
-            `;
-            
-            // Click to copy H3 index
-            hexagonItem.addEventListener('click', function() {
-                navigator.clipboard.writeText(group.h3Index).then(() => {
-                    // Visual feedback
-                    hexagonItem.classList.add('bg-green-100');
-                    setTimeout(() => {
-                        hexagonItem.classList.remove('bg-green-100');
-                    }, 200);
-                }).catch(err => {
-                    console.error('Failed to copy:', err);
-                });
-            });
-            
-            contextMenuHexagonList.appendChild(hexagonItem);
-        });
-    } else {
-        contextMenuHexagonSection.classList.add('hidden');
-    }
     
     // Position the menu
     contextMenu.style.left = `${x}px`;
@@ -1324,47 +1246,59 @@ function hideContextMenu() {
     contextMenu.classList.add('hidden');
 }
 
+// Helper function to setup add partner form with coordinates
+function setupAddPartnerForm(lat, lng) {
+    // Reset form and set edit mode to false
+    editMode.isActive = false;
+    editMode.partnerId = null;
+    document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
+    const submitButton = document.getElementById('partner-submit-btn');
+    submitButton.textContent = 'Add';
+    
+    // Pre-fill coordinates
+    document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
+    document.getElementById('sidebar-latitude').value = lat.toFixed(6);
+    document.getElementById('sidebar-longitude').value = lng.toFixed(6);
+    document.getElementById('sidebar-h3Resolution').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION;
+    document.getElementById('sidebar-numZones').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES;
+    document.getElementById('sidebar-color').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
+    document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
+    document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
+    document.getElementById('sidebar-enable-secondary').checked = true;
+    document.getElementById('secondary-fields').classList.remove('hidden');
+    document.getElementById('sidebar-h3Resolution2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION;
+    document.getElementById('sidebar-numZones2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES;
+    document.getElementById('sidebar-color2').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
+    document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
+    document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
+}
+
 // Open partner sidebar with coordinates filled
 function openPartnerSidebarWithCoords(lat, lng) {
-    // Close any open sidebars
-    closeAllSidebars();
-    
-    // Place cross marker immediately
-    placeCrossMarker(lat, lng);
-    
-    // Delay to allow closing animation to complete before reopening sidebar
-    setTimeout(() => {
-        // Reset form and set edit mode to false
-        editMode.isActive = false;
-        editMode.partnerId = null;
-        document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
-        const submitButton = document.getElementById('partner-submit-btn');
-        submitButton.textContent = 'Add';
-        
-        // Pre-fill coordinates
-        document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
-        document.getElementById('sidebar-latitude').value = lat.toFixed(6);
-        document.getElementById('sidebar-longitude').value = lng.toFixed(6);
-        document.getElementById('sidebar-h3Resolution').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION;
-        document.getElementById('sidebar-numZones').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES;
-        document.getElementById('sidebar-color').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
-        document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
-        document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
-        document.getElementById('sidebar-enable-secondary').checked = true;
-        document.getElementById('secondary-fields').classList.remove('hidden');
-        document.getElementById('sidebar-h3Resolution2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION;
-        document.getElementById('sidebar-numZones2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES;
-        document.getElementById('sidebar-color2').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
-        document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
-        document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
-        
-        // Show sidebar with animation
-        const sidebar = document.getElementById('add-partner-sidebar');
-        sidebar.classList.remove('hidden');
-        sidebar.offsetHeight; // Force reflow
-        sidebar.classList.remove('sidebar-closed');
+    const sidebar = document.getElementById('add-partner-sidebar');
+
+    // If the same sidebar (add-partner) is already open
+    if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
+        closeSidebar(sidebar);
+        setTimeout(() => {
+            setupAddPartnerForm(lat, lng);
+            placeCrossMarker(lat, lng);
+            openSidebar(sidebar);
+        }, 300);
+    } else if (currentOpenSidebar) {
+        // Another sidebar is open, use switch animation
+        switchToSidebar(sidebar, SIDEBAR_TYPES.ADD_PARTNER);
+        setTimeout(() => {
+            setupAddPartnerForm(lat, lng);
+            placeCrossMarker(lat, lng);
+        }, 50);
+    } else {
+        // No sidebar open, just open with animation
+        setupAddPartnerForm(lat, lng);
+        placeCrossMarker(lat, lng);
+        openSidebar(sidebar);
         currentOpenSidebar = SIDEBAR_TYPES.ADD_PARTNER;
-    }, 250);
+    }
 }
 
 // Right-click event handler
@@ -1413,3 +1347,168 @@ document.getElementById('sidebar-cancel-add').addEventListener('click', function
 document.getElementById('sidebar-close-btn').addEventListener('click', function() {
     removeCrossMarker();
 });
+
+// ==========================================
+// CUSTOMER LOCATION SIDEBAR
+// ==========================================
+
+// Update customer location sidebar content
+function updateCustomerLocationSidebarContent(lat, lng) {
+    const customerLocationCoords = document.getElementById('customer-location-coords');
+    const customerLocationHexagonList = document.getElementById('customer-location-hexagon-list');
+    const summaryHexagonCount = document.getElementById('summary-hexagon-count');
+    const summaryPartnerCount = document.getElementById('summary-partner-count');
+    
+    // Place cross marker at customer location
+    placeCrossMarker(lat, lng);
+    
+    // Update coordinates display
+    customerLocationCoords.textContent = `Lat: ${lat.toFixed(6)}, Lon: ${lng.toFixed(6)}`;
+    
+    // Find hexagons at location
+    const detectedHexagons = findHexagonsAtLocation(lat, lng);
+    
+    // Update summary counts
+    const uniquePartners = new Set();
+    detectedHexagons.forEach(hex => {
+        if (hex.partnerId) {
+            uniquePartners.add(hex.partnerId);
+        }
+    });
+    summaryHexagonCount.textContent = detectedHexagons.length;
+    summaryPartnerCount.textContent = uniquePartners.size;
+    
+    // Update hexagon list
+    customerLocationHexagonList.innerHTML = '';
+    
+    if (detectedHexagons.length > 0) {
+        // Group hexagons by H3 index
+        const groupedHexagons = {};
+        detectedHexagons.forEach(hexagon => {
+            if (!groupedHexagons[hexagon.h3Index]) {
+                groupedHexagons[hexagon.h3Index] = {
+                    h3Index: hexagon.h3Index,
+                    resolution: hexagon.resolution,
+                    color: hexagon.color,
+                    partners: [],
+                    isStandalone: false
+                };
+            }
+            
+            if (hexagon.source === 'standalone') {
+                groupedHexagons[hexagon.h3Index].isStandalone = true;
+            } else {
+                groupedHexagons[hexagon.h3Index].partners.push({
+                    partnerId: hexagon.partnerId,
+                    layerType: hexagon.layerType,
+                    zoneNumber: hexagon.zoneNumber,
+                    color: hexagon.color
+                });
+            }
+        });
+        
+        // Convert to array and sort by resolution (highest first)
+        const groupedArray = Object.values(groupedHexagons).sort((a, b) => b.resolution - a.resolution);
+        
+        groupedArray.forEach(group => {
+            const hexagonCard = document.createElement('div');
+            hexagonCard.className = 'hexagon-card';
+            hexagonCard.dataset.h3Index = group.h3Index;
+            
+            // Build partners list HTML - separate div for each partner with their color
+            let partnersHtml = '';
+            if (group.partners.length > 0) {
+                partnersHtml = group.partners.map(p => {
+                    return `<div class="partner-info" style="border-left-color: ${p.color};">
+                        <div class="partner-info-line">
+                            <span class="partner-badge">${p.partnerId} <span class="zone-badge">${p.layerType}, zone ${p.zoneNumber}</span></span>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+            
+            // Build standalone indicator
+            let standaloneHtml = '';
+            if (group.isStandalone && group.partners.length === 0) {
+                standaloneHtml = '<div class="partner-info standalone"><div class="partner-info-line standalone">Standalone hexagon</div></div>';
+            } else if (group.isStandalone) {
+                standaloneHtml = '<div class="partner-info standalone" style="margin-top: 8px;"><div class="partner-info-line standalone">Also: standalone</div></div>';
+            }
+            
+            hexagonCard.innerHTML = `
+                <div class="hexagon-card-header">
+                    <i data-lucide="hexagon" class="w-5 h-5" style="color: ${group.color};"></i>
+                    <div class="hexagon-info">
+                        <div class="h3-index">${group.h3Index}</div>
+                        <div class="resolution-badge">Res ${group.resolution}</div>
+                    </div>
+                </div>
+                ${partnersHtml}
+                ${standaloneHtml}
+            `;
+            
+            customerLocationHexagonList.appendChild(hexagonCard);
+        });
+        
+        // Initialize Lucide icons for the new content
+        lucide.createIcons();
+    } else {
+        // No hexagons found
+        const noHexagonsMsg = document.createElement('div');
+        noHexagonsMsg.className = 'no-hexagons-msg';
+        noHexagonsMsg.innerHTML = `
+            <i data-lucide="hexagon" class="w-12 h-12 mx-auto" style="color: #d1d5db; display: block;"></i>
+            <p>No hexagons at this location</p>
+        `;
+        customerLocationHexagonList.appendChild(noHexagonsMsg);
+        lucide.createIcons();
+    }
+}
+
+// Show customer location sidebar
+function showCustomerLocationSidebar(lat, lng) {
+    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
+
+    // Close customer location sidebar first if it's open (with animation)
+    if (currentOpenSidebar === SIDEBAR_TYPES.CUSTOMER_LOCATION) {
+        closeSidebar(customerLocationSidebar);
+        // Wait for close animation to complete (300ms matches CSS transition duration)
+        setTimeout(() => {
+            updateCustomerLocationSidebarContent(lat, lng);
+            openSidebar(customerLocationSidebar);
+        }, 300);
+    } else if (currentOpenSidebar && currentOpenSidebar !== SIDEBAR_TYPES.CUSTOMER_LOCATION) {
+        // Another sidebar is open, use switch animation
+        switchToSidebar(customerLocationSidebar, SIDEBAR_TYPES.CUSTOMER_LOCATION);
+        // Update content after switch animation starts
+        setTimeout(() => {
+            updateCustomerLocationSidebarContent(lat, lng);
+        }, 50);
+    } else {
+        // No sidebar open, just update content and open with animation
+        updateCustomerLocationSidebarContent(lat, lng);
+        openSidebar(customerLocationSidebar);
+        currentOpenSidebar = SIDEBAR_TYPES.CUSTOMER_LOCATION;
+    }
+}
+
+// Close customer location sidebar
+function closeCustomerLocationSidebar() {
+    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
+    closeSidebar(customerLocationSidebar);
+    if (currentOpenSidebar === SIDEBAR_TYPES.CUSTOMER_LOCATION) {
+        currentOpenSidebar = null;
+    }
+    removeCrossMarker();
+}
+
+// Context menu "Customer Location" button
+document.getElementById('context-menu-customer-location').addEventListener('click', function() {
+    hideContextMenu();
+    if (contextMenuState.latitude !== null && contextMenuState.longitude !== null) {
+        showCustomerLocationSidebar(contextMenuState.latitude, contextMenuState.longitude);
+    }
+});
+
+// Customer location sidebar close button
+document.getElementById('customer-location-close-btn').addEventListener('click', closeCustomerLocationSidebar);
