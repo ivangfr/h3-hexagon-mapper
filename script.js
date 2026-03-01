@@ -365,6 +365,9 @@ function updatePartnerCounterFromPartners() {
 
 // Load HexagonMapperData format (new unified format)
 function loadHexagonMapperData(data) {
+    // Close all sidebars and remove cross marker before loading new data
+    closeAllSidebars();
+
     // Clear existing hexagons
     Object.keys(hexagons).forEach(h3Index => {
         map.removeLayer(hexagons[h3Index].polygon);
@@ -637,7 +640,7 @@ function showPartnerSidebar(partnerId) {
             updatePartnerSidebarContent(partner);
             openSidebar(partnerSidebar);
             currentPartnerId = partnerId;
-        }, 150);
+        }, 200);
     } else if (currentOpenSidebar && currentOpenSidebar !== SIDEBAR_TYPES.PARTNER) {
         // Another sidebar is open, close all and open partner sidebar
         closeAllSidebars();
@@ -646,7 +649,7 @@ function showPartnerSidebar(partnerId) {
             openSidebar(partnerSidebar);
             currentOpenSidebar = SIDEBAR_TYPES.PARTNER;
             currentPartnerId = partnerId;
-        }, 50);
+        }, 200);
     } else {
         // No sidebar open, just open partner sidebar with animation
         updatePartnerSidebarContent(partner);
@@ -1199,14 +1202,14 @@ function openPartnerSidebarWithCoords(lat, lng) {
             setupAddPartnerForm(lat, lng);
             placeCrossMarker(lat, lng);
             openSidebar(sidebar);
-        }, 300);
+        }, 200);
     } else if (currentOpenSidebar) {
         // Another sidebar is open, use switch animation
         switchToSidebar(sidebar, SIDEBAR_TYPES.ADD_PARTNER);
         setTimeout(() => {
             setupAddPartnerForm(lat, lng);
             placeCrossMarker(lat, lng);
-        }, 50);
+        }, 200);
     } else {
         // No sidebar open, just open with animation
         setupAddPartnerForm(lat, lng);
@@ -1393,18 +1396,18 @@ function showCustomerLocationSidebar(lat, lng) {
     // Close customer location sidebar first if it's open (with animation)
     if (currentOpenSidebar === SIDEBAR_TYPES.CUSTOMER_LOCATION) {
         closeSidebar(customerLocationSidebar);
-        // Wait for close animation to complete (300ms matches CSS transition duration)
+        // Wait for close animation to complete (200ms matches CSS transition duration)
         setTimeout(() => {
             updateCustomerLocationSidebarContent(lat, lng);
             openSidebar(customerLocationSidebar);
-        }, 300);
+        }, 200);
     } else if (currentOpenSidebar && currentOpenSidebar !== SIDEBAR_TYPES.CUSTOMER_LOCATION) {
         // Another sidebar is open, use switch animation
         switchToSidebar(customerLocationSidebar, SIDEBAR_TYPES.CUSTOMER_LOCATION);
         // Update content after switch animation starts
         setTimeout(() => {
             updateCustomerLocationSidebarContent(lat, lng);
-        }, 50);
+        }, 200);
     } else {
         // No sidebar open, just update content and open with animation
         updateCustomerLocationSidebarContent(lat, lng);
@@ -1457,7 +1460,7 @@ function closeSidebar(sidebarElement) {
         if (sidebarElement.classList.contains('sidebar-closed')) {
             sidebarElement.classList.add('hidden');
         }
-    }, 300);
+    }, 200);
 }
 
 // Helper function to open a sidebar with animation
@@ -1516,14 +1519,14 @@ function switchToSidebar(sidebarElement, sidebarType) {
             if (closingSidebar.classList.contains('sidebar-closed')) {
                 closingSidebar.classList.add('hidden');
             }
-        }, 300);
+        }, 200);
     }
     
-    // Small delay before opening new sidebar for smoother transition
+    // Wait for close animation to complete before opening new sidebar
     setTimeout(() => {
         sidebarElement.classList.remove('hidden');
         sidebarElement.offsetHeight; // Force reflow
         sidebarElement.classList.remove('sidebar-closed');
         currentOpenSidebar = sidebarType;
-    }, 50);
+    }, 200);
 }

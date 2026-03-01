@@ -333,7 +333,7 @@ input[type="color"]::-webkit-color-swatch {
     /* Slide + Fade Animation - Default state (visible) */
     transform: translateX(0);
     opacity: 1;
-    transition: transform 300ms ease-in-out, opacity 300ms ease-in-out;
+    transition: transform 200ms ease-in-out, opacity 200ms ease-in-out;
 }
 
 /* Sidebar closed state - Slide + Fade */
