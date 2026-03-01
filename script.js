@@ -1,7 +1,11 @@
+// ==========================================
+// INITIALIZATION
+// ==========================================
+
 // Initialize Lucide Icons
 lucide.createIcons();
 
-// Initialize the map centered on a specific location (e.g., Berlin)
+// Initialize map centered on Berlin
 const map = L.map('map', { zoomControl: false }).setView([52.5200, 13.4050], 15);
 
 // Add OpenStreetMap tile layer
@@ -9,23 +13,60 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
-// Store generated hexagons and their polygons
+// ==========================================
+// STATE MANAGEMENT
+// ==========================================
+
+// Hexagon state
 const hexagons = {};
 
-// Default settings
+// Default hexagon settings
 let resolution = 9;
 let color = '#0000ff';
 let opacity = 0.3;
 
-// Measurement settings
+// Measurement state
 let isMeasuring = false;
 let measurementStart = null;
 let measurementLine = null;
 
-// Grayscale settings
+// Grayscale state
 let isGrayscale = false;
 
-// Function to generate and display H3 grid cells
+// Partner state
+const partnersById = {};
+let currentPartnerId = null;
+let partnerIdCounter = 1;
+let editMode = {
+    isActive: false,
+    partnerId: null
+};
+
+// Context menu state
+let contextMenuState = {
+    latitude: null,
+    longitude: null,
+    crossMarker: null
+};
+
+// Partner constants
+const PARTNER_CONSTANTS = {
+    DEFAULT_OPACITY: 0.2,
+    DEFAULT_COLOR: '#0000ff',
+    DEFAULT_PRIMARY_RESOLUTION: 9,
+    DEFAULT_PRIMARY_NUMBER_ZONES: 18,
+    DEFAULT_SECONDARY_RESOLUTION: 6,
+    DEFAULT_SECONDARY_NUMBER_ZONES: 8
+};
+
+// ==========================================
+// HEXAGON MANAGEMENT
+// ==========================================
+
+/**
+ * Generates and displays H3 grid cells at the clicked location.
+ * Toggles hexagon existence - adds if not present, removes if already exists.
+ */
 function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
     const h3Index = h3.latLngToCell(latitude, longitude, resolution);
     
@@ -36,7 +77,9 @@ function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
     }
 }
 
-// Function to add a hexagon to the map
+/**
+ * Adds a hexagon polygon to the map.
+ */
 function addHexagon(hexagon) {
     const { h3Index, latitude, longitude, resolution, color, opacity } = hexagon;
     const hexagonBoundary = h3.cellToBoundary(h3Index);
@@ -50,7 +93,9 @@ function addHexagon(hexagon) {
     hexagons[h3Index] = { polygon, latitude, longitude };
 }
 
-// Function to remove a hexagon from the map
+/**
+ * Removes a hexagon polygon from the map.
+ */
 function removeHexagon(hexagon) {
     const { h3Index } = hexagon;
     if (hexagons[h3Index]) {
@@ -59,7 +104,13 @@ function removeHexagon(hexagon) {
     }
 }
 
-// Measurement functions
+// ==========================================
+// MEASUREMENT FUNCTIONALITY
+// ==========================================
+
+/**
+ * Activates measurement mode and shows UI indicators.
+ */
 function startMeasurement() {
     closeAllSidebars();
 
@@ -80,6 +131,9 @@ function startMeasurement() {
     measurementDisplay.classList.remove('hidden');
 }
 
+/**
+ * Deactivates measurement mode and hides UI indicators.
+ */
 function stopMeasurement() {
     isMeasuring = false;
     if (measurementLine) {
@@ -94,13 +148,20 @@ function stopMeasurement() {
     document.getElementById('measurement-display').classList.add('hidden');
 }
 
+/**
+ * Calculates distance between two points in kilometers.
+ */
 function calculateDistance(start, end) {
     const startLatLng = L.latLng(start.lat, start.lng);
     const endLatLng = L.latLng(end.lat, end.lng);
     return startLatLng.distanceTo(endLatLng) / 1000; // Convert meters to kilometers
 }
 
-// Add event listener to the map for click events
+// ==========================================
+// MAP EVENT HANDLERS
+// ==========================================
+
+// Map click handler
 map.on('click', function(e) {
     // Check if context menu is open - if so, just close it and don't create hexagon
     const contextMenu = document.getElementById('context-menu');
@@ -135,7 +196,7 @@ map.on('click', function(e) {
     generateH3Grid(lat, lng, resolution, color, opacity, map);
 });
 
-// Add event listener to the resolution slider
+// Resolution slider
 const resolutionSlider = document.getElementById('resolution');
 const resolutionValue = document.getElementById('resolution-value');
 resolutionSlider.addEventListener('input', function() {
@@ -143,13 +204,13 @@ resolutionSlider.addEventListener('input', function() {
     resolutionValue.textContent = resolution;
 });
 
-// Add event listener to the color picker
+// Color picker
 const colorPicker = document.getElementById('color-picker');
 colorPicker.addEventListener('input', function() {
     color = this.value;
 });
 
-// Add event listener to the opacity slider
+// Opacity slider
 const opacitySlider = document.getElementById('opacity');
 const opacityValue = document.getElementById('opacity-value');
 opacitySlider.addEventListener('input', function() {
@@ -157,7 +218,7 @@ opacitySlider.addEventListener('input', function() {
     opacityValue.textContent = opacity;
 });
 
-// Add event listener to show cursor coordinates
+// Mousemove - cursor coordinates & measurement line
 const cursorCoordinates = document.getElementById('cursor-coordinates');
 const measurementDisplay = document.getElementById('measurement-display');
 map.on('mousemove', function(e) {
@@ -189,7 +250,28 @@ map.on('mousemove', function(e) {
     }
 });
 
-// Function to close help sidebar
+// Right-click handler
+map.on('contextmenu', function(e) {
+    e.originalEvent.preventDefault();
+    
+    // Disable context menu during measurement mode
+    if (isMeasuring) {
+        return;
+    }
+    
+    const { lat, lng } = e.latlng;
+    const x = e.containerPoint.x;
+    const y = e.containerPoint.y;
+    showContextMenu(x, y, lat, lng);
+});
+
+// ==========================================
+// HELP SIDEBAR
+// ==========================================
+
+/**
+ * Closes the help sidebar and removes cross marker.
+ */
 function closeHelpSidebar() {
     const helpSidebar = document.getElementById('help-sidebar');
     closeSidebar(helpSidebar);
@@ -197,14 +279,18 @@ function closeHelpSidebar() {
     removeCrossMarker();
 }
 
-// Function to open help sidebar (closes other sidebars first)
+/**
+ * Opens the help sidebar (closes other sidebars first).
+ */
 function openHelpSidebar() {
     closeAllSidebars();
     const helpSidebar = document.getElementById('help-sidebar');
     openSidebar(helpSidebar);
 }
 
-// Function to toggle help sidebar
+/**
+ * Toggles the help sidebar visibility.
+ */
 function toggleHelpSidebar() {
     const sidebar = document.getElementById('help-sidebar');
     if (sidebar.classList.contains('translate-x-full')) {
@@ -214,14 +300,18 @@ function toggleHelpSidebar() {
     }
 }
 
-// Add event listener to toggle the help sidebar
+// Help sidebar toggle button
 const helpSidebarToggle = document.getElementById('help-sidebar-toggle');
 helpSidebarToggle.addEventListener('click', toggleHelpSidebar);
 
-// Add event listener for help close button
+// Help sidebar close button
 document.getElementById('help-close-btn').addEventListener('click', closeHelpSidebar);
 
-// Add event listener to toggle measurement mode
+// ==========================================
+// TOOLBAR CONTROLS
+// ==========================================
+
+// Measurement toggle button
 const measurementToggle = document.getElementById('measurement-toggle');
 measurementToggle.addEventListener('click', function() {
     if (!isMeasuring) {
@@ -237,7 +327,7 @@ measurementToggle.addEventListener('click', function() {
     }
 });
 
-// Add event listener to toggle grayscale mode
+// Grayscale toggle
 const grayscaleToggle = document.getElementById('grayscale-toggle');
 grayscaleToggle.addEventListener('change', function() {
     isGrayscale = this.checked;
@@ -250,7 +340,13 @@ grayscaleToggle.addEventListener('change', function() {
     }
 });
 
-// Function to save hexagons and partners to JSON
+// ==========================================
+// SAVE/LOAD DATA
+// ==========================================
+
+/**
+ * Saves all hexagons and partners to a JSON file.
+ */
 function saveData() {
     // Check if there's anything to save
     if (Object.keys(hexagons).length === 0 && Object.keys(partnersById).length === 0) {
@@ -301,7 +397,9 @@ function saveData() {
     URL.revokeObjectURL(url);
 }
 
-// Function to load hexagons and partners from JSON
+/**
+ * Loads hexagons and partners from a JSON file.
+ */
 function loadData(event) {
     const file = event.target.files[0];
     if (file) {
@@ -336,7 +434,9 @@ function loadData(event) {
     }
 }
 
-// Update partner counter based on existing partners (used after loading)
+/**
+ * Updates partner counter based on existing partners (used after loading).
+ */
 function updatePartnerCounterFromPartners() {
     let maxNum = 0;
     Object.keys(partnersById).forEach(partnerId => {
@@ -350,7 +450,9 @@ function updatePartnerCounterFromPartners() {
     partnerIdCounter = maxNum + 1;
 }
 
-// Load HexagonMapperData format (new unified format)
+/**
+ * Loads HexagonMapperData format (new unified format).
+ */
 function loadHexagonMapperData(data) {
     // Close all sidebars and remove cross marker before loading new data
     closeAllSidebars();
@@ -399,7 +501,7 @@ function loadHexagonMapperData(data) {
     }
 }
 
-// Add event listeners for save and load buttons
+// Save/Load buttons
 document.getElementById('save-btn').addEventListener('click', saveData);
 document.getElementById('load-btn').addEventListener('click', function() {
     document.getElementById('load-file').click();
@@ -410,26 +512,9 @@ document.getElementById('load-file').addEventListener('change', loadData);
 // PARTNER MANAGEMENT
 // ==========================================
 
-// Partner state
-const partnersById = {};
-let currentPartnerId = null;
-let partnerIdCounter = 1;
-let editMode = {
-    isActive: false,
-    partnerId: null
-};
-
-// Partner constants
-const PARTNER_CONSTANTS = {
-    DEFAULT_OPACITY: 0.2,
-    DEFAULT_COLOR: '#0000ff',
-    DEFAULT_PRIMARY_RESOLUTION: 9,
-    DEFAULT_PRIMARY_NUMBER_ZONES: 18,
-    DEFAULT_SECONDARY_RESOLUTION: 6,
-    DEFAULT_SECONDARY_NUMBER_ZONES: 8
-};
-
-// Add a partner to the map
+/**
+ * Adds a partner with hexagon zones to the map.
+ */
 function addPartnerToMap(partner) {
     const { partnerId, latitude, longitude, h3Resolution, numZones, h3Resolution2, numZones2, color: partnerColor, color2 } = partner;
     const actualColor = partnerColor || PARTNER_CONSTANTS.DEFAULT_COLOR;
@@ -514,7 +599,9 @@ function addPartnerToMap(partner) {
     map.setView([latitude, longitude], map.getZoom());
 }
 
-// Delete a partner from the map
+/**
+ * Deletes a partner and all its hexagons from the map.
+ */
 function deletePartner(partnerId) {
     const partner = partnersById[partnerId];
     if (!partner) return;
@@ -538,7 +625,9 @@ function deletePartner(partnerId) {
     delete partnersById[partnerId];
 }
 
-// Update a partner with new data
+/**
+ * Updates a partner with new data.
+ */
 function updatePartner(oldPartnerId, newPartnerData) {
     const oldPartner = partnersById[oldPartnerId];
     if (!oldPartner) return;
@@ -563,7 +652,9 @@ function updatePartner(oldPartnerId, newPartnerData) {
     addPartnerToMap(newPartnerData);
 }
 
-// Toggle primary hexagons visibility for a partner
+/**
+ * Toggles primary hexagons visibility for a partner.
+ */
 function togglePrimaryHexagonsVisibility(partnerId, visible) {
     const partner = partnersById[partnerId];
     if (!partner || partner.elements.primaryHexagons.length === 0) return;
@@ -585,7 +676,9 @@ function togglePrimaryHexagonsVisibility(partnerId, visible) {
     }
 }
 
-// Toggle secondary hexagons visibility for a partner
+/**
+ * Toggles secondary hexagons visibility for a partner.
+ */
 function toggleSecondaryHexagonsVisibility(partnerId, visible) {
     const partner = partnersById[partnerId];
     if (!partner || partner.elements.secondaryHexagons.length === 0) return;
@@ -607,7 +700,9 @@ function toggleSecondaryHexagonsVisibility(partnerId, visible) {
     }
 }
 
-// Toggle delivery area visibility for a partner
+/**
+ * Toggles delivery area visibility for a partner.
+ */
 function toggleDeliveryAreaVisibility(partnerId, visible) {
     const partner = partnersById[partnerId];
     if (!partner || !partner.elements.deliveryAreaPolygon) return;
@@ -625,7 +720,9 @@ function toggleDeliveryAreaVisibility(partnerId, visible) {
     }
 }
 
-// Parse polygon content (KML or WKT) and extract coordinates
+/**
+ * Parses polygon content (KML or WKT) and extracts coordinates.
+ */
 function parsePolygonContent(content) {
     const trimmedContent = content.trim();
     
@@ -645,7 +742,9 @@ function parsePolygonContent(content) {
     return parseWKTPolygon(trimmedContent);
 }
 
-// Parse KML content and extract polygon coordinates
+/**
+ * Parses KML content and extracts polygon coordinates.
+ */
 function parseKMLCoordinates(kmlContent) {
     const coordinates = [];
     
@@ -670,7 +769,9 @@ function parseKMLCoordinates(kmlContent) {
     return coordinates;
 }
 
-// Parse WKT POLYGON content and extract coordinates
+/**
+ * Parses WKT POLYGON content and extracts coordinates.
+ */
 function parseWKTPolygon(wktContent) {
     const coordinates = [];
     
@@ -707,7 +808,9 @@ function parseWKTPolygon(wktContent) {
     return coordinates;
 }
 
-// Show partner sidebar
+/**
+ * Shows the partner info sidebar.
+ */
 function showPartnerSidebar(partnerId) {
     const partner = partnersById[partnerId];
     if (!partner) return;
@@ -724,7 +827,9 @@ function showPartnerSidebar(partnerId) {
     currentPartnerId = partnerId;
 }
 
-// Update partner sidebar content
+/**
+ * Updates the partner sidebar content with partner details.
+ */
 function updatePartnerSidebarContent(partner) {
     document.getElementById('slide-partner-id').textContent = partner.partnerId;
 
@@ -811,14 +916,18 @@ function updatePartnerSidebarContent(partner) {
     }
 }
 
-// Close partner sidebar
+/**
+ * Closes the partner info sidebar.
+ */
 function closePartnerSidebar() {
     const slideWindow = document.getElementById('partner-sidebar');
     closeSidebar(slideWindow);
     currentPartnerId = null;
 }
 
-// Reset sidebar form
+/**
+ * Resets the add/edit partner form to default values.
+ */
 function resetSidebarForm() {
     document.getElementById('add-partner-form').reset();
     document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
@@ -849,7 +958,9 @@ function resetSidebarForm() {
     submitButton.textContent = 'Add';
 }
 
-// Open sidebar for editing a partner
+/**
+ * Opens the sidebar for editing an existing partner.
+ */
 function openSidebarForEdit(partner) {
     editMode.isActive = true;
     editMode.partnerId = partner.partnerId;
@@ -898,7 +1009,9 @@ function openSidebarForEdit(partner) {
     openSidebar(sidebar);
 }
 
-// Validate partner data
+/**
+ * Validates partner data before saving.
+ */
 function validatePartner(partner) {
     if (!partner || typeof partner !== 'object') {
         alert("Partner must be an object");
@@ -939,7 +1052,7 @@ function validatePartner(partner) {
 // PARTNER EVENT LISTENERS
 // ==========================================
 
-// Sidebar close button
+// Add partner sidebar - close button
 document.getElementById('sidebar-close-btn').addEventListener('click', function() {
     removeCrossMarker();
     const sidebar = document.getElementById('add-partner-sidebar');
@@ -947,7 +1060,7 @@ document.getElementById('sidebar-close-btn').addEventListener('click', function(
     resetSidebarForm();
 });
 
-// Sidebar cancel button
+// Add partner sidebar - cancel button
 document.getElementById('sidebar-cancel-add').addEventListener('click', function() {
     removeCrossMarker();
     const sidebar = document.getElementById('add-partner-sidebar');
@@ -955,27 +1068,27 @@ document.getElementById('sidebar-cancel-add').addEventListener('click', function
     resetSidebarForm();
 });
 
-// Sidebar resolution slider
+// Add partner sidebar - resolution slider
 document.getElementById('sidebar-h3Resolution').addEventListener('input', function() {
     document.getElementById('sidebar-resolution-value').textContent = this.value;
 });
 
-// Sidebar zones slider
+// Add partner sidebar - zones slider
 document.getElementById('sidebar-numZones').addEventListener('input', function() {
     document.getElementById('sidebar-zones-value').textContent = this.value;
 });
 
-// Sidebar resolution2 slider
+// Add partner sidebar - resolution2 slider
 document.getElementById('sidebar-h3Resolution2').addEventListener('input', function() {
     document.getElementById('sidebar-resolution2-value').textContent = this.value;
 });
 
-// Sidebar zones2 slider
+// Add partner sidebar - zones2 slider
 document.getElementById('sidebar-numZones2').addEventListener('input', function() {
     document.getElementById('sidebar-zones2-value').textContent = this.value;
 });
 
-// Enable secondary checkbox
+// Add partner sidebar - enable secondary checkbox
 document.getElementById('sidebar-enable-secondary').addEventListener('change', function() {
     if (this.checked) {
         document.getElementById('secondary-fields').classList.remove('hidden');
@@ -984,14 +1097,14 @@ document.getElementById('sidebar-enable-secondary').addEventListener('change', f
     }
 });
 
-// Primary color change to sync secondary color (only if same color checkbox is checked)
+// Add partner sidebar - primary color sync to secondary
 document.getElementById('sidebar-color').addEventListener('input', function() {
     if (document.getElementById('sidebar-same-color').checked) {
         document.getElementById('sidebar-color2').value = this.value;
     }
 });
 
-// Same color as primary checkbox
+// Add partner sidebar - same color checkbox
 document.getElementById('sidebar-same-color').addEventListener('change', function() {
     if (this.checked) {
         // Sync secondary color with primary and disable the color picker
@@ -1003,7 +1116,7 @@ document.getElementById('sidebar-same-color').addEventListener('change', functio
     }
 });
 
-// Enable delivery area checkbox
+// Add partner sidebar - enable delivery area checkbox
 document.getElementById('sidebar-enable-delivery-area').addEventListener('change', function() {
     if (this.checked) {
         document.getElementById('delivery-area-fields').classList.remove('hidden');
@@ -1012,14 +1125,14 @@ document.getElementById('sidebar-enable-delivery-area').addEventListener('change
     }
 });
 
-// Primary color change to sync delivery area color (only if same color checkbox is checked)
+// Add partner sidebar - primary color sync to delivery
 document.getElementById('sidebar-color').addEventListener('input', function() {
     if (document.getElementById('sidebar-same-color-delivery').checked) {
         document.getElementById('sidebar-delivery-color').value = this.value;
     }
 });
 
-// Same color as primary for delivery area checkbox
+// Add partner sidebar - same color for delivery checkbox
 document.getElementById('sidebar-same-color-delivery').addEventListener('change', function() {
     if (this.checked) {
         // Sync delivery color with primary and disable the color picker
@@ -1031,7 +1144,7 @@ document.getElementById('sidebar-same-color-delivery').addEventListener('change'
     }
 });
 
-// Add/Edit partner form submission
+// Add/Edit partner form - submit
 document.getElementById('add-partner-form').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -1093,10 +1206,10 @@ document.getElementById('add-partner-form').addEventListener('submit', function(
     resetSidebarForm();
 });
 
-// Partner sidebar close button
+// Partner info sidebar - close button
 document.getElementById('slide-close-btn').addEventListener('click', closePartnerSidebar);
 
-// Edit partner button
+// Partner info sidebar - edit button
 document.getElementById('edit-partner-btn').addEventListener('click', function() {
     const partnerId = currentPartnerId;
     if (!partnerId) return;
@@ -1108,7 +1221,7 @@ document.getElementById('edit-partner-btn').addEventListener('click', function()
     openSidebarForEdit(partner);
 });
 
-// Delete partner button
+// Partner info sidebar - delete button
 document.getElementById('delete-partner-btn').addEventListener('click', function() {
     const partnerId = currentPartnerId;
     if (!partnerId) return;
@@ -1123,19 +1236,19 @@ document.getElementById('delete-partner-btn').addEventListener('click', function
     }
 });
 
-// Toggle primary zone
+// Partner info sidebar - toggle primary zone
 document.getElementById('toggle-primary-zone').addEventListener('change', function() {
     if (!currentPartnerId) return;
     togglePrimaryHexagonsVisibility(currentPartnerId, this.checked);
 });
 
-// Toggle secondary zone
+// Partner info sidebar - toggle secondary zone
 document.getElementById('toggle-secondary-zone').addEventListener('change', function() {
     if (!currentPartnerId) return;
     toggleSecondaryHexagonsVisibility(currentPartnerId, this.checked);
 });
 
-// Toggle delivery area
+// Partner info sidebar - toggle delivery area
 document.getElementById('toggle-delivery-area').addEventListener('change', function() {
     if (!currentPartnerId) return;
     toggleDeliveryAreaVisibility(currentPartnerId, this.checked);
@@ -1145,14 +1258,9 @@ document.getElementById('toggle-delivery-area').addEventListener('change', funct
 // RIGHT-CLICK CONTEXT MENU
 // ==========================================
 
-// Context menu state
-let contextMenuState = {
-    latitude: null,
-    longitude: null,
-    crossMarker: null
-};
-
-// Create cross marker icon
+/**
+ * Creates a cross marker icon for location indicators.
+ */
 function createCrossMarkerIcon() {
     return L.divIcon({
         className: 'cross-marker',
@@ -1162,7 +1270,9 @@ function createCrossMarkerIcon() {
     });
 }
 
-// Place cross marker on map
+/**
+ * Places a cross marker on the map at the specified coordinates.
+ */
 function placeCrossMarker(lat, lng) {
     removeCrossMarker();
     contextMenuState.crossMarker = L.marker([lat, lng], {
@@ -1171,7 +1281,9 @@ function placeCrossMarker(lat, lng) {
     }).addTo(map);
 }
 
-// Remove cross marker from map
+/**
+ * Removes the cross marker from the map.
+ */
 function removeCrossMarker() {
     if (contextMenuState.crossMarker) {
         map.removeLayer(contextMenuState.crossMarker);
@@ -1179,7 +1291,9 @@ function removeCrossMarker() {
     }
 }
 
-// Check if a point is inside a hexagon polygon
+/**
+ * Checks if a point is inside a hexagon polygon using ray casting algorithm.
+ */
 function isPointInHexagon(lat, lng, hexagonPolygon) {
     const point = L.latLng(lat, lng);
     const bounds = hexagonPolygon.getBounds();
@@ -1208,7 +1322,9 @@ function isPointInHexagon(lat, lng, hexagonPolygon) {
     return inside;
 }
 
-// Find all hexagons at a given location
+/**
+ * Finds all hexagons (standalone and partner) at a given location.
+ */
 function findHexagonsAtLocation(lat, lng) {
     const detectedHexagons = [];
     
@@ -1265,7 +1381,9 @@ function findHexagonsAtLocation(lat, lng) {
     return detectedHexagons;
 }
 
-// Show context menu
+/**
+ * Displays the context menu at the specified position.
+ */
 function showContextMenu(x, y, lat, lng) {
     const contextMenu = document.getElementById('context-menu');
     const contextMenuHeader = document.getElementById('context-menu-header');
@@ -1297,13 +1415,17 @@ function showContextMenu(x, y, lat, lng) {
     }
 }
 
-// Hide context menu
+/**
+ * Hides the context menu.
+ */
 function hideContextMenu() {
     const contextMenu = document.getElementById('context-menu');
     contextMenu.classList.add('hidden');
 }
 
-// Helper function to setup add partner form with coordinates
+/**
+ * Sets up the add partner form with pre-filled coordinates.
+ */
 function setupAddPartnerForm(lat, lng) {
     // Reset form and set edit mode to false
     editMode.isActive = false;
@@ -1340,7 +1462,9 @@ function setupAddPartnerForm(lat, lng) {
     document.getElementById('sidebar-polygon-content').value = '';
 }
 
-// Open partner sidebar with coordinates filled
+/**
+ * Opens the add partner sidebar with coordinates pre-filled.
+ */
 function openPartnerSidebarWithCoords(lat, lng) {
     closeAllSidebars();
     setupAddPartnerForm(lat, lng);
@@ -1348,21 +1472,6 @@ function openPartnerSidebarWithCoords(lat, lng) {
     const sidebar = document.getElementById('add-partner-sidebar');
     openSidebar(sidebar);
 }
-
-// Right-click event handler
-map.on('contextmenu', function(e) {
-    e.originalEvent.preventDefault();
-    
-    // Disable context menu during measurement mode
-    if (isMeasuring) {
-        return;
-    }
-    
-    const { lat, lng } = e.latlng;
-    const x = e.containerPoint.x;
-    const y = e.containerPoint.y;
-    showContextMenu(x, y, lat, lng);
-});
 
 // Hide context menu on document click (outside menu)
 document.addEventListener('click', function(e) {
@@ -1372,7 +1481,7 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Context menu "Add Partner Here" button
+// Context menu - "Add Partner Here" button
 document.getElementById('context-menu-add-partner').addEventListener('click', function() {
     hideContextMenu();
     if (contextMenuState.latitude !== null && contextMenuState.longitude !== null) {
@@ -1384,7 +1493,9 @@ document.getElementById('context-menu-add-partner').addEventListener('click', fu
 // CUSTOMER LOCATION SIDEBAR
 // ==========================================
 
-// Update customer location sidebar content
+/**
+ * Updates the customer location sidebar content with detected hexagons.
+ */
 function updateCustomerLocationSidebarContent(lat, lng) {
     const customerLocationCoords = document.getElementById('customer-location-coords');
     const customerLocationHexagonList = document.getElementById('customer-location-hexagon-list');
@@ -1498,7 +1609,9 @@ function updateCustomerLocationSidebarContent(lat, lng) {
     }
 }
 
-// Show customer location sidebar
+/**
+ * Shows the customer location sidebar with hexagon detection.
+ */
 function showCustomerLocationSidebar(lat, lng) {
     closeAllSidebars();
     updateCustomerLocationSidebarContent(lat, lng);
@@ -1506,14 +1619,16 @@ function showCustomerLocationSidebar(lat, lng) {
     openSidebar(customerLocationSidebar);
 }
 
-// Close customer location sidebar
+/**
+ * Closes the customer location sidebar.
+ */
 function closeCustomerLocationSidebar() {
     const customerLocationSidebar = document.getElementById('customer-location-sidebar');
     closeSidebar(customerLocationSidebar);
     removeCrossMarker();
 }
 
-// Context menu "Customer Location" button
+// Context menu - "Customer Location" button
 document.getElementById('context-menu-customer-location').addEventListener('click', function() {
     hideContextMenu();
     if (contextMenuState.latitude !== null && contextMenuState.longitude !== null) {
@@ -1521,17 +1636,19 @@ document.getElementById('context-menu-customer-location').addEventListener('clic
     }
 });
 
-// Customer location sidebar close button
+// Customer location sidebar - close button
 document.getElementById('customer-location-close-btn').addEventListener('click', closeCustomerLocationSidebar);
 
-// Drawer overlay click handler - closes all sidebars when clicked
+// Drawer overlay - click to close all sidebars
 document.getElementById('drawer-overlay').addEventListener('click', closeAllSidebars);
 
 // ==========================================
 // SIDEBAR ANIMATION HELPERS
 // ==========================================
 
-// Helper function to close a sidebar with animation
+/**
+ * Closes a sidebar with slide-out animation.
+ */
 function closeSidebar(sidebarElement) {
     // For right-side drawers, add translate-x-full to slide out
     sidebarElement.classList.add('translate-x-full');
@@ -1539,7 +1656,9 @@ function closeSidebar(sidebarElement) {
     hideDrawerOverlay();
 }
 
-// Helper function to open a sidebar with animation
+/**
+ * Opens a sidebar with slide-in animation.
+ */
 function openSidebar(sidebarElement) {
     // Remove translate-x-full to slide in
     sidebarElement.classList.remove('translate-x-full');
@@ -1547,19 +1666,25 @@ function openSidebar(sidebarElement) {
     showDrawerOverlay();
 }
 
-// Helper function to show the drawer overlay
+/**
+ * Shows the drawer overlay.
+ */
 function showDrawerOverlay() {
     const overlay = document.getElementById('drawer-overlay');
     overlay.classList.remove('opacity-0', 'pointer-events-none');
 }
 
-// Helper function to hide the drawer overlay
+/**
+ * Hides the drawer overlay.
+ */
 function hideDrawerOverlay() {
     const overlay = document.getElementById('drawer-overlay');
     overlay.classList.add('opacity-0', 'pointer-events-none');
 }
 
-// Helper function to close all sidebars
+/**
+ * Closes all sidebars and removes cross marker.
+ */
 function closeAllSidebars() {
     const helpSidebar = document.getElementById('help-sidebar');
     const addPartnerSidebar = document.getElementById('add-partner-sidebar');
