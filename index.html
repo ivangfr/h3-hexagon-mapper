@@ -19,234 +19,392 @@
     <link rel="stylesheet" href="style.css" />
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'roboto': ['Roboto', 'sans-serif'],
+                        'roboto-mono': ['Roboto Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
 </head>
-<body class="font-roboto">
+<body class="font-roboto m-0 p-0 h-screen">
     <div id="map" class="h-screen"></div>
-    <div id="measurement-overlay" class="fixed inset-0 bg-black bg-opacity-20 hidden" style="z-index: 9997; pointer-events: none;"></div>
+    <div id="measurement-overlay" class="fixed inset-0 bg-black/20 hidden" style="z-index: 9997; pointer-events: none;"></div>
     
-    <div id="measurement-mode-indicator" class="fixed top-4 left-1/2 transform -translate-x-1/2 hidden" style="z-index: 9998;">
+    <div id="measurement-mode-indicator" class="fixed top-5 left-1/2 -translate-x-1/2 hidden bg-gray-900/95 backdrop-blur-sm text-white font-semibold px-6 py-2.5 text-sm rounded-full shadow-lg" style="z-index: 9998;">
         <span>Measurement Mode Active</span>
     </div>
     
     <!-- Controls Panel -->
-    <div id="controls" style="z-index: 9998;">
-        <div class="controls-header">
-            <h2><i data-lucide="hexagon" class="icon-header"></i> H3 Hexagon Mapper</h2>
+    <div id="controls" class="absolute w-[280px] top-2.5 left-2.5 z-[9998] bg-white rounded-2xl shadow-lg shadow-black/10 overflow-hidden hover:shadow-xl hover:shadow-black/15 transition-shadow duration-300">
+        <!-- Header -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-700 px-4 py-3">
+            <h2 class="m-0 text-[15px] font-semibold text-white flex items-center gap-2">
+                <i data-lucide="hexagon" class="w-5 h-5"></i>
+                H3 Hexagon Mapper
+            </h2>
         </div>
         
-        <div class="controls-body">
+        <!-- Body -->
+        <div class="p-5 space-y-5">
             <!-- Hexagon Settings Section -->
-            <div class="control-section">
-                <div class="section-title">Hexagon Settings</div>
-                
-                <div class="control-group">
-                    <label for="resolution">Resolution <span id="resolution-value">9</span></label>
-                    <input type="range" id="resolution" min="0" max="15" value="9" class="w-full">
+            <div class="space-y-4">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                    Hexagon Settings
                 </div>
                 
-                <div class="control-group">
-                    <label for="color-picker">Color</label>
-                    <input type="color" id="color-picker" value="#0000ff" class="w-full">
-                </div>
-                
-                <div class="control-group">
-                    <label for="opacity">Opacity <span id="opacity-value">0.3</span></label>
-                    <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3" class="w-full">
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label for="resolution" class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                            Resolution
+                            <span id="resolution-value" class="font-semibold text-blue-500 bg-blue-50 px-2.5 py-0.5 rounded-md text-xs font-mono">9</span>
+                        </label>
+                        <input type="range" id="resolution" min="0" max="15" value="9" class="w-full">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-2">
+                            <label for="color-picker" class="block text-[13px] font-medium text-gray-700">Color</label>
+                            <input type="color" id="color-picker" value="#0000ff" class="w-full h-9 cursor-pointer">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="opacity" class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                                Opacity
+                                <span id="opacity-value" class="font-semibold text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">0.3</span>
+                            </label>
+                            <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3" class="w-full">
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <!-- Data Section -->
-            <div class="control-section">
-                <div class="section-title">Data</div>
-                
-                <div class="btn-group">
-                    <button id="save-btn" class="btn btn-primary"><i data-lucide="save" class="icon-btn"></i> Save</button>
-                    <button id="load-btn" class="btn btn-primary"><i data-lucide="folder-open" class="icon-btn"></i> Load</button>
+            <div class="space-y-4">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    Data
                 </div>
-                <input type="file" id="load-file" accept=".json" style="display: none;">
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="save-btn" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md shadow-blue-500/30 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        Save
+                    </button>
+                    <button id="load-btn" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md shadow-blue-500/30 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                        <i data-lucide="folder-open" class="w-4 h-4"></i>
+                        Load
+                    </button>
+                </div>
+                <input type="file" id="load-file" accept=".json" class="hidden">
             </div>
             
             <!-- Tools Section -->
-            <div class="control-section">
-                <div class="section-title">Tools</div>
-                <button id="measurement-toggle" class="btn btn-success" style="margin-bottom: 8px;"><i data-lucide="ruler" class="icon-btn"></i> Start Measurement</button>
-                <div class="toggle-group" style="margin-bottom: 8px;">
-                    <label>
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="grayscale-toggle">
-                            <span class="toggle-slider"></span>
-                        </div>
-                        Grayscale Map
-                    </label>
+            <div class="space-y-4">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <i data-lucide="wrench" class="w-4 h-4"></i>
+                    Tools
                 </div>
-                <button id="help-sidebar-toggle" class="btn btn-gray"><i data-lucide="help-circle" class="icon-btn"></i> Help</button>
+                
+                <div class="space-y-2">
+                    <button id="measurement-toggle" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-md shadow-emerald-500/30 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                        <i data-lucide="ruler" class="w-4 h-4"></i>
+                        Start Measurement
+                    </button>
+                    
+                    <div class="flex items-center p-3 bg-gray-50 rounded-xl">
+                        <label class="flex items-center gap-3 cursor-pointer w-full">
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="grayscale-toggle">
+                                <span class="toggle-slider"></span>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700">Grayscale Map</span>
+                        </label>
+                    </div>
+                    
+                    <button id="help-sidebar-toggle" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-gray-600 bg-gray-100 rounded-xl border border-gray-200 hover:bg-gray-200 hover:border-gray-300 transition-all duration-200">
+                        <i data-lucide="help-circle" class="w-4 h-4"></i>
+                        Help
+                    </button>
+                </div>
             </div>
         </div>
         
-        <div class="controls-footer">
-            <label>Ivan Franchin © 2026</label>
-            <a href="https://github.com/ivangfr/h3-hexagon-mapper/blob/main/LICENSE" target="_blank">BSD 3-Clause License</a>
+        <!-- Footer -->
+        <div class="px-5 py-4 bg-gray-50 border-t border-gray-200 text-center">
+            <label class="text-lg text-gray-900 block mb-1">Ivan Franchin © 2026</label>
+            <a href="https://github.com/ivangfr/h3-hexagon-mapper/blob/main/LICENSE" target="_blank" class="text-[13px] text-blue-500 hover:text-blue-700 hover:underline transition-colors">BSD 3-Clause License</a>
         </div>
     </div>
     
-    <div id="cursor-coordinates" style="z-index: 9999;">Lat: 0, Lon: 0</div>
+    <!-- Coordinates Display -->
+    <div id="cursor-coordinates" class="absolute bottom-2.5 left-2.5 z-[9999] bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium text-gray-700 font-mono border border-black/5 w-[280px] text-center">
+        Lat: 0, Lon: 0
+    </div>
     
     <!-- Right-Click Context Menu -->
-    <div id="context-menu" class="fixed hidden" style="z-index: 10001;">
-        <div id="context-menu-header" class="hidden">
-            <div class="context-menu-label">Coordinates</div>
-            <div id="context-menu-coords"></div>
+    <div id="context-menu" class="fixed hidden z-[10001] bg-white rounded-xl shadow-xl shadow-black/15 border border-gray-200 py-2 min-w-[300px] overflow-hidden">
+        <div id="context-menu-header" class="hidden px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1">Coordinates</div>
+            <div id="context-menu-coords" class="text-[13px] font-semibold text-gray-900 font-mono"></div>
         </div>
-        <div id="context-menu-partner-section">
-            <button id="context-menu-add-partner" class="btn btn-purple"><i data-lucide="store" class="icon-btn"></i> Add Partner</button>
-            <button id="context-menu-customer-location" class="btn btn-primary" style="margin-top: 8px;"><i data-lucide="map-pin" class="icon-btn"></i> Customer Location</button>
+        <div id="context-menu-partner-section" class="px-4 py-3 border-b border-gray-100 space-y-2">
+            <button id="context-menu-add-partner" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md shadow-purple-500/30 hover:from-purple-600 hover:to-purple-700 hover:shadow-lg hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                <i data-lucide="store" class="w-4 h-4"></i>
+                Add Partner
+            </button>
+            <button id="context-menu-customer-location" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md shadow-blue-500/30 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                <i data-lucide="map-pin" class="w-4 h-4"></i>
+                Customer Location
+            </button>
         </div>
     </div>
     
-    <div id="measurement-display" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 hidden" style="z-index: 9999;">0.00 km</div>
+    <!-- Measurement Display -->
+    <div id="measurement-display" class="absolute bottom-5 left-1/2 -translate-x-1/2 hidden z-[9999] bg-white/95 backdrop-blur-sm px-8 py-4 rounded-2xl shadow-xl text-3xl font-bold text-gray-900 border border-black/5 font-mono">
+        0.00 km
+    </div>
     
     <!-- Help Sidebar -->
-    <div id="help-sidebar" class="sidebar hidden sidebar-closed" style="z-index: 9999;">
-        <div class="sidebar-header">
-            <div class="sidebar-header-content">
-                <h2><i data-lucide="help-circle" class="icon-header"></i> Help</h2>
-                <button id="help-close-btn" class="sidebar-close">&times;</button>
+    <div id="help-sidebar" class="sidebar hidden sidebar-closed z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10" style="z-index: 9999;">
+        <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
+            <div class="flex justify-between items-center">
+                <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
+                    <i data-lucide="help-circle" class="w-5 h-5"></i>
+                    Help
+                </h2>
+                <button id="help-close-btn" class="w-9 h-9 rounded-full bg-gray-100 border-none cursor-pointer flex items-center justify-center text-xl text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:rotate-90 transition-all duration-200">&times;</button>
             </div>
         </div>
-        <div class="sidebar-body">
+        <div class="p-6 space-y-6">
             <!-- Getting Started -->
-            <div class="help-category">
-                <div class="help-category-title"><i data-lucide="play-circle" class="icon-header"></i> Getting Started</div>
-                <ul class="help-list">
-                    <li><strong>Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.</li>
-                    <li><strong>Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.</li>
+            <div class="space-y-3">
+                <div class="text-sm font-bold text-gray-900 flex items-center gap-2 pb-2 border-b-2 border-gray-200">
+                    <i data-lucide="play-circle" class="w-5 h-5"></i>
+                    Getting Started
+                </div>
+                <ul class="list-none p-0 m-0 space-y-0">
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.
+                    </li>
                 </ul>
             </div>
             
             <!-- Hexagon Controls -->
-            <div class="help-category">
-                <div class="help-category-title"><i data-lucide="sliders-horizontal" class="icon-header"></i> Hexagon Controls</div>
-                <ul class="help-list">
-                    <li><strong>Adjust Resolution:</strong> Use the resolution slider to adjust the H3 resolution of the hexagons (0-15).</li>
-                    <li><strong>Change Color:</strong> Use the color picker to change the color of the hexagons.</li>
-                    <li><strong>Change Opacity:</strong> Use the opacity slider to change the opacity of the hexagons.</li>
+            <div class="space-y-3">
+                <div class="text-sm font-bold text-gray-900 flex items-center gap-2 pb-2 border-b-2 border-gray-200">
+                    <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+                    Hexagon Controls
+                </div>
+                <ul class="list-none p-0 m-0 space-y-0">
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Adjust Resolution:</strong> Use the resolution slider to adjust the H3 resolution of the hexagons (0-15).
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Change Color:</strong> Use the color picker to change the color of the hexagons.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Change Opacity:</strong> Use the opacity slider to change the opacity of the hexagons.
+                    </li>
                 </ul>
             </div>
             
             <!-- Measurement -->
-            <div class="help-category">
-                <div class="help-category-title"><i data-lucide="ruler" class="icon-header"></i> Measurement Mode</div>
-                <ul class="help-list">
-                    <li><strong>Activate:</strong> Click the "Start Measurement" button to enable measurement mode. An overlay and indicator will appear.</li>
-                    <li><strong>Measure Distance:</strong> Click on the map to set a starting point, then move your mouse to see the distance in kilometers. A dashed line shows the measurement path.</li>
-                    <li><strong>Clear or Exit:</strong> Click again to clear the current measurement and start a new one, or click "Stop Measurement" to exit measurement mode.</li>
+            <div class="space-y-3">
+                <div class="text-sm font-bold text-gray-900 flex items-center gap-2 pb-2 border-b-2 border-gray-200">
+                    <i data-lucide="ruler" class="w-5 h-5"></i>
+                    Measurement Mode
+                </div>
+                <ul class="list-none p-0 m-0 space-y-0">
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Activate:</strong> Click the "Start Measurement" button to enable measurement mode. An overlay and indicator will appear.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Measure Distance:</strong> Click on the map to set a starting point, then move your mouse to see the distance in kilometers. A dashed line shows the measurement path.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Clear or Exit:</strong> Click again to clear the current measurement and start a new one, or click "Stop Measurement" to exit measurement mode.
+                    </li>
                 </ul>
             </div>
             
             <!-- Data Management -->
-            <div class="help-category">
-                <div class="help-category-title"><i data-lucide="database" class="icon-header"></i> Data Management</div>
-                <ul class="help-list">
-                    <li><strong>Save:</strong> Click the "Save" button to download both hexagons and partners as a JSON file.</li>
-                    <li><strong>Load:</strong> Click the "Load" button and select a JSON file to load hexagons and partners.</li>
+            <div class="space-y-3">
+                <div class="text-sm font-bold text-gray-900 flex items-center gap-2 pb-2 border-b-2 border-gray-200">
+                    <i data-lucide="database" class="w-5 h-5"></i>
+                    Data Management
+                </div>
+                <ul class="list-none p-0 m-0 space-y-0">
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Save:</strong> Click the "Save" button to download both hexagons and partners as a JSON file.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Load:</strong> Click the "Load" button and select a JSON file to load hexagons and partners.
+                    </li>
                 </ul>
             </div>
             
             <!-- Partner Management -->
-            <div class="help-category">
-                <div class="help-category-title"><i data-lucide="store" class="icon-header"></i> Partner Management</div>
-                <ul class="help-list">
-                    <li><strong>Add Partner:</strong> Right-click on the map and click "Add Partner" to open a form pre-filled with the clicked coordinates.</li>
-                    <li><strong>Edit Partner:</strong> Click on a partner marker on the map, then click "Edit Partner" to modify its settings.</li>
-                    <li><strong>Delete Partner:</strong> Click on a partner marker and use "Delete Partner" to remove it.</li>
+            <div class="space-y-3">
+                <div class="text-sm font-bold text-gray-900 flex items-center gap-2 pb-2 border-b-2 border-gray-200">
+                    <i data-lucide="store" class="w-5 h-5"></i>
+                    Partner Management
+                </div>
+                <ul class="list-none p-0 m-0 space-y-0">
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Add Partner:</strong> Right-click on the map and click "Add Partner" to open a form pre-filled with the clicked coordinates.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Edit Partner:</strong> Click on a partner marker on the map, then click "Edit Partner" to modify its settings.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Delete Partner:</strong> Click on a partner marker and use "Delete Partner" to remove it.
+                    </li>
                 </ul>
             </div>
             
             <!-- Delivery Area -->
-            <div class="help-category">
-                <div class="help-category-title"><i data-lucide="map" class="icon-header"></i> Delivery Area</div>
-                <ul class="help-list">
-                    <li><strong>Enable:</strong> Check "Enable Delivery Area" when adding or editing a partner to define a custom delivery polygon.</li>
-                    <li><strong>Polygon Content:</strong> Paste KML coordinates or WKT format to define the delivery area boundary.</li>
-                    <li><strong>Formats Supported:</strong> KML coordinates, WKT POLYGON, or WKT MULTIPOLYGON.</li>
-                    <li><strong>Toggle:</strong> Use the Delivery Area toggle to show/hide the polygon on the map.</li>
+            <div class="space-y-3">
+                <div class="text-sm font-bold text-gray-900 flex items-center gap-2 pb-2 border-b-2 border-gray-200">
+                    <i data-lucide="map" class="w-5 h-5"></i>
+                    Delivery Area
+                </div>
+                <ul class="list-none p-0 m-0 space-y-0">
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Enable:</strong> Check "Enable Delivery Area" when adding or editing a partner to define a custom delivery polygon.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Polygon Content:</strong> Paste KML coordinates or WKT format to define the delivery area boundary.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Formats Supported:</strong> KML coordinates, WKT POLYGON, or WKT MULTIPOLYGON.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Toggle:</strong> Use the Delivery Area toggle to show/hide the polygon on the map.
+                    </li>
                 </ul>
-                <div class="help-note" style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 8px 12px; margin-top: 8px; border-radius: 4px;">
-                    <strong>⚠️ Note:</strong> This feature is not fully implemented yet. Polygon content is validated but not rendered on the map.
+                <div class="bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r text-sm">
+                    <strong class="text-amber-800">⚠️ Note:</strong> This feature is not fully implemented yet. Polygon content is validated but not rendered on the map.
                 </div>
             </div>
             
             <!-- Context Menu -->
-            <div class="help-category">
-                <div class="help-category-title"><i data-lucide="mouse-pointer-click" class="icon-header"></i> Right-Click Context Menu</div>
-                <ul class="help-list">
-                    <li><strong>Open Context Menu:</strong> Right-click anywhere on the map to open a context menu at that location.</li>
-                    <li><strong>Add Partner:</strong> Click "Add Partner" to open the partner form pre-filled with the clicked coordinates. A cross marker shows the selected position.</li>
-                    <li><strong>Customer Location:</strong> Click "Customer Location" to view all H3 hexagon IDs at the clicked location in a dedicated sidebar.</li>
+            <div class="space-y-3">
+                <div class="text-sm font-bold text-gray-900 flex items-center gap-2 pb-2 border-b-2 border-gray-200">
+                    <i data-lucide="mouse-pointer-click" class="w-5 h-5"></i>
+                    Right-Click Context Menu
+                </div>
+                <ul class="list-none p-0 m-0 space-y-0">
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Open Context Menu:</strong> Right-click anywhere on the map to open a context menu at that location.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Add Partner:</strong> Click "Add Partner" to open the partner form pre-filled with the clicked coordinates. A cross marker shows the selected position.
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong class="text-gray-900 font-semibold">Customer Location:</strong> Click "Customer Location" to view all H3 hexagon IDs at the clicked location in a dedicated sidebar.
+                    </li>
                 </ul>
             </div>
             
             <!-- Source & Libraries -->
-            <div class="help-category">
-                <div class="help-category-title"><i data-lucide="book-open" class="icon-header"></i> Source & Libraries</div>
-                <ul class="help-list">
-                    <li><strong><a href="https://github.com/ivangfr/h3-hexagon-mapper" target="_blank">ivangfr/h3-hexagon-mapper</a></strong></li>
-                    <li><strong><a href="https://github.com/Leaflet/Leaflet" target="_blank">Leaflet</a></strong> - <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" target="_blank">BSD 2-Clause License</a></li>
-                    <li><strong><a href="https://github.com/uber/h3" target="_blank">H3-js</a></strong> - <a href="https://github.com/uber/h3-js/blob/master/LICENSE" target="_blank">Apache License 2.0</a></li>
-                    <li><strong><a href="https://www.openstreetmap.org" target="_blank">OpenStreetMap</a></strong> - <a href="https://www.openstreetmap.org/copyright" target="_blank">ODbL License</a></li>
-                    <li><strong><a href="https://tailwindcss.com/" target="_blank">Tailwind CSS</a></strong> - <a href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" target="_blank">MIT License</a></li>
-                    <li><strong><a href="https://lucide.dev/" target="_blank">Lucide Icons</a></strong> - <a href="https://github.com/lucide-icons/lucide/blob/main/LICENSE" target="_blank">ISC License</a></li>
+            <div class="space-y-3">
+                <div class="text-sm font-bold text-gray-900 flex items-center gap-2 pb-2 border-b-2 border-gray-200">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    Source & Libraries
+                </div>
+                <ul class="list-none p-0 m-0 space-y-0">
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong><a href="https://github.com/ivangfr/h3-hexagon-mapper" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline font-medium">ivangfr/h3-hexagon-mapper</a></strong>
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong><a href="https://github.com/Leaflet/Leaflet" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline font-medium">Leaflet</a></strong> - <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">BSD 2-Clause License</a>
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong><a href="https://github.com/uber/h3" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline font-medium">H3-js</a></strong> - <a href="https://github.com/uber/h3-js/blob/master/LICENSE" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">Apache License 2.0</a>
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong><a href="https://www.openstreetmap.org" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline font-medium">OpenStreetMap</a></strong> - <a href="https://www.openstreetmap.org/copyright" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">ODbL License</a>
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong><a href="https://tailwindcss.com/" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline font-medium">Tailwind CSS</a></strong> - <a href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">MIT License</a>
+                    </li>
+                    <li class="py-2.5 border-b border-gray-100 text-[13px] leading-relaxed text-gray-600 last:border-b-0">
+                        <strong><a href="https://lucide.dev/" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline font-medium">Lucide Icons</a></strong> - <a href="https://github.com/lucide-icons/lucide/blob/main/LICENSE" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">ISC License</a>
+                    </li>
                 </ul>
             </div>
             
-            <div class="help-footer">
-                <p>Ivan Franchin © 2026</p>
+            <div class="pt-5 border-t-2 border-gray-200 text-center">
+                <p class="text-[13px] text-gray-500 m-0">Ivan Franchin © 2026</p>
             </div>
         </div>
     </div>
 
     <!-- Add Partner Sidebar -->
-    <div id="add-partner-sidebar" class="sidebar hidden sidebar-closed" style="z-index: 9999;">
-        <div class="sidebar-header">
-            <div class="sidebar-header-content">
-                <h2><i data-lucide="store" class="icon-header"></i> <span id="partner-sidebar-title">Add Partner</span></h2>
-                <button id="sidebar-close-btn" class="sidebar-close">&times;</button>
+    <div id="add-partner-sidebar" class="sidebar hidden sidebar-closed z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10">
+        <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
+            <div class="flex justify-between items-center">
+                <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
+                    <i data-lucide="store" class="w-5 h-5"></i>
+                    <span id="partner-sidebar-title">Add Partner</span>
+                </h2>
+                <button id="sidebar-close-btn" class="w-9 h-9 rounded-full bg-gray-100 border-none cursor-pointer flex items-center justify-center text-xl text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:rotate-90 transition-all duration-200">&times;</button>
             </div>
         </div>
-        <div class="sidebar-body">
-            <form id="add-partner-form">
-                <div class="form-group">
-                    <label for="sidebar-partnerId">Partner ID</label>
-                    <input type="text" id="sidebar-partnerId" placeholder="Enter partner ID" value="partner1" required>
+        <div class="p-6">
+            <form id="add-partner-form" class="space-y-4">
+                <div class="space-y-2">
+                    <label for="sidebar-partnerId" class="block text-[13px] font-semibold text-gray-700">Partner ID</label>
+                    <input type="text" id="sidebar-partnerId" placeholder="Enter partner ID" value="partner1" required class="w-full px-3.5 py-3 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
                 </div>
                 
                 <!-- Latitude and Longitude on same line -->
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="form-group">
-                        <label for="sidebar-latitude">Latitude</label>
-                        <input type="number" id="sidebar-latitude" placeholder="-90 to 90" value="52.52" step="any" required>
+                    <div class="space-y-2">
+                        <label for="sidebar-latitude" class="block text-[13px] font-semibold text-gray-700">Latitude</label>
+                        <input type="number" id="sidebar-latitude" placeholder="-90 to 90" value="52.52" step="any" required class="w-full px-3.5 py-3 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
                     </div>
-                    <div class="form-group">
-                        <label for="sidebar-longitude">Longitude</label>
-                        <input type="number" id="sidebar-longitude" placeholder="-180 to 180" value="13.4" step="any" required>
+                    <div class="space-y-2">
+                        <label for="sidebar-longitude" class="block text-[13px] font-semibold text-gray-700">Longitude</label>
+                        <input type="number" id="sidebar-longitude" placeholder="-180 to 180" value="13.4" step="any" required class="w-full px-3.5 py-3 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
                     </div>
                 </div>
                 
-                <div class="section-title">Primary Zone</div>
+                <!-- Primary Zone Section -->
+                <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <i data-lucide="circle" class="w-4 h-4"></i>
+                    Primary Zone
+                </div>
                 
-                <div id="primary-fields">
-                    <!-- Primary Resolution and Zones on same line -->
+                <div id="primary-fields" class="p-2.5 bg-gray-50 rounded-xl border border-gray-200">
+                    <!-- Primary Resolution, Zones, and Color on same line -->
                     <div class="grid grid-cols-3 gap-3">
-                        <div class="form-group">
-                            <label>Res. <span id="sidebar-resolution-value">9</span></label>
+                        <div class="space-y-2">
+                            <label class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                                Res.
+                                <span id="sidebar-resolution-value" class="font-semibold text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">9</span>
+                            </label>
                             <input type="range" id="sidebar-h3Resolution" min="0" max="15" value="9" required>
                         </div>
-                        <div class="form-group">
-                            <label>Zones <span id="sidebar-zones-value">18</span></label>
+                        <div class="space-y-2">
+                            <label class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                                Zones
+                                <span id="sidebar-zones-value" class="font-semibold text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">18</span>
+                            </label>
                             <input type="range" id="sidebar-numZones" min="1" max="50" value="18" required>
                         </div>
-                        <div class="form-group">
-                            <label class="mb-0">Color</label>
+                        <div class="space-y-2">
+                            <label class="block text-[13px] font-medium text-gray-700 mb-0">Color</label>
                             <input type="color" id="sidebar-color" value="#0000ff" class="color-picker-compact" required>
                         </div>
                     </div>
@@ -254,130 +412,148 @@
                 
                 <hr class="my-4 border-gray-200">
                 
-                <div class="toggle-group">
-                    <label>
+                <!-- Secondary Zone Toggle -->
+                <div class="flex items-center p-3 bg-gray-50 rounded-xl">
+                    <label class="flex items-center gap-3 cursor-pointer w-full">
                         <div class="toggle-switch">
                             <input type="checkbox" id="sidebar-enable-secondary">
                             <span class="toggle-slider"></span>
                         </div>
-                        Enable Secondary Zone
+                        <span class="text-sm font-medium text-gray-700">Enable Secondary Zone</span>
                     </label>
                 </div>
                 
-                <div id="secondary-fields" class="hidden">
+                <!-- Secondary Zone Fields -->
+                <div id="secondary-fields" class="hidden p-2.5 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
                     <!-- Secondary Resolution and Zones on same line -->
                     <div class="grid grid-cols-2 gap-3">
-                        <div class="form-group">
-                            <label>Res. <span id="sidebar-resolution2-value">6</span></label>
+                        <div class="space-y-2">
+                            <label class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                                Res.
+                                <span id="sidebar-resolution2-value" class="font-semibold text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">6</span>
+                            </label>
                             <input type="range" id="sidebar-h3Resolution2" min="0" max="15" value="6">
                         </div>
-                        <div class="form-group">
-                            <label>Zones <span id="sidebar-zones2-value">8</span></label>
+                        <div class="space-y-2">
+                            <label class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                                Zones
+                                <span id="sidebar-zones2-value" class="font-semibold text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">8</span>
+                            </label>
                             <input type="range" id="sidebar-numZones2" min="1" max="50" value="8">
                         </div>
                     </div>
                     
                     <!-- Secondary Color and Same as primary on same line -->
-                    <div class="form-group">
-                        <div class="flex items-center gap-2">
-                            <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
-                                <input type="checkbox" id="sidebar-same-color" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                <span>Same as primary</span>
-                            </label>
-                            <input type="color" id="sidebar-color2" value="#0000ff" class="color-picker-compact">
-                        </div>
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
+                            <input type="checkbox" id="sidebar-same-color" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span>Same as primary</span>
+                        </label>
+                        <input type="color" id="sidebar-color2" value="#0000ff" class="color-picker-compact">
                     </div>
                 </div>
                 
                 <hr class="my-4 border-gray-200">
                 
                 <!-- Delivery Area Toggle -->
-                <div class="toggle-group">
-                    <label>
+                <div class="flex items-center p-3 bg-gray-50 rounded-xl">
+                    <label class="flex items-center gap-3 cursor-pointer w-full">
                         <div class="toggle-switch">
                             <input type="checkbox" id="sidebar-enable-delivery-area">
                             <span class="toggle-slider"></span>
                         </div>
-                        Enable Delivery Area
+                        <span class="text-sm font-medium text-gray-700">Enable Delivery Area</span>
                     </label>
                 </div>
                 
                 <!-- Delivery Area Fields -->
-                <div id="delivery-area-fields" class="hidden">
+                <div id="delivery-area-fields" class="hidden p-2.5 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
                     <!-- Polygon Content Textarea (KML or WKT) -->
-                    <div class="form-group">
-                        <label for="sidebar-polygon-content">Polygon Content</label>
-                        <textarea id="sidebar-polygon-content" placeholder="Paste KML or WKT content here..." rows="4"></textarea>
+                    <div class="space-y-2">
+                        <label for="sidebar-polygon-content" class="block text-[13px] font-semibold text-gray-700">Polygon Content</label>
+                        <textarea id="sidebar-polygon-content" placeholder="Paste KML or WKT content here..." rows="4" class="w-full px-3.5 py-3 text-[13px] font-mono border-2 border-gray-200 rounded-xl resize-y min-h-[100px] bg-white outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all placeholder:text-gray-400"></textarea>
                     </div>
                     
                     <!-- Delivery Area Color -->
-                    <div class="form-group">
-                        <div class="flex items-center gap-2">
-                            <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
-                                <input type="checkbox" id="sidebar-same-color-delivery" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                <span>Same as primary</span>
-                            </label>
-                            <input type="color" id="sidebar-delivery-color" value="#0000ff" class="color-picker-compact" disabled>
-                        </div>
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
+                            <input type="checkbox" id="sidebar-same-color-delivery" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span>Same as primary</span>
+                        </label>
+                        <input type="color" id="sidebar-delivery-color" value="#0000ff" class="color-picker-compact" disabled>
                     </div>
                 </div>
                 
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" id="partner-submit-btn">Add</button>
-                    <button type="button" id="sidebar-cancel-add" class="btn btn-secondary">Cancel</button>
+                <!-- Form Actions -->
+                <div class="flex gap-3 pt-5 border-t border-gray-200">
+                    <button type="submit" id="partner-submit-btn" class="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 text-[13px] font-semibold text-white bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md shadow-blue-500/30 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                        Add
+                    </button>
+                    <button type="button" id="sidebar-cancel-add" class="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 text-[13px] font-semibold text-gray-700 bg-gray-100 rounded-xl border border-gray-200 hover:bg-gray-200 hover:border-gray-300 transition-all duration-200">
+                        Cancel
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Customer Location Sidebar -->
-    <div id="customer-location-sidebar" class="sidebar hidden sidebar-closed" style="z-index: 9999;">
-        <div class="sidebar-header">
-            <div class="sidebar-header-content">
-                <h2><i data-lucide="map-pin" class="icon-header"></i> Customer Location</h2>
-                <button id="customer-location-close-btn" class="sidebar-close">&times;</button>
+    <div id="customer-location-sidebar" class="sidebar hidden sidebar-closed z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10">
+        <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
+            <div class="flex justify-between items-center">
+                <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
+                    <i data-lucide="map-pin" class="w-5 h-5"></i>
+                    Customer Location
+                </h2>
+                <button id="customer-location-close-btn" class="w-9 h-9 rounded-full bg-gray-100 border-none cursor-pointer flex items-center justify-center text-xl text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:rotate-90 transition-all duration-200">&times;</button>
             </div>
         </div>
-        <div class="sidebar-body">
+        <div class="p-6 space-y-4">
             <!-- Coordinates Card -->
-            <div class="coords-card">
-                <div class="coords-label">Coordinates</div>
-                <div id="customer-location-coords" class="coords-value"></div>
+            <div class="bg-gradient-to-br from-sky-50 to-sky-100 border border-sky-200 rounded-xl p-4">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-sky-600 mb-1.5">Coordinates</div>
+                <div id="customer-location-coords" class="text-sm font-semibold text-sky-900 font-mono"></div>
             </div>
             
             <!-- Summary Card -->
-            <div id="customer-location-summary" class="summary-card">
-                <div class="summary-item">
-                    <div class="summary-value" id="summary-hexagon-count">0</div>
-                    <div class="summary-label">Hexagons</div>
+            <div id="customer-location-summary" class="flex items-center justify-center bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                <div class="flex-1 text-center">
+                    <div id="summary-hexagon-count" class="text-3xl font-bold text-blue-500 leading-none mb-1">0</div>
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Hexagons</div>
                 </div>
-                <div class="summary-divider"></div>
-                <div class="summary-item">
-                    <div class="summary-value" id="summary-partner-count">0</div>
-                    <div class="summary-label">Partners</div>
+                <div class="w-px h-10 bg-gray-200 mx-4"></div>
+                <div class="flex-1 text-center">
+                    <div id="summary-partner-count" class="text-3xl font-bold text-blue-500 leading-none mb-1">0</div>
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Partners</div>
                 </div>
             </div>
             
             <!-- Hexagon List -->
-            <div class="section-title" style="margin-bottom: 12px;">Hexagons at Location</div>
-            <div id="customer-location-hexagon-list"></div>
+            <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                <i data-lucide="hexagon" class="w-4 h-4"></i>
+                Hexagons at Location
+            </div>
+            <div id="customer-location-hexagon-list" class="space-y-3"></div>
         </div>
     </div>
 
     <!-- Partner Sidebar -->
-    <div id="partner-sidebar" class="sidebar hidden sidebar-closed" style="z-index: 10000;">
-        <div class="sidebar-header">
-            <div class="sidebar-header-content">
-                <h2><i data-lucide="store" class="icon-header"></i> <span id="slide-partner-id">Unknown</span></h2>
-                <button id="slide-close-btn" class="sidebar-close">&times;</button>
+    <div id="partner-sidebar" class="sidebar hidden sidebar-closed z-[10000] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10">
+        <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
+            <div class="flex justify-between items-center">
+                <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
+                    <i data-lucide="store" class="w-5 h-5"></i>
+                    <span id="slide-partner-id">Unknown</span>
+                </h2>
+                <button id="slide-close-btn" class="w-9 h-9 rounded-full bg-gray-100 border-none cursor-pointer flex items-center justify-center text-xl text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:rotate-90 transition-all duration-200">&times;</button>
             </div>
         </div>
-        <div class="sidebar-body" style="padding: 16px;">
+        <div class="p-4 space-y-3">
             <!-- Primary Zone Toggle -->
-            <div class="zone-toggle" style="margin-bottom: 12px;">
-                <div class="zone-toggle-info">
-                    <h4>Primary Zone</h4>
-                    <p>Primary H3 hexagons</p>
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Primary Zone</h4>
+                    <p class="m-0 text-xs text-gray-500">Primary H3 hexagons</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-primary-zone" class="sr-only peer" checked>
@@ -386,10 +562,10 @@
             </div>
             
             <!-- Secondary Zone Toggle -->
-            <div class="zone-toggle" style="margin-bottom: 12px;">
-                <div class="zone-toggle-info">
-                    <h4>Secondary Zone</h4>
-                    <p>Secondary H3 hexagons</p>
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Secondary Zone</h4>
+                    <p class="m-0 text-xs text-gray-500">Secondary H3 hexagons</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-secondary-zone" class="sr-only peer" checked>
@@ -398,10 +574,10 @@
             </div>
             
             <!-- Delivery Area Toggle -->
-            <div class="zone-toggle" style="margin-bottom: 16px;">
-                <div class="zone-toggle-info">
-                    <h4>Delivery Area</h4>
-                    <p>Custom polygon (KML/WKT)</p>
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Delivery Area</h4>
+                    <p class="m-0 text-xs text-gray-500">Custom polygon (KML/WKT)</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-delivery-area" class="sr-only peer" checked>
@@ -410,9 +586,9 @@
             </div>
 
             <!-- Partner Stats -->
-            <div class="stats-card" style="margin-bottom: 16px;">
-                <h4>Statistics</h4>
-                <table id="partner-stats-table">
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <h4 class="m-0 text-sm font-semibold text-gray-900 mb-3">Statistics</h4>
+                <table id="partner-stats-table" class="w-full text-[13px]">
                     <tbody class="divide-y divide-gray-200">
                         <!-- Stats rows will be populated by JavaScript -->
                     </tbody>
@@ -420,14 +596,19 @@
             </div>
 
             <!-- Partner Edit -->
-            <button id="edit-partner-btn" class="btn btn-primary" style="margin-bottom: 8px;"><i data-lucide="pencil" class="icon-btn"></i> Edit Partner</button>
+            <button id="edit-partner-btn" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md shadow-blue-500/30 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+                Edit Partner
+            </button>
 
             <!-- Partner Delete -->
-            <button id="delete-partner-btn" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);"><i data-lucide="trash-2" class="icon-btn"></i> Delete Partner</button>
+            <button id="delete-partner-btn" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-md shadow-red-500/30 hover:from-red-600 hover:to-red-700 hover:shadow-lg hover:shadow-red-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                Delete Partner
+            </button>
         </div>
     </div>
 
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/h3-js"></script>
     <script src="script.js"></script>

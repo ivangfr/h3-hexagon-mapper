@@ -774,8 +774,8 @@ function updatePartnerSidebarContent(partner) {
     // Primary zone row
     const primaryRow = document.createElement('tr');
     primaryRow.innerHTML = `
-        <td class="py-1 pr-2 font-medium text-gray-700">Primary</td>
-        <td class="py-1 text-gray-600">Resolution: ${partner.h3Resolution}<br>Zones: ${partner.numZones} (${primaryCount} hexagons)</td>
+        <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Primary</td>
+        <td class="py-2 text-gray-600">Resolution: ${partner.h3Resolution}<br>Zones: ${partner.numZones} (${primaryCount} hexagons)</td>
     `;
     tableBody.appendChild(primaryRow);
 
@@ -783,8 +783,8 @@ function updatePartnerSidebarContent(partner) {
     if (secondaryCount > 0 && partner.numZones2 !== undefined) {
         const secondaryRow = document.createElement('tr');
         secondaryRow.innerHTML = `
-            <td class="py-1 pr-2 font-medium text-gray-700">Secondary</td>
-            <td class="py-1 text-gray-600">Resolution: ${partner.h3Resolution2}<br>Zones: ${partner.numZones2} (${secondaryCount} hexagons)</td>
+            <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Secondary</td>
+            <td class="py-2 text-gray-600">Resolution: ${partner.h3Resolution2}<br>Zones: ${partner.numZones2} (${secondaryCount} hexagons)</td>
         `;
         tableBody.appendChild(secondaryRow);
     }
@@ -793,8 +793,8 @@ function updatePartnerSidebarContent(partner) {
     if (hasDeliveryArea) {
         const deliveryRow = document.createElement('tr');
         deliveryRow.innerHTML = `
-            <td class="py-1 pr-2 font-medium text-gray-700">Delivery Area</td>
-            <td class="py-1 text-gray-600">Custom polygon defined</td>
+            <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Delivery Area</td>
+            <td class="py-2 text-gray-600">Custom polygon defined</td>
         `;
         tableBody.appendChild(deliveryRow);
     }
@@ -1530,16 +1530,17 @@ function updateCustomerLocationSidebarContent(lat, lng) {
         
         groupedArray.forEach(group => {
             const hexagonCard = document.createElement('div');
-            hexagonCard.className = 'hexagon-card';
+            hexagonCard.className = 'bg-gray-50 rounded-xl p-4 border border-gray-200';
             hexagonCard.dataset.h3Index = group.h3Index;
             
             // Build partners list HTML - separate div for each partner with their color
             let partnersHtml = '';
             if (group.partners.length > 0) {
                 partnersHtml = group.partners.map(p => {
-                    return `<div class="partner-info" style="border-left-color: ${p.color};">
-                        <div class="partner-info-line">
-                            <span class="partner-badge">${p.partnerId} <span class="zone-badge">${p.layerType}, zone ${p.zoneNumber}</span></span>
+                    return `<div class="mt-3 pl-3 py-2 border-l-4 rounded-r bg-white" style="border-left-color: ${p.color};">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-[13px] font-semibold text-gray-900">${p.partnerId}</span>
+                            <span class="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded">${p.layerType}, zone ${p.zoneNumber}</span>
                         </div>
                     </div>`;
                 }).join('');
@@ -1548,17 +1549,17 @@ function updateCustomerLocationSidebarContent(lat, lng) {
             // Build standalone indicator
             let standaloneHtml = '';
             if (group.isStandalone && group.partners.length === 0) {
-                standaloneHtml = '<div class="partner-info standalone"><div class="partner-info-line standalone">Standalone hexagon</div></div>';
+                standaloneHtml = '<div class="mt-3 pl-3 py-2 border-l-4 border-l-gray-400 rounded-r bg-gray-100"><div class="text-[13px] text-gray-500 italic">Standalone hexagon</div></div>';
             } else if (group.isStandalone) {
-                standaloneHtml = '<div class="partner-info standalone" style="margin-top: 8px;"><div class="partner-info-line standalone">Also: standalone</div></div>';
+                standaloneHtml = '<div class="mt-2 pl-3 py-1 border-l-4 border-l-gray-400 rounded-r bg-gray-100"><div class="text-xs text-gray-500 italic">Also: standalone</div></div>';
             }
             
             hexagonCard.innerHTML = `
-                <div class="hexagon-card-header">
-                    <i data-lucide="hexagon" class="w-5 h-5" style="color: ${group.color};"></i>
-                    <div class="hexagon-info">
-                        <div class="h3-index">${group.h3Index}</div>
-                        <div class="resolution-badge">Res ${group.resolution}</div>
+                <div class="flex items-center gap-3">
+                    <i data-lucide="hexagon" class="w-5 h-5 flex-shrink-0" style="color: ${group.color};"></i>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-mono text-gray-900 break-all">${group.h3Index}</div>
+                        <div class="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded inline-block mt-1">Res ${group.resolution}</div>
                     </div>
                 </div>
                 ${partnersHtml}
@@ -1573,10 +1574,10 @@ function updateCustomerLocationSidebarContent(lat, lng) {
     } else {
         // No hexagons found
         const noHexagonsMsg = document.createElement('div');
-        noHexagonsMsg.className = 'no-hexagons-msg';
+        noHexagonsMsg.className = 'text-center py-8 text-gray-400';
         noHexagonsMsg.innerHTML = `
-            <i data-lucide="hexagon" class="w-12 h-12 mx-auto" style="color: #d1d5db; display: block;"></i>
-            <p>No hexagons at this location</p>
+            <i data-lucide="hexagon" class="w-12 h-12 mx-auto mb-3 text-gray-300"></i>
+            <p class="text-sm">No hexagons at this location</p>
         `;
         customerLocationHexagonList.appendChild(noHexagonsMsg);
         lucide.createIcons();
