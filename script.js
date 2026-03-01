@@ -25,6 +25,9 @@ let resolution = 9;
 let color = '#0000ff';
 let opacity = 0.3;
 
+// Standalone hexagons enabled state
+let standaloneHexagonsEnabled = true;
+
 // Measurement state
 let isMeasuring = false;
 let measurementStart = null;
@@ -192,6 +195,12 @@ map.on('click', function(e) {
         }
         return;
     }
+    
+    // Only add standalone hexagons if enabled
+    if (!standaloneHexagonsEnabled) {
+        return;
+    }
+    
     const { lat, lng } = e.latlng;
     generateH3Grid(lat, lng, resolution, color, opacity, map);
 });
@@ -337,6 +346,21 @@ grayscaleToggle.addEventListener('change', function() {
         mapElement.classList.add('map-grayscale');
     } else {
         mapElement.classList.remove('map-grayscale');
+    }
+});
+
+// Standalone hexagons toggle
+const standaloneToggle = document.getElementById('standalone-hexagons-toggle');
+const standaloneSettings = document.getElementById('standalone-hexagon-settings');
+
+standaloneToggle.addEventListener('change', function() {
+    standaloneHexagonsEnabled = this.checked;
+    
+    // Show/hide settings container based on toggle state
+    if (this.checked) {
+        standaloneSettings.classList.remove('hidden');
+    } else {
+        standaloneSettings.classList.add('hidden');
     }
 });
 
@@ -1003,6 +1027,15 @@ function openSidebarForEdit(partner) {
         document.getElementById('sidebar-same-color').checked = true;
         document.getElementById('sidebar-color2').disabled = true;
     }
+
+    // Handle delivery area fields
+    document.getElementById('sidebar-enable-delivery-area').checked = false;
+    document.getElementById('delivery-area-fields').classList.add('hidden');
+    document.getElementById('sidebar-same-color-delivery').checked = true;
+    // Set delivery color to match primary color
+    document.getElementById('sidebar-delivery-color').value = primaryColor;
+    document.getElementById('sidebar-delivery-color').disabled = true;
+    document.getElementById('sidebar-polygon-content').value = '';
 
     // Open sidebar with animation
     const sidebar = document.getElementById('add-partner-sidebar');
