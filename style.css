@@ -472,7 +472,7 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .form-group label {
@@ -633,13 +633,37 @@ input[type="color"]::-webkit-color-swatch {
     transform: translateX(22px);
 }
 
-/* Secondary Fields */
-#secondary-fields {
-    padding: 16px;
+
+#primary-fields, #secondary-fields, #delivery-area-fields {
+    padding: 10px;
     background: #f9fafb;
     border-radius: 12px;
     margin-top: 16px;
     border: 1px solid #e5e7eb;
+}
+
+#delivery-area-fields textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-family: 'Roboto Mono', monospace;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    resize: vertical;
+    min-height: 100px;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+}
+
+#delivery-area-fields textarea:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#delivery-area-fields textarea::placeholder {
+    color: #9ca3af;
 }
 
 /* Form Actions */

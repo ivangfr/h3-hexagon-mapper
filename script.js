@@ -620,6 +620,106 @@ function toggleSecondaryHexagonsVisibility(partnerId, visible) {
     }
 }
 
+// Toggle delivery area visibility for a partner
+function toggleDeliveryAreaVisibility(partnerId, visible) {
+    const partner = partnersById[partnerId];
+    if (!partner || !partner.elements.deliveryAreaPolygon) return;
+
+    if (visible) {
+        partner.elements.deliveryAreaPolygon.setStyle({
+            fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
+            opacity: 1
+        });
+    } else {
+        partner.elements.deliveryAreaPolygon.setStyle({
+            fillOpacity: 0,
+            opacity: 0
+        });
+    }
+}
+
+// Parse polygon content (KML or WKT) and extract coordinates
+function parsePolygonContent(content) {
+    const trimmedContent = content.trim();
+    
+    // Detect format: KML has XML structure, WKT starts with POLYGON
+    if (trimmedContent.includes('<coordinates') || trimmedContent.includes('<Coordinates')) {
+        return parseKMLCoordinates(trimmedContent);
+    } else if (trimmedContent.toUpperCase().startsWith('POLYGON')) {
+        return parseWKTPolygon(trimmedContent);
+    }
+    
+    // Try to auto-detect by attempting both parsers
+    const kmlResult = parseKMLCoordinates(trimmedContent);
+    if (kmlResult.length > 0) {
+        return kmlResult;
+    }
+    
+    return parseWKTPolygon(trimmedContent);
+}
+
+// Parse KML content and extract polygon coordinates
+function parseKMLCoordinates(kmlContent) {
+    const coordinates = [];
+    
+    // Try to extract coordinates from KML <coordinates> tag
+    const coordMatch = kmlContent.match(/<coordinates[^>]*>([\s\S]*?)<\/coordinates>/i);
+    if (coordMatch) {
+        const coordText = coordMatch[1].trim();
+        // KML coordinates are in format: lon,lat,alt lon,lat,alt ...
+        const coordPairs = coordText.split(/\s+/);
+        coordPairs.forEach(pair => {
+            const parts = pair.split(',');
+            if (parts.length >= 2) {
+                const lon = parseFloat(parts[0]);
+                const lat = parseFloat(parts[1]);
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    coordinates.push([lat, lon]);
+                }
+            }
+        });
+    }
+    
+    return coordinates;
+}
+
+// Parse WKT POLYGON content and extract coordinates
+function parseWKTPolygon(wktContent) {
+    const coordinates = [];
+    
+    // WKT POLYGON format: POLYGON((lon1 lat1, lon2 lat2, lon3 lat3, ...))
+    // or with multiple rings: POLYGON((outer_ring),(inner_ring1),...)
+    
+    // Match the content inside POLYGON(...)
+    const polygonMatch = wktContent.match(/POLYGON\s*\(\s*\(([\s\S]+)\)\s*\)/i);
+    if (polygonMatch) {
+        // Get the first (outer) ring
+        let ringContent = polygonMatch[1];
+        
+        // Handle multiple rings - take only the first (outer) ring
+        const rings = ringContent.split(/\)\s*,\s*\(/);
+        if (rings.length > 0) {
+            ringContent = rings[0];
+        }
+        
+        // Parse coordinate pairs: lon1 lat1, lon2 lat2, ...
+        const coordPairs = ringContent.split(',');
+        coordPairs.forEach(pair => {
+            const trimmedPair = pair.trim();
+            const parts = trimmedPair.split(/\s+/);
+            if (parts.length >= 2) {
+                const lon = parseFloat(parts[0]);
+                const lat = parseFloat(parts[1]);
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    coordinates.push([lat, lon]);
+                }
+            }
+        });
+    }
+    
+    return coordinates;
+}
+
 // Show partner sidebar
 function showPartnerSidebar(partnerId) {
     const partner = partnersById[partnerId];
@@ -669,6 +769,7 @@ function updatePartnerSidebarContent(partner) {
 
     const primaryCount = partner.elements.primaryHexagons.length;
     const secondaryCount = partner.elements.secondaryHexagons.length;
+    const hasDeliveryArea = partner.elements.deliveryAreaPolygon !== undefined;
 
     // Primary zone row
     const primaryRow = document.createElement('tr');
@@ -688,13 +789,25 @@ function updatePartnerSidebarContent(partner) {
         tableBody.appendChild(secondaryRow);
     }
 
+    // Delivery area row (if exists)
+    if (hasDeliveryArea) {
+        const deliveryRow = document.createElement('tr');
+        deliveryRow.innerHTML = `
+            <td class="py-1 pr-2 font-medium text-gray-700">Delivery Area</td>
+            <td class="py-1 text-gray-600">Custom polygon defined</td>
+        `;
+        tableBody.appendChild(deliveryRow);
+    }
+
     // Set initial toggle states
     const primaryVisible = partner.elements.primaryHexagons.length > 0 && partner.elements.primaryHexagons[0].polygon.options.fillOpacity > 0;
     const secondaryVisible = partner.elements.secondaryHexagons.length > 0 && partner.elements.secondaryHexagons[0].polygon.options.fillOpacity > 0;
+    const deliveryVisible = hasDeliveryArea && partner.elements.deliveryAreaPolygon.options.fillOpacity > 0;
     const hasSecondaryHexagons = partner.elements.secondaryHexagons.length > 0;
 
     document.getElementById('toggle-primary-zone').checked = primaryVisible;
     document.getElementById('toggle-secondary-zone').checked = secondaryVisible;
+    document.getElementById('toggle-delivery-area').checked = deliveryVisible;
 
     // Configure secondary toggle based on availability
     const secondaryToggle = document.getElementById('toggle-secondary-zone');
@@ -711,6 +824,24 @@ function updatePartnerSidebarContent(partner) {
         if (secondaryContainer) {
             secondaryContainer.classList.add('opacity-50', 'cursor-not-allowed');
             secondaryContainer.style.pointerEvents = 'none';
+        }
+    }
+
+    // Configure delivery area toggle based on availability
+    const deliveryToggle = document.getElementById('toggle-delivery-area');
+    const deliveryContainer = deliveryToggle.closest('.zone-toggle');
+
+    if (hasDeliveryArea) {
+        deliveryToggle.disabled = false;
+        if (deliveryContainer) {
+            deliveryContainer.classList.remove('opacity-50', 'cursor-not-allowed');
+            deliveryContainer.style.pointerEvents = 'auto';
+        }
+    } else {
+        deliveryToggle.disabled = true;
+        if (deliveryContainer) {
+            deliveryContainer.classList.add('opacity-50', 'cursor-not-allowed');
+            deliveryContainer.style.pointerEvents = 'none';
         }
     }
 }
@@ -736,6 +867,17 @@ function resetSidebarForm() {
     document.getElementById('secondary-fields').classList.add('hidden');
     document.getElementById('sidebar-same-color').checked = true;
     document.getElementById('sidebar-color2').disabled = true;
+    
+    // Reset delivery area fields
+    document.getElementById('sidebar-enable-delivery-area').checked = false;
+    document.getElementById('delivery-area-fields').classList.add('hidden');
+    document.getElementById('sidebar-same-color-delivery').checked = true;
+    document.getElementById('sidebar-delivery-color').disabled = true;
+    // Set delivery color to match primary color
+    const primaryColor = document.getElementById('sidebar-color').value || PARTNER_CONSTANTS.DEFAULT_COLOR;
+    document.getElementById('sidebar-delivery-color').value = primaryColor;
+    // Clear polygon textarea
+    document.getElementById('sidebar-polygon-content').value = '';
     
     editMode.isActive = false;
     editMode.partnerId = null;
@@ -904,6 +1046,34 @@ document.getElementById('sidebar-same-color').addEventListener('change', functio
     }
 });
 
+// Enable delivery area checkbox
+document.getElementById('sidebar-enable-delivery-area').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('delivery-area-fields').classList.remove('hidden');
+    } else {
+        document.getElementById('delivery-area-fields').classList.add('hidden');
+    }
+});
+
+// Primary color change to sync delivery area color (only if same color checkbox is checked)
+document.getElementById('sidebar-color').addEventListener('input', function() {
+    if (document.getElementById('sidebar-same-color-delivery').checked) {
+        document.getElementById('sidebar-delivery-color').value = this.value;
+    }
+});
+
+// Same color as primary for delivery area checkbox
+document.getElementById('sidebar-same-color-delivery').addEventListener('change', function() {
+    if (this.checked) {
+        // Sync delivery color with primary and disable the color picker
+        document.getElementById('sidebar-delivery-color').value = document.getElementById('sidebar-color').value;
+        document.getElementById('sidebar-delivery-color').disabled = true;
+    } else {
+        // Enable the delivery color picker for independent selection
+        document.getElementById('sidebar-delivery-color').disabled = false;
+    }
+});
+
 // Add/Edit partner form submission
 document.getElementById('add-partner-form').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -919,6 +1089,16 @@ document.getElementById('add-partner-form').addEventListener('submit', function(
     const h3Resolution2 = enableSecondary ? parseInt(document.getElementById('sidebar-h3Resolution2').value) : undefined;
     const numZones2 = enableSecondary ? parseInt(document.getElementById('sidebar-numZones2').value) : undefined;
     const color2 = enableSecondary ? document.getElementById('sidebar-color2').value : undefined;
+
+    // Validate delivery area polygon content
+    const enableDeliveryArea = document.getElementById('sidebar-enable-delivery-area').checked;
+    if (enableDeliveryArea) {
+        const polygonContent = document.getElementById('sidebar-polygon-content').value.trim();
+        if (!polygonContent) {
+            alert("Please provide polygon content (KML or WKT) for the delivery area, or disable the delivery area option.");
+            return;
+        }
+    }
 
     const partner = { partnerId, latitude, longitude, h3Resolution, numZones, h3Resolution2, numZones2, color, color2 };
 
@@ -998,6 +1178,12 @@ document.getElementById('toggle-primary-zone').addEventListener('change', functi
 document.getElementById('toggle-secondary-zone').addEventListener('change', function() {
     if (!currentPartnerId) return;
     toggleSecondaryHexagonsVisibility(currentPartnerId, this.checked);
+});
+
+// Toggle delivery area
+document.getElementById('toggle-delivery-area').addEventListener('change', function() {
+    if (!currentPartnerId) return;
+    toggleDeliveryAreaVisibility(currentPartnerId, this.checked);
 });
 
 // ==========================================
@@ -1189,6 +1375,14 @@ function setupAddPartnerForm(lat, lng) {
     document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
     document.getElementById('sidebar-same-color').checked = true;
     document.getElementById('sidebar-color2').disabled = true;
+    
+    // Reset delivery area fields
+    document.getElementById('sidebar-enable-delivery-area').checked = false;
+    document.getElementById('delivery-area-fields').classList.add('hidden');
+    document.getElementById('sidebar-same-color-delivery').checked = true;
+    document.getElementById('sidebar-delivery-color').disabled = true;
+    document.getElementById('sidebar-delivery-color').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
+    document.getElementById('sidebar-polygon-content').value = '';
 }
 
 // Open partner sidebar with coordinates filled

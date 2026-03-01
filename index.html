@@ -162,6 +162,20 @@
                 </ul>
             </div>
             
+            <!-- Delivery Area -->
+            <div class="help-category">
+                <div class="help-category-title"><i data-lucide="map" class="icon-header"></i> Delivery Area</div>
+                <ul class="help-list">
+                    <li><strong>Enable:</strong> Check "Enable Delivery Area" when adding or editing a partner to define a custom delivery polygon.</li>
+                    <li><strong>Polygon Content:</strong> Paste KML coordinates or WKT format to define the delivery area boundary.</li>
+                    <li><strong>Formats Supported:</strong> KML coordinates, WKT POLYGON, or WKT MULTIPOLYGON.</li>
+                    <li><strong>Toggle:</strong> Use the Delivery Area toggle to show/hide the polygon on the map.</li>
+                </ul>
+                <div class="help-note" style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 8px 12px; margin-top: 8px; border-radius: 4px;">
+                    <strong>⚠️ Note:</strong> This feature is not fully implemented yet. Polygon content is validated but not rendered on the map.
+                </div>
+            </div>
+            
             <!-- Context Menu -->
             <div class="help-category">
                 <div class="help-category-title"><i data-lucide="mouse-pointer-click" class="icon-header"></i> Right-Click Context Menu</div>
@@ -218,26 +232,28 @@
                     </div>
                 </div>
                 
-                <!-- Primary Resolution and Zones on same line -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="form-group">
-                        <label>Res. <span id="sidebar-resolution-value">9</span></label>
-                        <input type="range" id="sidebar-h3Resolution" min="0" max="15" value="9" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Zones <span id="sidebar-zones-value">18</span></label>
-                        <input type="range" id="sidebar-numZones" min="1" max="50" value="18" required>
+                <div class="section-title">Primary Zone</div>
+                
+                <div id="primary-fields">
+                    <!-- Primary Resolution and Zones on same line -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="form-group">
+                            <label>Res. <span id="sidebar-resolution-value">9</span></label>
+                            <input type="range" id="sidebar-h3Resolution" min="0" max="15" value="9" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Zones <span id="sidebar-zones-value">18</span></label>
+                            <input type="range" id="sidebar-numZones" min="1" max="50" value="18" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="mb-0">Color</label>
+                            <input type="color" id="sidebar-color" value="#0000ff" class="color-picker-compact" required>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Primary Color - Inline compact layout -->
-                <div class="form-group">
-                    <div class="flex items-center justify-between">
-                        <label class="mb-0">Primary Color</label>
-                        <input type="color" id="sidebar-color" value="#0000ff" class="color-picker-compact" required>
-                    </div>
-                </div>
-                    
+                <hr class="my-4 border-gray-200">
+                
                 <div class="toggle-group">
                     <label>
                         <div class="toggle-switch">
@@ -248,7 +264,7 @@
                     </label>
                 </div>
                 
-                <div id="secondary-fields">
+                <div id="secondary-fields" class="hidden">
                     <!-- Secondary Resolution and Zones on same line -->
                     <div class="grid grid-cols-2 gap-3">
                         <div class="form-group">
@@ -263,15 +279,45 @@
                     
                     <!-- Secondary Color and Same as primary on same line -->
                     <div class="form-group">
-                        <div class="flex items-center justify-between">
-                            <label class="mb-0">Secondary Color</label>
-                            <div class="flex items-center gap-2">
-                                <input type="color" id="sidebar-color2" value="#0000ff" class="color-picker-compact">
-                                <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
-                                    <input type="checkbox" id="sidebar-same-color" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                    <span>Same as primary</span>
-                                </label>
-                            </div>
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
+                                <input type="checkbox" id="sidebar-same-color" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                <span>Same as primary</span>
+                            </label>
+                            <input type="color" id="sidebar-color2" value="#0000ff" class="color-picker-compact">
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-4 border-gray-200">
+                
+                <!-- Delivery Area Toggle -->
+                <div class="toggle-group">
+                    <label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="sidebar-enable-delivery-area">
+                            <span class="toggle-slider"></span>
+                        </div>
+                        Enable Delivery Area
+                    </label>
+                </div>
+                
+                <!-- Delivery Area Fields -->
+                <div id="delivery-area-fields" class="hidden">
+                    <!-- Polygon Content Textarea (KML or WKT) -->
+                    <div class="form-group">
+                        <label for="sidebar-polygon-content">Polygon Content</label>
+                        <textarea id="sidebar-polygon-content" placeholder="Paste KML or WKT content here..." rows="4"></textarea>
+                    </div>
+                    
+                    <!-- Delivery Area Color -->
+                    <div class="form-group">
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
+                                <input type="checkbox" id="sidebar-same-color-delivery" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                <span>Same as primary</span>
+                            </label>
+                            <input type="color" id="sidebar-delivery-color" value="#0000ff" class="color-picker-compact" disabled>
                         </div>
                     </div>
                 </div>
@@ -340,13 +386,25 @@
             </div>
             
             <!-- Secondary Zone Toggle -->
-            <div class="zone-toggle" style="margin-bottom: 16px;">
+            <div class="zone-toggle" style="margin-bottom: 12px;">
                 <div class="zone-toggle-info">
                     <h4>Secondary Zone</h4>
                     <p>Secondary H3 hexagons</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-secondary-zone" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+            
+            <!-- Delivery Area Toggle -->
+            <div class="zone-toggle" style="margin-bottom: 16px;">
+                <div class="zone-toggle-info">
+                    <h4>Delivery Area</h4>
+                    <p>Custom polygon (KML/WKT)</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-delivery-area" class="sr-only peer" checked>
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
             </div>

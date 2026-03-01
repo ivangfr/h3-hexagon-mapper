@@ -57,6 +57,18 @@ Partners allow you to add and manage H3 hexagonal zones around specific location
 - **Secondary Zone Toggle**: Show/hide the secondary H3 hexagonal zones for a selected partner (if configured).
 - **Partner Statistics**: View the resolution, number of zones, and hexagon count for both primary and secondary zones.
 
+### Delivery Area
+
+- **Enable Delivery Area**: Check the "Enable Delivery Area" checkbox when adding or editing a partner to define a custom delivery polygon.
+- **Polygon Content**: Paste KML coordinates or WKT format (POLYGON or MULTIPOLYGON) into the text area.
+- **Supported Formats**:
+  - **KML**: `<coordinates>lon,lat lon,lat...</coordinates>`
+  - **WKT**: `POLYGON((lon lat, lon lat, ...))` or `MULTIPOLYGON(((lon lat, ...), ((lon lat, ...)))`
+- **Delivery Area Color**: Choose a custom color for the delivery area polygon, or use the same color as the primary zone.
+- **Toggle Visibility**: Use the "Delivery Area" toggle in the partner panel to show or hide the delivery polygon on the map.
+
+> ⚠️ **Note**: The Delivery Area feature is not fully implemented yet. Polygon content is validated but the polygon is not currently rendered on the map.
+
 ## How to Run Locally
 
 To run the project locally, follow these steps:
