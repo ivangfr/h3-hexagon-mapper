@@ -120,9 +120,9 @@
                     
                     <div class="flex items-center p-3 bg-gray-50 rounded-xl">
                         <label class="flex items-center gap-3 cursor-pointer w-full">
-                            <div class="toggle-switch">
-                                <input type="checkbox" id="grayscale-toggle">
-                                <span class="toggle-slider"></span>
+                            <div class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="grayscale-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                             </div>
                             <span class="text-sm font-medium text-gray-700">Grayscale Map</span>
                         </label>
@@ -171,8 +171,11 @@
         0.00 km
     </div>
     
+    <!-- Drawer Overlay -->
+    <div id="drawer-overlay" class="fixed inset-0 bg-black/20 z-[9998] opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out"></div>
+    
     <!-- Help Sidebar -->
-    <div id="help-sidebar" class="sidebar hidden sidebar-closed z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10" style="z-index: 9999;">
+    <div id="help-sidebar" class="fixed top-0 right-0 h-full z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out">
         <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
             <div class="flex justify-between items-center">
                 <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
@@ -351,7 +354,7 @@
     </div>
 
     <!-- Add Partner Sidebar -->
-    <div id="add-partner-sidebar" class="sidebar hidden sidebar-closed z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10">
+    <div id="add-partner-sidebar" class="fixed top-0 right-0 h-full z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out">
         <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
             <div class="flex justify-between items-center">
                 <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
@@ -415,9 +418,9 @@
                 <!-- Secondary Zone Toggle -->
                 <div class="flex items-center p-3 bg-gray-50 rounded-xl">
                     <label class="flex items-center gap-3 cursor-pointer w-full">
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="sidebar-enable-secondary">
-                            <span class="toggle-slider"></span>
+                        <div class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="sidebar-enable-secondary" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                         </div>
                         <span class="text-sm font-medium text-gray-700">Enable Secondary Zone</span>
                     </label>
@@ -458,9 +461,9 @@
                 <!-- Delivery Area Toggle -->
                 <div class="flex items-center p-3 bg-gray-50 rounded-xl">
                     <label class="flex items-center gap-3 cursor-pointer w-full">
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="sidebar-enable-delivery-area">
-                            <span class="toggle-slider"></span>
+                        <div class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="sidebar-enable-delivery-area" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                         </div>
                         <span class="text-sm font-medium text-gray-700">Enable Delivery Area</span>
                     </label>
@@ -498,7 +501,7 @@
     </div>
 
     <!-- Customer Location Sidebar -->
-    <div id="customer-location-sidebar" class="sidebar hidden sidebar-closed z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10">
+    <div id="customer-location-sidebar" class="fixed top-0 right-0 h-full z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out">
         <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
             <div class="flex justify-between items-center">
                 <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
@@ -538,7 +541,7 @@
     </div>
 
     <!-- Partner Sidebar -->
-    <div id="partner-sidebar" class="sidebar hidden sidebar-closed z-[10000] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10">
+    <div id="partner-sidebar" class="fixed top-0 right-0 h-full z-[10000] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out">
         <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
             <div class="flex justify-between items-center">
                 <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">

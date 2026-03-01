@@ -28,13 +28,10 @@ let isGrayscale = false;
 // Function to generate and display H3 grid cells
 function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
     const h3Index = h3.latLngToCell(latitude, longitude, resolution);
-    console.log(`Generating H3 grid for index: ${h3Index}`);
     
     if (hexagons[h3Index]) {
-        console.log(`Removing hexagon with index: ${h3Index}`);
         removeHexagon({ h3Index, latitude, longitude, resolution, color, opacity });
     } else {
-        console.log(`Adding hexagon with index: ${h3Index}`);
         addHexagon({ h3Index, latitude, longitude, resolution, color, opacity });
     }
 }
@@ -196,31 +193,21 @@ map.on('mousemove', function(e) {
 function closeHelpSidebar() {
     const helpSidebar = document.getElementById('help-sidebar');
     closeSidebar(helpSidebar);
-    if (currentOpenSidebar === SIDEBAR_TYPES.HELP) {
-        currentOpenSidebar = null;
-    }
     // Remove cross marker when closing help sidebar
     removeCrossMarker();
 }
 
 // Function to open help sidebar (closes other sidebars first)
 function openHelpSidebar() {
+    closeAllSidebars();
     const helpSidebar = document.getElementById('help-sidebar');
-    
-    // If another sidebar is open, use switch animation
-    if (currentOpenSidebar && currentOpenSidebar !== SIDEBAR_TYPES.HELP) {
-        switchToSidebar(helpSidebar, SIDEBAR_TYPES.HELP);
-    } else {
-        // Just open help sidebar with animation
-        openSidebar(helpSidebar);
-        currentOpenSidebar = SIDEBAR_TYPES.HELP;
-    }
+    openSidebar(helpSidebar);
 }
 
 // Function to toggle help sidebar
 function toggleHelpSidebar() {
     const sidebar = document.getElementById('help-sidebar');
-    if (sidebar.classList.contains('sidebar-closed') || sidebar.classList.contains('hidden')) {
+    if (sidebar.classList.contains('translate-x-full')) {
         openHelpSidebar();
     } else {
         closeHelpSidebar();
@@ -725,38 +712,16 @@ function showPartnerSidebar(partnerId) {
     const partner = partnersById[partnerId];
     if (!partner) return;
 
-    const partnerSidebar = document.getElementById('partner-sidebar');
-
     // If the same partner is already being shown, do nothing
-    if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER && currentPartnerId === partnerId) {
+    if (currentPartnerId === partnerId) {
         return;
     }
 
-    // Close partner sidebar first if it's open (with animation)
-    if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER) {
-        closeSidebar(partnerSidebar);
-        // Wait for close animation, then open with new content
-        setTimeout(() => {
-            updatePartnerSidebarContent(partner);
-            openSidebar(partnerSidebar);
-            currentPartnerId = partnerId;
-        }, 200);
-    } else if (currentOpenSidebar && currentOpenSidebar !== SIDEBAR_TYPES.PARTNER) {
-        // Another sidebar is open, close all and open partner sidebar
-        closeAllSidebars();
-        setTimeout(() => {
-            updatePartnerSidebarContent(partner);
-            openSidebar(partnerSidebar);
-            currentOpenSidebar = SIDEBAR_TYPES.PARTNER;
-            currentPartnerId = partnerId;
-        }, 200);
-    } else {
-        // No sidebar open, just open partner sidebar with animation
-        updatePartnerSidebarContent(partner);
-        openSidebar(partnerSidebar);
-        currentOpenSidebar = SIDEBAR_TYPES.PARTNER;
-        currentPartnerId = partnerId;
-    }
+    closeAllSidebars();
+    updatePartnerSidebarContent(partner);
+    const partnerSidebar = document.getElementById('partner-sidebar');
+    openSidebar(partnerSidebar);
+    currentPartnerId = partnerId;
 }
 
 // Update partner sidebar content
@@ -850,9 +815,6 @@ function updatePartnerSidebarContent(partner) {
 function closePartnerSidebar() {
     const slideWindow = document.getElementById('partner-sidebar');
     closeSidebar(slideWindow);
-    if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER) {
-        currentOpenSidebar = null;
-    }
     currentPartnerId = null;
 }
 
@@ -934,7 +896,6 @@ function openSidebarForEdit(partner) {
     // Open sidebar with animation
     const sidebar = document.getElementById('add-partner-sidebar');
     openSidebar(sidebar);
-    currentOpenSidebar = SIDEBAR_TYPES.ADD_PARTNER;
 }
 
 // Validate partner data
@@ -980,21 +941,17 @@ function validatePartner(partner) {
 
 // Sidebar close button
 document.getElementById('sidebar-close-btn').addEventListener('click', function() {
+    removeCrossMarker();
     const sidebar = document.getElementById('add-partner-sidebar');
     closeSidebar(sidebar);
-    if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
-        currentOpenSidebar = null;
-    }
     resetSidebarForm();
 });
 
 // Sidebar cancel button
 document.getElementById('sidebar-cancel-add').addEventListener('click', function() {
+    removeCrossMarker();
     const sidebar = document.getElementById('add-partner-sidebar');
     closeSidebar(sidebar);
-    if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
-        currentOpenSidebar = null;
-    }
     resetSidebarForm();
 });
 
@@ -1129,12 +1086,10 @@ document.getElementById('add-partner-form').addEventListener('submit', function(
         partnerIdCounter++;
     }
 
-    // Close sidebar and reset form
+    // Remove cross marker, close sidebar and reset form
+    removeCrossMarker();
     const sidebar = document.getElementById('add-partner-sidebar');
     closeSidebar(sidebar);
-    if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
-        currentOpenSidebar = null;
-    }
     resetSidebarForm();
 });
 
@@ -1387,30 +1342,11 @@ function setupAddPartnerForm(lat, lng) {
 
 // Open partner sidebar with coordinates filled
 function openPartnerSidebarWithCoords(lat, lng) {
+    closeAllSidebars();
+    setupAddPartnerForm(lat, lng);
+    placeCrossMarker(lat, lng);
     const sidebar = document.getElementById('add-partner-sidebar');
-
-    // If the same sidebar (add-partner) is already open
-    if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
-        closeSidebar(sidebar);
-        setTimeout(() => {
-            setupAddPartnerForm(lat, lng);
-            placeCrossMarker(lat, lng);
-            openSidebar(sidebar);
-        }, 200);
-    } else if (currentOpenSidebar) {
-        // Another sidebar is open, use switch animation
-        switchToSidebar(sidebar, SIDEBAR_TYPES.ADD_PARTNER);
-        setTimeout(() => {
-            setupAddPartnerForm(lat, lng);
-            placeCrossMarker(lat, lng);
-        }, 200);
-    } else {
-        // No sidebar open, just open with animation
-        setupAddPartnerForm(lat, lng);
-        placeCrossMarker(lat, lng);
-        openSidebar(sidebar);
-        currentOpenSidebar = SIDEBAR_TYPES.ADD_PARTNER;
-    }
+    openSidebar(sidebar);
 }
 
 // Right-click event handler
@@ -1428,15 +1364,6 @@ map.on('contextmenu', function(e) {
     showContextMenu(x, y, lat, lng);
 });
 
-// Hide context menu on map click
-map.on('click', function(e) {
-    const contextMenu = document.getElementById('context-menu');
-    if (!contextMenu.classList.contains('hidden')) {
-        hideContextMenu();
-        return;
-    }
-});
-
 // Hide context menu on document click (outside menu)
 document.addEventListener('click', function(e) {
     const contextMenu = document.getElementById('context-menu');
@@ -1451,19 +1378,6 @@ document.getElementById('context-menu-add-partner').addEventListener('click', fu
     if (contextMenuState.latitude !== null && contextMenuState.longitude !== null) {
         openPartnerSidebarWithCoords(contextMenuState.latitude, contextMenuState.longitude);
     }
-});
-
-// Remove cross marker when partner form is submitted or cancelled
-document.getElementById('add-partner-form').addEventListener('submit', function() {
-    removeCrossMarker();
-});
-
-document.getElementById('sidebar-cancel-add').addEventListener('click', function() {
-    removeCrossMarker();
-});
-
-document.getElementById('sidebar-close-btn').addEventListener('click', function() {
-    removeCrossMarker();
 });
 
 // ==========================================
@@ -1586,38 +1500,16 @@ function updateCustomerLocationSidebarContent(lat, lng) {
 
 // Show customer location sidebar
 function showCustomerLocationSidebar(lat, lng) {
+    closeAllSidebars();
+    updateCustomerLocationSidebarContent(lat, lng);
     const customerLocationSidebar = document.getElementById('customer-location-sidebar');
-
-    // Close customer location sidebar first if it's open (with animation)
-    if (currentOpenSidebar === SIDEBAR_TYPES.CUSTOMER_LOCATION) {
-        closeSidebar(customerLocationSidebar);
-        // Wait for close animation to complete (200ms matches CSS transition duration)
-        setTimeout(() => {
-            updateCustomerLocationSidebarContent(lat, lng);
-            openSidebar(customerLocationSidebar);
-        }, 200);
-    } else if (currentOpenSidebar && currentOpenSidebar !== SIDEBAR_TYPES.CUSTOMER_LOCATION) {
-        // Another sidebar is open, use switch animation
-        switchToSidebar(customerLocationSidebar, SIDEBAR_TYPES.CUSTOMER_LOCATION);
-        // Update content after switch animation starts
-        setTimeout(() => {
-            updateCustomerLocationSidebarContent(lat, lng);
-        }, 200);
-    } else {
-        // No sidebar open, just update content and open with animation
-        updateCustomerLocationSidebarContent(lat, lng);
-        openSidebar(customerLocationSidebar);
-        currentOpenSidebar = SIDEBAR_TYPES.CUSTOMER_LOCATION;
-    }
+    openSidebar(customerLocationSidebar);
 }
 
 // Close customer location sidebar
 function closeCustomerLocationSidebar() {
     const customerLocationSidebar = document.getElementById('customer-location-sidebar');
     closeSidebar(customerLocationSidebar);
-    if (currentOpenSidebar === SIDEBAR_TYPES.CUSTOMER_LOCATION) {
-        currentOpenSidebar = null;
-    }
     removeCrossMarker();
 }
 
@@ -1632,40 +1524,39 @@ document.getElementById('context-menu-customer-location').addEventListener('clic
 // Customer location sidebar close button
 document.getElementById('customer-location-close-btn').addEventListener('click', closeCustomerLocationSidebar);
 
+// Drawer overlay click handler - closes all sidebars when clicked
+document.getElementById('drawer-overlay').addEventListener('click', closeAllSidebars);
+
 // ==========================================
 // SIDEBAR ANIMATION HELPERS
 // ==========================================
 
-// Track current open sidebar type for animation decisions
-let currentOpenSidebar = null; // 'help', 'add-partner', 'partner', or null
-
-// Sidebar type constants
-const SIDEBAR_TYPES = {
-    HELP: 'help',
-    ADD_PARTNER: 'add-partner',
-    PARTNER: 'partner',
-    CUSTOMER_LOCATION: 'customer-location'
-};
-
 // Helper function to close a sidebar with animation
 function closeSidebar(sidebarElement) {
-    sidebarElement.classList.add('sidebar-closed');
-    // Remove hidden class after animation completes (for accessibility)
-    setTimeout(() => {
-        if (sidebarElement.classList.contains('sidebar-closed')) {
-            sidebarElement.classList.add('hidden');
-        }
-    }, 200);
+    // For right-side drawers, add translate-x-full to slide out
+    sidebarElement.classList.add('translate-x-full');
+    // Hide overlay
+    hideDrawerOverlay();
 }
 
 // Helper function to open a sidebar with animation
 function openSidebar(sidebarElement) {
-    // Remove hidden first if present
-    sidebarElement.classList.remove('hidden');
-    // Force reflow to ensure hidden removal takes effect
-    sidebarElement.offsetHeight;
-    // Then remove closed class to trigger animation
-    sidebarElement.classList.remove('sidebar-closed');
+    // Remove translate-x-full to slide in
+    sidebarElement.classList.remove('translate-x-full');
+    // Show overlay
+    showDrawerOverlay();
+}
+
+// Helper function to show the drawer overlay
+function showDrawerOverlay() {
+    const overlay = document.getElementById('drawer-overlay');
+    overlay.classList.remove('opacity-0', 'pointer-events-none');
+}
+
+// Helper function to hide the drawer overlay
+function hideDrawerOverlay() {
+    const overlay = document.getElementById('drawer-overlay');
+    overlay.classList.add('opacity-0', 'pointer-events-none');
 }
 
 // Helper function to close all sidebars
@@ -1679,49 +1570,7 @@ function closeAllSidebars() {
     closeSidebar(addPartnerSidebar);
     closeSidebar(partnerSidebar);
     closeSidebar(customerLocationSidebar);
-    currentOpenSidebar = null;
     
     // Remove cross marker when closing all sidebars
     removeCrossMarker();
-}
-
-// Helper function to switch between sidebars with slide+fade animation
-function switchToSidebar(sidebarElement, sidebarType) {
-    const helpSidebar = document.getElementById('help-sidebar');
-    const addPartnerSidebar = document.getElementById('add-partner-sidebar');
-    const partnerSidebar = document.getElementById('partner-sidebar');
-    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
-    
-    // Remove cross marker when switching sidebars
-    removeCrossMarker();
-    
-    // Close current sidebar first and ensure hidden is added after animation
-    let closingSidebar = null;
-    if (currentOpenSidebar === SIDEBAR_TYPES.HELP) {
-        closingSidebar = helpSidebar;
-    } else if (currentOpenSidebar === SIDEBAR_TYPES.ADD_PARTNER) {
-        closingSidebar = addPartnerSidebar;
-    } else if (currentOpenSidebar === SIDEBAR_TYPES.PARTNER) {
-        closingSidebar = partnerSidebar;
-    } else if (currentOpenSidebar === SIDEBAR_TYPES.CUSTOMER_LOCATION) {
-        closingSidebar = customerLocationSidebar;
-    }
-    
-    if (closingSidebar) {
-        closingSidebar.classList.add('sidebar-closed');
-        // Add hidden class after animation completes to fully remove from rendering
-        setTimeout(() => {
-            if (closingSidebar.classList.contains('sidebar-closed')) {
-                closingSidebar.classList.add('hidden');
-            }
-        }, 200);
-    }
-    
-    // Wait for close animation to complete before opening new sidebar
-    setTimeout(() => {
-        sidebarElement.classList.remove('hidden');
-        sidebarElement.offsetHeight; // Force reflow
-        sidebarElement.classList.remove('sidebar-closed');
-        currentOpenSidebar = sidebarType;
-    }, 200);
 }
