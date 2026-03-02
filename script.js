@@ -17,8 +17,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // STATE MANAGEMENT
 // ==========================================
 
-// Hexagon state
-const hexagons = {};
+// Standalone hexagon state
+const standaloneHexagons = {};
 
 // Default hexagon settings
 let resolution = 9;
@@ -54,12 +54,15 @@ let contextMenuState = {
 
 // Partner constants
 const PARTNER_CONSTANTS = {
-    DEFAULT_OPACITY: 0.2,
-    DEFAULT_COLOR: '#0000ff',
-    DEFAULT_PRIMARY_RESOLUTION: 9,
-    DEFAULT_PRIMARY_NUMBER_ZONES: 18,
-    DEFAULT_SECONDARY_RESOLUTION: 6,
-    DEFAULT_SECONDARY_NUMBER_ZONES: 8
+    DEFAULT_OPACITY: 0.1,
+    DEFAULT_PRIMARY_COLOR: '#0000ff',
+    DEFAULT_PRIMARY_H3_RESOLUTION: 9,
+    DEFAULT_PRIMARY_NUM_ZONES: 18,
+    DEFAULT_SECONDARY_H3_RESOLUTION: 6,
+    DEFAULT_SECONDARY_NUM_ZONES: 8,
+    DEFAULT_STANDALONE_HEXAGON_WEIGHT: 2,
+    DEFAULT_PRIMARY_HEXAGON_WEIGHT: 1,
+    DEFAULT_SECONDARY_HEXAGON_WEIGHT: 2
 };
 
 // ==========================================
@@ -73,7 +76,7 @@ const PARTNER_CONSTANTS = {
 function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
     const h3Index = h3.latLngToCell(latitude, longitude, resolution);
     
-    if (hexagons[h3Index]) {
+    if (standaloneHexagons[h3Index]) {
         removeHexagon({ h3Index, latitude, longitude, resolution, color, opacity });
     } else {
         addHexagon({ h3Index, latitude, longitude, resolution, color, opacity });
@@ -90,10 +93,11 @@ function addHexagon(hexagon) {
         color: color,
         fillColor: color,
         fillOpacity: opacity,
-        originalFillOpacity: opacity
+        originalFillOpacity: opacity,
+        weight: PARTNER_CONSTANTS.DEFAULT_STANDALONE_HEXAGON_WEIGHT
     }).addTo(map);
 
-    hexagons[h3Index] = { polygon, latitude, longitude };
+    standaloneHexagons[h3Index] = { polygon, latitude, longitude };
 }
 
 /**
@@ -101,9 +105,9 @@ function addHexagon(hexagon) {
  */
 function removeHexagon(hexagon) {
     const { h3Index } = hexagon;
-    if (hexagons[h3Index]) {
-        map.removeLayer(hexagons[h3Index].polygon);
-        delete hexagons[h3Index];
+    if (standaloneHexagons[h3Index]) {
+        map.removeLayer(standaloneHexagons[h3Index].polygon);
+        delete standaloneHexagons[h3Index];
     }
 }
 
@@ -247,9 +251,9 @@ map.on('mousemove', function(e) {
         // Create new measurement line (black)
         measurementLine = L.polyline([measurementStart, currentPoint], {
             color: '#000000',
-            weight: 5,
+            weight: 10,
             opacity: 0.8,
-            dashArray: '5, 10'
+            dashArray: '5, 15'
         }).addTo(map);
 
         // Update measurement display with large numbers
@@ -373,14 +377,14 @@ standaloneToggle.addEventListener('change', function() {
  */
 function saveData() {
     // Check if there's anything to save
-    if (Object.keys(hexagons).length === 0 && Object.keys(partnersById).length === 0) {
+    if (Object.keys(standaloneHexagons).length === 0 && Object.keys(partnersById).length === 0) {
         alert("No hexagons or partners to save.");
         return;
     }
 
-    // Build hexagons array (compact format)
-    const hexagonsData = Object.keys(hexagons).map(h3Index => {
-        const { polygon } = hexagons[h3Index];
+    // Build standaloneHexagons array (compact format)
+    const standaloneHexagonsData = Object.keys(standaloneHexagons).map(h3Index => {
+        const { polygon } = standaloneHexagons[h3Index];
         return {
             h3Index,
             color: polygon.options.color,
@@ -393,12 +397,12 @@ function saveData() {
         partnerId: partner.partnerId,
         latitude: partner.latitude,
         longitude: partner.longitude,
-        h3Resolution: partner.h3Resolution,
-        numZones: partner.numZones,
-        h3Resolution2: partner.h3Resolution2,
-        numZones2: partner.numZones2,
-        color: partner.color || PARTNER_CONSTANTS.DEFAULT_COLOR,
-        color2: partner.color2
+        primaryH3Resolution: partner.primaryH3Resolution,
+        primaryNumZones: partner.primaryNumZones,
+        secondaryH3Resolution: partner.secondaryH3Resolution,
+        secondaryNumZones: partner.secondaryNumZones,
+        primaryColor: partner.primaryColor || PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR,
+        secondaryColor: partner.secondaryColor
     }));
 
     // Create unified data structure
@@ -406,7 +410,7 @@ function saveData() {
         type: "HexagonMapperData",
         version: "1.0",
         timestamp: new Date().toISOString(),
-        hexagons: hexagonsData,
+        standaloneHexagons: standaloneHexagonsData,
         partners: partnersData
     };
 
@@ -481,10 +485,10 @@ function loadHexagonMapperData(data) {
     // Close all sidebars and remove cross marker before loading new data
     closeAllSidebars();
 
-    // Clear existing hexagons
-    Object.keys(hexagons).forEach(h3Index => {
-        map.removeLayer(hexagons[h3Index].polygon);
-        delete hexagons[h3Index];
+    // Clear existing standaloneHexagons
+    Object.keys(standaloneHexagons).forEach(h3Index => {
+        map.removeLayer(standaloneHexagons[h3Index].polygon);
+        delete standaloneHexagons[h3Index];
     });
 
     // Clear existing partners
@@ -492,9 +496,9 @@ function loadHexagonMapperData(data) {
         deletePartner(partnerId);
     });
 
-    // Load hexagons
-    if (data.hexagons && Array.isArray(data.hexagons)) {
-        data.hexagons.forEach(hexagonData => {
+    // Load standaloneHexagons
+    if (data.standaloneHexagons && Array.isArray(data.standaloneHexagons)) {
+        data.standaloneHexagons.forEach(hexagonData => {
             const { h3Index, color, fillOpacity } = hexagonData;
             const hexagonBoundary = h3.cellToBoundary(h3Index);
             const polygon = L.polygon(hexagonBoundary, {
@@ -506,7 +510,7 @@ function loadHexagonMapperData(data) {
 
             // Get center coordinates from h3Index
             const cellToLatLng = h3.cellToLatLng(h3Index);
-            hexagons[h3Index] = { 
+            standaloneHexagons[h3Index] = {
                 polygon, 
                 latitude: cellToLatLng.lat, 
                 longitude: cellToLatLng.lng 
@@ -540,20 +544,20 @@ document.getElementById('load-file').addEventListener('change', loadData);
  * Adds a partner with hexagon zones to the map.
  */
 function addPartnerToMap(partner) {
-    const { partnerId, latitude, longitude, h3Resolution, numZones, h3Resolution2, numZones2, color: partnerColor, color2 } = partner;
-    const actualColor = partnerColor || PARTNER_CONSTANTS.DEFAULT_COLOR;
+    const { partnerId, latitude, longitude, primaryH3Resolution, primaryNumZones, secondaryH3Resolution, secondaryNumZones, primaryColor: partnerPrimaryColor, secondaryColor } = partner;
+    const actualPrimaryColor = partnerPrimaryColor || PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR;
 
     // Create partner object with elements structure
     const partnerObject = {
         partnerId,
         latitude,
         longitude,
-        h3Resolution,
-        numZones,
-        h3Resolution2,
-        numZones2,
-        color: partnerColor,
-        color2,
+        primaryH3Resolution,
+        primaryNumZones,
+        secondaryH3Resolution,
+        secondaryNumZones,
+        primaryColor: partnerPrimaryColor,
+        secondaryColor,
         elements: {
             primaryHexagons: [],
             secondaryHexagons: []
@@ -570,14 +574,15 @@ function addPartnerToMap(partner) {
     });
 
     // Draw primary hexagons
-    const centerCell = h3.latLngToCell(latitude, longitude, h3Resolution);
-    const disk = h3.gridDisk(centerCell, numZones - 1);
+    const centerCell = h3.latLngToCell(latitude, longitude, primaryH3Resolution);
+    const disk = h3.gridDisk(centerCell, primaryNumZones - 1);
     disk.forEach((cell, index) => {
         const boundary = h3.cellToBoundary(cell);
         const polygon = L.polygon(boundary, {
-            color: actualColor,
-            fillColor: actualColor,
-            fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY
+            color: actualPrimaryColor,
+            fillColor: actualPrimaryColor,
+            fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
+            weight: PARTNER_CONSTANTS.DEFAULT_PRIMARY_HEXAGON_WEIGHT
         }).addTo(map);
         
         const hexagonObject = {
@@ -585,23 +590,24 @@ function addPartnerToMap(partner) {
             polygon: polygon,
             center: { lat: latitude, lng: longitude },
             layerType: 'primary',
-            h3Resolution: h3Resolution,
+            h3Resolution: primaryH3Resolution,
             zoneNumber: h3.gridDistance(centerCell, cell)
         };
         partnerObject.elements.primaryHexagons.push(hexagonObject);
     });
 
     // Draw secondary hexagons if provided
-    if (h3Resolution2 !== undefined && numZones2 !== undefined) {
-        const actualColor2 = color2 || actualColor;
-        const centerCell2 = h3.latLngToCell(latitude, longitude, h3Resolution2);
-        const disk2 = h3.gridDisk(centerCell2, numZones2 - 1);
+    if (secondaryH3Resolution !== undefined && secondaryNumZones !== undefined) {
+        const actualSecondaryColor = secondaryColor || actualPrimaryColor;
+        const centerCell2 = h3.latLngToCell(latitude, longitude, secondaryH3Resolution);
+        const disk2 = h3.gridDisk(centerCell2, secondaryNumZones - 1);
         disk2.forEach((cell, index) => {
             const boundary = h3.cellToBoundary(cell);
             const polygon = L.polygon(boundary, {
-                color: actualColor2,
-                fillColor: actualColor2,
-                fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY
+                color: actualSecondaryColor,
+                fillColor: actualSecondaryColor,
+                fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
+                weight: PARTNER_CONSTANTS.DEFAULT_SECONDARY_HEXAGON_WEIGHT
             }).addTo(map);
             
             const hexagonObject = {
@@ -609,7 +615,7 @@ function addPartnerToMap(partner) {
                 polygon: polygon,
                 center: { lat: latitude, lng: longitude },
                 layerType: 'secondary',
-                h3Resolution: h3Resolution2,
+                h3Resolution: secondaryH3Resolution,
                 zoneNumber: h3.gridDistance(centerCell2, cell)
             };
             partnerObject.elements.secondaryHexagons.push(hexagonObject);
@@ -846,8 +852,8 @@ function showPartnerSidebar(partnerId) {
 
     closeAllSidebars();
     updatePartnerSidebarContent(partner);
-    const partnerSidebar = document.getElementById('partner-sidebar');
-    openSidebar(partnerSidebar);
+    const partnerInfoSidebar = document.getElementById('partner-info-sidebar');
+    openSidebar(partnerInfoSidebar);
     currentPartnerId = partnerId;
 }
 
@@ -869,16 +875,16 @@ function updatePartnerSidebarContent(partner) {
     const primaryRow = document.createElement('tr');
     primaryRow.innerHTML = `
         <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Primary</td>
-        <td class="py-2 text-gray-600">Resolution: ${partner.h3Resolution}<br>Zones: ${partner.numZones} (${primaryCount} hexagons)</td>
+        <td class="py-2 text-gray-600">Resolution: ${partner.primaryH3Resolution}<br>Zones: ${partner.primaryNumZones} (${primaryCount} hexagons)</td>
     `;
     tableBody.appendChild(primaryRow);
 
     // Secondary zone row (if exists)
-    if (secondaryCount > 0 && partner.numZones2 !== undefined) {
+    if (secondaryCount > 0 && partner.secondaryNumZones !== undefined) {
         const secondaryRow = document.createElement('tr');
         secondaryRow.innerHTML = `
             <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Secondary</td>
-            <td class="py-2 text-gray-600">Resolution: ${partner.h3Resolution2}<br>Zones: ${partner.numZones2} (${secondaryCount} hexagons)</td>
+            <td class="py-2 text-gray-600">Resolution: ${partner.secondaryH3Resolution}<br>Zones: ${partner.secondaryNumZones} (${secondaryCount} hexagons)</td>
         `;
         tableBody.appendChild(secondaryRow);
     }
@@ -944,7 +950,7 @@ function updatePartnerSidebarContent(partner) {
  * Closes the partner info sidebar.
  */
 function closePartnerSidebar() {
-    const slideWindow = document.getElementById('partner-sidebar');
+    const slideWindow = document.getElementById('partner-info-sidebar');
     closeSidebar(slideWindow);
     currentPartnerId = null;
 }
@@ -953,15 +959,15 @@ function closePartnerSidebar() {
  * Resets the add/edit partner form to default values.
  */
 function resetSidebarForm() {
-    document.getElementById('add-partner-form').reset();
+    document.getElementById('partner-form').reset();
     document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
-    document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
-    document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
-    document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
-    document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
+    document.getElementById('sidebar-primary-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_H3_RESOLUTION.toString();
+    document.getElementById('sidebar-primary-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUM_ZONES.toString();
+    document.getElementById('sidebar-secondary-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_H3_RESOLUTION.toString();
+    document.getElementById('sidebar-secondary-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUM_ZONES.toString();
     document.getElementById('secondary-fields').classList.add('hidden');
     document.getElementById('sidebar-same-color').checked = true;
-    document.getElementById('sidebar-color2').disabled = true;
+    document.getElementById('sidebar-secondary-color').disabled = true;
     
     // Reset delivery area fields
     document.getElementById('sidebar-enable-delivery-area').checked = false;
@@ -969,7 +975,7 @@ function resetSidebarForm() {
     document.getElementById('sidebar-same-color-delivery').checked = true;
     document.getElementById('sidebar-delivery-color').disabled = true;
     // Set delivery color to match primary color
-    const primaryColor = document.getElementById('sidebar-color').value || PARTNER_CONSTANTS.DEFAULT_COLOR;
+    const primaryColor = document.getElementById('sidebar-primary-color').value || PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR;
     document.getElementById('sidebar-delivery-color').value = primaryColor;
     // Clear polygon textarea
     document.getElementById('sidebar-polygon-content').value = '';
@@ -977,7 +983,7 @@ function resetSidebarForm() {
     editMode.isActive = false;
     editMode.partnerId = null;
     
-    document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
+    document.getElementById('partner-form-title').textContent = 'Add Partner';
     const submitButton = document.getElementById('partner-submit-btn');
     submitButton.textContent = 'Add';
 }
@@ -989,7 +995,7 @@ function openSidebarForEdit(partner) {
     editMode.isActive = true;
     editMode.partnerId = partner.partnerId;
 
-    document.getElementById('partner-sidebar-title').textContent = 'Edit Partner';
+    document.getElementById('partner-form-title').textContent = 'Edit Partner';
     const submitButton = document.getElementById('partner-submit-btn');
     submitButton.textContent = 'Update';
 
@@ -997,35 +1003,35 @@ function openSidebarForEdit(partner) {
     document.getElementById('sidebar-partnerId').value = partner.partnerId;
     document.getElementById('sidebar-latitude').value = partner.latitude;
     document.getElementById('sidebar-longitude').value = partner.longitude;
-    document.getElementById('sidebar-h3Resolution').value = partner.h3Resolution;
-    document.getElementById('sidebar-numZones').value = partner.numZones;
-    document.getElementById('sidebar-color').value = partner.color || PARTNER_CONSTANTS.DEFAULT_COLOR;
+    document.getElementById('sidebar-primary-h3Resolution').value = partner.primaryH3Resolution;
+    document.getElementById('sidebar-primary-numZones').value = partner.primaryNumZones;
+    document.getElementById('sidebar-primary-color').value = partner.primaryColor || PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR;
 
-    document.getElementById('sidebar-resolution-value').textContent = partner.h3Resolution.toString();
-    document.getElementById('sidebar-zones-value').textContent = partner.numZones.toString();
+    document.getElementById('sidebar-primary-resolution-value').textContent = partner.primaryH3Resolution.toString();
+    document.getElementById('sidebar-primary-zones-value').textContent = partner.primaryNumZones.toString();
 
     // Handle secondary fields
-    const primaryColor = partner.color || PARTNER_CONSTANTS.DEFAULT_COLOR;
-    if (partner.h3Resolution2 !== undefined && partner.numZones2 !== undefined) {
+    const primaryColor = partner.primaryColor || PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR;
+    if (partner.secondaryH3Resolution !== undefined && partner.secondaryNumZones !== undefined) {
         document.getElementById('sidebar-enable-secondary').checked = true;
         document.getElementById('secondary-fields').classList.remove('hidden');
-        document.getElementById('sidebar-h3Resolution2').value = partner.h3Resolution2;
-        document.getElementById('sidebar-numZones2').value = partner.numZones2;
-        document.getElementById('sidebar-resolution2-value').textContent = partner.h3Resolution2.toString();
-        document.getElementById('sidebar-zones2-value').textContent = partner.numZones2.toString();
+        document.getElementById('sidebar-secondary-h3Resolution').value = partner.secondaryH3Resolution;
+        document.getElementById('sidebar-secondary-numZones').value = partner.secondaryNumZones;
+        document.getElementById('sidebar-secondary-resolution-value').textContent = partner.secondaryH3Resolution.toString();
+        document.getElementById('sidebar-secondary-zones-value').textContent = partner.secondaryNumZones.toString();
         
         // Check if secondary color is different from primary
-        const secondaryColor = partner.color2 || primaryColor;
+        const secondaryColor = partner.secondaryColor || primaryColor;
         const colorsAreSame = secondaryColor.toLowerCase() === primaryColor.toLowerCase();
         document.getElementById('sidebar-same-color').checked = colorsAreSame;
-        document.getElementById('sidebar-color2').value = secondaryColor;
-        document.getElementById('sidebar-color2').disabled = colorsAreSame;
+        document.getElementById('sidebar-secondary-color').value = secondaryColor;
+        document.getElementById('sidebar-secondary-color').disabled = colorsAreSame;
     } else {
         document.getElementById('sidebar-enable-secondary').checked = false;
         document.getElementById('secondary-fields').classList.add('hidden');
-        document.getElementById('sidebar-color2').value = primaryColor;
+        document.getElementById('sidebar-secondary-color').value = primaryColor;
         document.getElementById('sidebar-same-color').checked = true;
-        document.getElementById('sidebar-color2').disabled = true;
+        document.getElementById('sidebar-secondary-color').disabled = true;
     }
 
     // Handle delivery area fields
@@ -1038,7 +1044,7 @@ function openSidebarForEdit(partner) {
     document.getElementById('sidebar-polygon-content').value = '';
 
     // Open sidebar with animation
-    const sidebar = document.getElementById('add-partner-sidebar');
+    const sidebar = document.getElementById('partner-form-sidebar');
     openSidebar(sidebar);
 }
 
@@ -1062,20 +1068,20 @@ function validatePartner(partner) {
         alert("longitude must be a number between -180 and 180");
         return false;
     }
-    if (typeof partner.h3Resolution !== 'number' || !Number.isInteger(partner.h3Resolution) || partner.h3Resolution < 0 || partner.h3Resolution > 15) {
-        alert("h3Resolution must be an integer between 0 and 15");
+    if (typeof partner.primaryH3Resolution !== 'number' || !Number.isInteger(partner.primaryH3Resolution) || partner.primaryH3Resolution < 0 || partner.primaryH3Resolution > 15) {
+        alert("primaryH3Resolution must be an integer between 0 and 15");
         return false;
     }
-    if (typeof partner.numZones !== 'number' || !Number.isInteger(partner.numZones) || partner.numZones < 1 || partner.numZones > 50) {
-        alert("numZones must be an integer between 1 and 50");
+    if (typeof partner.primaryNumZones !== 'number' || !Number.isInteger(partner.primaryNumZones) || partner.primaryNumZones < 1 || partner.primaryNumZones > 50) {
+        alert("primaryNumZones must be an integer between 1 and 50");
         return false;
     }
-    if (partner.h3Resolution2 !== undefined && (typeof partner.h3Resolution2 !== 'number' || !Number.isInteger(partner.h3Resolution2) || partner.h3Resolution2 < 0 || partner.h3Resolution2 > 15)) {
-        alert("h3Resolution2 must be an integer between 0 and 15 if provided");
+    if (partner.secondaryH3Resolution !== undefined && (typeof partner.secondaryH3Resolution !== 'number' || !Number.isInteger(partner.secondaryH3Resolution) || partner.secondaryH3Resolution < 0 || partner.secondaryH3Resolution > 15)) {
+        alert("secondaryH3Resolution must be an integer between 0 and 15 if provided");
         return false;
     }
-    if (partner.numZones2 !== undefined && (typeof partner.numZones2 !== 'number' || !Number.isInteger(partner.numZones2) || partner.numZones2 < 1 || partner.numZones2 > 50)) {
-        alert("numZones2 must be an integer between 1 and 50 if provided");
+    if (partner.secondaryNumZones !== undefined && (typeof partner.secondaryNumZones !== 'number' || !Number.isInteger(partner.secondaryNumZones) || partner.secondaryNumZones < 1 || partner.secondaryNumZones > 50)) {
+        alert("secondaryNumZones must be an integer between 1 and 50 if provided");
         return false;
     }
     return true;
@@ -1085,40 +1091,40 @@ function validatePartner(partner) {
 // PARTNER EVENT LISTENERS
 // ==========================================
 
-// Add partner sidebar - close button
+// Partner form sidebar - close button
 document.getElementById('sidebar-close-btn').addEventListener('click', function() {
     removeCrossMarker();
-    const sidebar = document.getElementById('add-partner-sidebar');
+    const sidebar = document.getElementById('partner-form-sidebar');
     closeSidebar(sidebar);
     resetSidebarForm();
 });
 
-// Add partner sidebar - cancel button
+// Partner form sidebar - cancel button
 document.getElementById('sidebar-cancel-add').addEventListener('click', function() {
     removeCrossMarker();
-    const sidebar = document.getElementById('add-partner-sidebar');
+    const sidebar = document.getElementById('partner-form-sidebar');
     closeSidebar(sidebar);
     resetSidebarForm();
 });
 
-// Add partner sidebar - resolution slider
-document.getElementById('sidebar-h3Resolution').addEventListener('input', function() {
-    document.getElementById('sidebar-resolution-value').textContent = this.value;
+// Add partner sidebar - primary resolution slider
+document.getElementById('sidebar-primary-h3Resolution').addEventListener('input', function() {
+    document.getElementById('sidebar-primary-resolution-value').textContent = this.value;
 });
 
-// Add partner sidebar - zones slider
-document.getElementById('sidebar-numZones').addEventListener('input', function() {
-    document.getElementById('sidebar-zones-value').textContent = this.value;
+// Add partner sidebar - primary zones slider
+document.getElementById('sidebar-primary-numZones').addEventListener('input', function() {
+    document.getElementById('sidebar-primary-zones-value').textContent = this.value;
 });
 
-// Add partner sidebar - resolution2 slider
-document.getElementById('sidebar-h3Resolution2').addEventListener('input', function() {
-    document.getElementById('sidebar-resolution2-value').textContent = this.value;
+// Add partner sidebar - secondary resolution slider
+document.getElementById('sidebar-secondary-h3Resolution').addEventListener('input', function() {
+    document.getElementById('sidebar-secondary-resolution-value').textContent = this.value;
 });
 
-// Add partner sidebar - zones2 slider
-document.getElementById('sidebar-numZones2').addEventListener('input', function() {
-    document.getElementById('sidebar-zones2-value').textContent = this.value;
+// Add partner sidebar - secondary zones slider
+document.getElementById('sidebar-secondary-numZones').addEventListener('input', function() {
+    document.getElementById('sidebar-secondary-zones-value').textContent = this.value;
 });
 
 // Add partner sidebar - enable secondary checkbox
@@ -1131,9 +1137,9 @@ document.getElementById('sidebar-enable-secondary').addEventListener('change', f
 });
 
 // Add partner sidebar - primary color sync to secondary
-document.getElementById('sidebar-color').addEventListener('input', function() {
+document.getElementById('sidebar-primary-color').addEventListener('input', function() {
     if (document.getElementById('sidebar-same-color').checked) {
-        document.getElementById('sidebar-color2').value = this.value;
+        document.getElementById('sidebar-secondary-color').value = this.value;
     }
 });
 
@@ -1141,11 +1147,11 @@ document.getElementById('sidebar-color').addEventListener('input', function() {
 document.getElementById('sidebar-same-color').addEventListener('change', function() {
     if (this.checked) {
         // Sync secondary color with primary and disable the color picker
-        document.getElementById('sidebar-color2').value = document.getElementById('sidebar-color').value;
-        document.getElementById('sidebar-color2').disabled = true;
+        document.getElementById('sidebar-secondary-color').value = document.getElementById('sidebar-primary-color').value;
+        document.getElementById('sidebar-secondary-color').disabled = true;
     } else {
         // Enable the secondary color picker for independent selection
-        document.getElementById('sidebar-color2').disabled = false;
+        document.getElementById('sidebar-secondary-color').disabled = false;
     }
 });
 
@@ -1159,7 +1165,7 @@ document.getElementById('sidebar-enable-delivery-area').addEventListener('change
 });
 
 // Add partner sidebar - primary color sync to delivery
-document.getElementById('sidebar-color').addEventListener('input', function() {
+document.getElementById('sidebar-primary-color').addEventListener('input', function() {
     if (document.getElementById('sidebar-same-color-delivery').checked) {
         document.getElementById('sidebar-delivery-color').value = this.value;
     }
@@ -1169,7 +1175,7 @@ document.getElementById('sidebar-color').addEventListener('input', function() {
 document.getElementById('sidebar-same-color-delivery').addEventListener('change', function() {
     if (this.checked) {
         // Sync delivery color with primary and disable the color picker
-        document.getElementById('sidebar-delivery-color').value = document.getElementById('sidebar-color').value;
+        document.getElementById('sidebar-delivery-color').value = document.getElementById('sidebar-primary-color').value;
         document.getElementById('sidebar-delivery-color').disabled = true;
     } else {
         // Enable the delivery color picker for independent selection
@@ -1177,21 +1183,21 @@ document.getElementById('sidebar-same-color-delivery').addEventListener('change'
     }
 });
 
-// Add/Edit partner form - submit
-document.getElementById('add-partner-form').addEventListener('submit', function(e) {
+// Partner form - submit
+document.getElementById('partner-form').addEventListener('submit', function(e) {
     e.preventDefault();
 
     const partnerId = document.getElementById('sidebar-partnerId').value.trim();
     const latitude = parseFloat(document.getElementById('sidebar-latitude').value);
     const longitude = parseFloat(document.getElementById('sidebar-longitude').value);
-    const h3Resolution = parseInt(document.getElementById('sidebar-h3Resolution').value);
-    const numZones = parseInt(document.getElementById('sidebar-numZones').value);
-    const color = document.getElementById('sidebar-color').value;
+    const primaryH3Resolution = parseInt(document.getElementById('sidebar-primary-h3Resolution').value);
+    const primaryNumZones = parseInt(document.getElementById('sidebar-primary-numZones').value);
+    const primaryColor = document.getElementById('sidebar-primary-color').value;
 
     const enableSecondary = document.getElementById('sidebar-enable-secondary').checked;
-    const h3Resolution2 = enableSecondary ? parseInt(document.getElementById('sidebar-h3Resolution2').value) : undefined;
-    const numZones2 = enableSecondary ? parseInt(document.getElementById('sidebar-numZones2').value) : undefined;
-    const color2 = enableSecondary ? document.getElementById('sidebar-color2').value : undefined;
+    const secondaryH3Resolution = enableSecondary ? parseInt(document.getElementById('sidebar-secondary-h3Resolution').value) : undefined;
+    const secondaryNumZones = enableSecondary ? parseInt(document.getElementById('sidebar-secondary-numZones').value) : undefined;
+    const secondaryColor = enableSecondary ? document.getElementById('sidebar-secondary-color').value : undefined;
 
     // Validate delivery area polygon content
     const enableDeliveryArea = document.getElementById('sidebar-enable-delivery-area').checked;
@@ -1203,7 +1209,7 @@ document.getElementById('add-partner-form').addEventListener('submit', function(
         }
     }
 
-    const partner = { partnerId, latitude, longitude, h3Resolution, numZones, h3Resolution2, numZones2, color, color2 };
+    const partner = { partnerId, latitude, longitude, primaryH3Resolution, primaryNumZones, secondaryH3Resolution, secondaryNumZones, primaryColor, secondaryColor };
 
     if (!validatePartner(partner)) {
         return;
@@ -1234,7 +1240,7 @@ document.getElementById('add-partner-form').addEventListener('submit', function(
 
     // Remove cross marker, close sidebar and reset form
     removeCrossMarker();
-    const sidebar = document.getElementById('add-partner-sidebar');
+    const sidebar = document.getElementById('partner-form-sidebar');
     closeSidebar(sidebar);
     resetSidebarForm();
 });
@@ -1361,9 +1367,9 @@ function isPointInHexagon(lat, lng, hexagonPolygon) {
 function findHexagonsAtLocation(lat, lng) {
     const detectedHexagons = [];
     
-    // Check standalone hexagons
-    Object.keys(hexagons).forEach(h3Index => {
-        const hexagonData = hexagons[h3Index];
+    // Check standaloneHexagons
+    Object.keys(standaloneHexagons).forEach(h3Index => {
+        const hexagonData = standaloneHexagons[h3Index];
         if (isPointInHexagon(lat, lng, hexagonData.polygon)) {
             detectedHexagons.push({
                 h3Index: h3Index,
@@ -1463,7 +1469,7 @@ function setupAddPartnerForm(lat, lng) {
     // Reset form and set edit mode to false
     editMode.isActive = false;
     editMode.partnerId = null;
-    document.getElementById('partner-sidebar-title').textContent = 'Add Partner';
+    document.getElementById('partner-form-title').textContent = 'Add Partner';
     const submitButton = document.getElementById('partner-submit-btn');
     submitButton.textContent = 'Add';
     
@@ -1471,27 +1477,27 @@ function setupAddPartnerForm(lat, lng) {
     document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
     document.getElementById('sidebar-latitude').value = lat.toFixed(6);
     document.getElementById('sidebar-longitude').value = lng.toFixed(6);
-    document.getElementById('sidebar-h3Resolution').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION;
-    document.getElementById('sidebar-numZones').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES;
-    document.getElementById('sidebar-color').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
-    document.getElementById('sidebar-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_RESOLUTION.toString();
-    document.getElementById('sidebar-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUMBER_ZONES.toString();
+    document.getElementById('sidebar-primary-h3Resolution').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_H3_RESOLUTION;
+    document.getElementById('sidebar-primary-numZones').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUM_ZONES;
+    document.getElementById('sidebar-primary-color').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR;
+    document.getElementById('sidebar-primary-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_H3_RESOLUTION.toString();
+    document.getElementById('sidebar-primary-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUM_ZONES.toString();
     document.getElementById('sidebar-enable-secondary').checked = false;
     document.getElementById('secondary-fields').classList.add('hidden');
-    document.getElementById('sidebar-h3Resolution2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION;
-    document.getElementById('sidebar-numZones2').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES;
-    document.getElementById('sidebar-color2').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
-    document.getElementById('sidebar-resolution2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_RESOLUTION.toString();
-    document.getElementById('sidebar-zones2-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUMBER_ZONES.toString();
+    document.getElementById('sidebar-secondary-h3Resolution').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_H3_RESOLUTION;
+    document.getElementById('sidebar-secondary-numZones').value = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUM_ZONES;
+    document.getElementById('sidebar-secondary-color').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR;
+    document.getElementById('sidebar-secondary-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_H3_RESOLUTION.toString();
+    document.getElementById('sidebar-secondary-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUM_ZONES.toString();
     document.getElementById('sidebar-same-color').checked = true;
-    document.getElementById('sidebar-color2').disabled = true;
+    document.getElementById('sidebar-secondary-color').disabled = true;
     
     // Reset delivery area fields
     document.getElementById('sidebar-enable-delivery-area').checked = false;
     document.getElementById('delivery-area-fields').classList.add('hidden');
     document.getElementById('sidebar-same-color-delivery').checked = true;
     document.getElementById('sidebar-delivery-color').disabled = true;
-    document.getElementById('sidebar-delivery-color').value = PARTNER_CONSTANTS.DEFAULT_COLOR;
+    document.getElementById('sidebar-delivery-color').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR;
     document.getElementById('sidebar-polygon-content').value = '';
 }
 
@@ -1502,7 +1508,7 @@ function openPartnerSidebarWithCoords(lat, lng) {
     closeAllSidebars();
     setupAddPartnerForm(lat, lng);
     placeCrossMarker(lat, lng);
-    const sidebar = document.getElementById('add-partner-sidebar');
+    const sidebar = document.getElementById('partner-form-sidebar');
     openSidebar(sidebar);
 }
 
@@ -1720,13 +1726,13 @@ function hideDrawerOverlay() {
  */
 function closeAllSidebars() {
     const helpSidebar = document.getElementById('help-sidebar');
-    const addPartnerSidebar = document.getElementById('add-partner-sidebar');
-    const partnerSidebar = document.getElementById('partner-sidebar');
+    const partnerFormSidebar = document.getElementById('partner-form-sidebar');
+    const partnerInfoSidebar = document.getElementById('partner-info-sidebar');
     const customerLocationSidebar = document.getElementById('customer-location-sidebar');
     
     closeSidebar(helpSidebar);
-    closeSidebar(addPartnerSidebar);
-    closeSidebar(partnerSidebar);
+    closeSidebar(partnerFormSidebar);
+    closeSidebar(partnerInfoSidebar);
     closeSidebar(customerLocationSidebar);
     
     // Remove cross marker when closing all sidebars
