@@ -18,27 +18,28 @@ You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mappe
 
 ## How to Use it
 
-### Getting Started
+### Standalone Hexagons
 
+Standalone hexagons are individual hexagons you can add anywhere on the map. You can enable or disable this feature using the toggle in the controls panel.
+
+- **Enable/Disable**: Use the "Standalone Hexagons" toggle to enable or disable the ability to add hexagons on the map. When disabled, the hexagon settings are hidden.
 - **Add a Hexagon**: Click on the map to add a hexagon at the clicked location.
 - **Remove a Hexagon**: Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.
-
-### Hexagon Controls
-
 - **Adjust Resolution**: Use the resolution slider to adjust the H3 resolution of the hexagons (0-15).
 - **Change Color**: Use the color picker to change the color of the hexagons.
 - **Change Opacity**: Use the opacity slider to change the opacity of the hexagons.
 
-### Measurement Mode
+### Map Display
+
+- **Grayscale Map Toggle**: Use the "Grayscale Map" toggle to switch the map tiles between normal color and grayscale view.
+
+### Tools
+
+#### Measurement Mode
 
 - **Activate**: Click the "Start Measurement" button to enable measurement mode. An overlay and indicator will appear.
 - **Measure Distance**: Click on the map to set a starting point, then move your mouse to see the distance in kilometers. A dashed line shows the measurement path.
 - **Clear or Exit**: Click again to clear the current measurement and start a new one, or click "Stop Measurement" to exit measurement mode.
-
-### Data Management
-
-- **Save**: Click the "Save" button to download both hexagons and partners as a JSON file.
-- **Load**: Click the "Load" button and select a JSON file to load hexagons and partners.
 
 ### Right-Click Context Menu
 
@@ -46,26 +47,49 @@ You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mappe
 - **Add Partner**: Click "Add Partner" to open the partner form pre-filled with the clicked coordinates. A cross marker shows the selected position.
 - **Customer Location**: Click "Customer Location" to view all H3 hexagon IDs at the clicked location in a dedicated sidebar.
 
-## Partner Management
+### Partner Management
 
-Partners allow you to add and manage H3 hexagonal zones around specific locations:
+Partners allow you to add and manage H3 hexagonal zones around specific locations.
 
-- **Add Partner**: Right-click on the map and click "Add Partner" to open the sidebar form pre-filled with the clicked coordinates. Enter a Partner ID, adjust coordinates (latitude/longitude), H3 resolution, number of zones, and color. You can also enable a secondary H3 layer with different settings.
-- **Edit Partner**: Click on any partner marker on the map to open the partner panel, then click "Edit Partner" to modify the partner's settings.
-- **Delete Partner**: Click on a partner marker and use the "Delete Partner" button to remove it from the map.
-- **Primary Zone Toggle**: Show/hide the primary H3 hexagonal zones for a selected partner.
-- **Secondary Zone Toggle**: Show/hide the secondary H3 hexagonal zones for a selected partner (if configured).
+#### Add Partner
+
+Right-click on the map and click "Add Partner" to open the partner form pre-filled with the clicked coordinates.
+
+#### Edit Partner
+
+Click on a partner marker on the map to open the partner info panel, then click "Edit Partner" to modify the partner's settings.
+
+#### Delete Partner
+
+Click on a partner marker and use the "Delete Partner" button to remove it from the map.
+
+#### Partner Form
+
+When adding or editing a partner, you can configure:
+
+- **Partner ID**: Unique identifier for the partner.
+- **Coordinates**: Latitude and longitude of the partner location.
+- **Primary Zone**: H3 resolution (0-15), number of zones (1-50), and color.
+- **Secondary Zone**: Optional additional zone layer with its own resolution, number of zones, and color. Enable the toggle to configure.
+- **Delivery Area**: Optional custom delivery polygon. Enable and paste KML or WKT content to define the boundary.
+  - **Supported Formats**:
+    - **KML**: XML-based format with coordinates tags.
+    - **WKT**: Single polygon with coordinate pairs or multiple polygons for complex areas.
+  - **Color**: Choose a custom color for the delivery area polygon, or use the same color as the primary zone.
+
+#### Partner Info
+
+When viewing a partner's info panel:
+
+- **Primary Zone Toggle**: Show/hide the primary H3 hexagonal zones for the selected partner.
+- **Secondary Zone Toggle**: Show/hide the secondary H3 hexagonal zones for the selected partner (if configured).
+- **Delivery Area Toggle**: Show/hide the delivery area polygon for the selected partner (if configured).
 - **Partner Statistics**: View the resolution, number of zones, and hexagon count for both primary and secondary zones.
 
-### Delivery Area
+### Data Management
 
-- **Enable Delivery Area**: Check the "Enable Delivery Area" checkbox when adding or editing a partner to define a custom delivery polygon.
-- **Polygon Content**: Paste KML coordinates or WKT format (POLYGON or MULTIPOLYGON) into the text area.
-- **Supported Formats**:
-  - **KML**: `<coordinates>lon,lat lon,lat...</coordinates>`
-  - **WKT**: `POLYGON((lon lat, lon lat, ...))` or `MULTIPOLYGON(((lon lat, ...), ((lon lat, ...)))`
-- **Delivery Area Color**: Choose a custom color for the delivery area polygon, or use the same color as the primary zone.
-- **Toggle Visibility**: Use the "Delivery Area" toggle in the partner panel to show or hide the delivery polygon on the map.
+- **Save**: Click the "Save" button to download both hexagons and partners as a JSON file.
+- **Load**: Click the "Load" button and select a JSON file to load hexagons and partners.
 
 ## How to Run Locally
 
