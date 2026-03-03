@@ -1659,7 +1659,9 @@ function hideContextMenu() {
 }
 
 /**
- * Sets up the add partner form with pre-filled coordinates.
+ * Sets up the add partner form with optional pre-filled coordinates.
+ * @param {number} [lat] - Optional latitude to pre-fill
+ * @param {number} [lng] - Optional longitude to pre-fill
  */
 function setupAddPartnerForm(lat, lng) {
     // Reset form and set edit mode to false
@@ -1669,10 +1671,15 @@ function setupAddPartnerForm(lat, lng) {
     const submitButton = document.getElementById('partner-submit-btn');
     submitButton.textContent = 'Add';
     
-    // Pre-fill coordinates
+    // Pre-fill coordinates only if provided
     document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
-    document.getElementById('sidebar-latitude').value = lat.toFixed(6);
-    document.getElementById('sidebar-longitude').value = lng.toFixed(6);
+    if (lat !== undefined && lng !== undefined) {
+        document.getElementById('sidebar-latitude').value = lat.toFixed(6);
+        document.getElementById('sidebar-longitude').value = lng.toFixed(6);
+    } else {
+        document.getElementById('sidebar-latitude').value = '';
+        document.getElementById('sidebar-longitude').value = '';
+    }
     document.getElementById('sidebar-primary-h3Resolution').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_H3_RESOLUTION;
     document.getElementById('sidebar-primary-numZones').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUM_ZONES;
     document.getElementById('sidebar-primary-color').value = PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR;
@@ -1708,6 +1715,16 @@ function openPartnerSidebarWithCoords(lat, lng) {
     openSidebar(sidebar);
 }
 
+/**
+ * Opens the add partner sidebar with empty coordinates (for Tools button).
+ */
+function openPartnerSidebar() {
+    closeAllSidebars();
+    setupAddPartnerForm();
+    const sidebar = document.getElementById('partner-form-sidebar');
+    openSidebar(sidebar);
+}
+
 // Hide context menu on document click (outside menu)
 document.addEventListener('click', function(e) {
     const contextMenu = document.getElementById('context-menu');
@@ -1722,6 +1739,11 @@ document.getElementById('context-menu-add-partner').addEventListener('click', fu
     if (contextMenuState.latitude !== null && contextMenuState.longitude !== null) {
         openPartnerSidebarWithCoords(contextMenuState.latitude, contextMenuState.longitude);
     }
+});
+
+// Tools - "Add Partner" button
+document.getElementById('tools-add-partner').addEventListener('click', function() {
+    openPartnerSidebar();
 });
 
 // ==========================================

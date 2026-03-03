@@ -35,6 +35,11 @@ Standalone hexagons are individual hexagons you can add anywhere on the map. You
 
 ### Tools
 
+#### Add Partner
+
+- **Open Form**: Click the "Add Partner" button in the Tools section to open the partner form with empty coordinates.
+- **Enter Location**: Manually provide the latitude and longitude for the partner location.
+
 #### Measurement Mode
 
 - **Activate**: Click the "Start Measurement" button to enable measurement mode. An overlay and indicator will appear.
@@ -44,7 +49,7 @@ Standalone hexagons are individual hexagons you can add anywhere on the map. You
 ### Right-Click Context Menu
 
 - **Open Context Menu**: Right-click anywhere on the map to open a context menu at that location.
-- **Add Partner**: Click "Add Partner" to open the partner form pre-filled with the clicked coordinates. A cross marker shows the selected position.
+- **Add Partner Here**: Click "Add Partner Here" to open the partner form pre-filled with the clicked coordinates. A cross marker shows the selected position.
 - **Customer Location**: Click "Customer Location" to view all H3 hexagon IDs at the clicked location in a dedicated sidebar.
 
 ### Partner Management
@@ -53,7 +58,10 @@ Partners allow you to add and manage H3 hexagonal zones around specific location
 
 #### Add Partner
 
-Right-click on the map and click "Add Partner" to open the partner form pre-filled with the clicked coordinates.
+There are two ways to add a partner:
+
+1. **Tools Button**: Click "Add Partner" in the Tools section to open the partner form with empty coordinates. Manually enter the latitude and longitude.
+2. **Context Menu**: Right-click on the map and click "Add Partner Here" to open the partner form pre-filled with the clicked coordinates.
 
 #### Edit Partner
 
