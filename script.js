@@ -55,6 +55,7 @@ let contextMenuState = {
 // Partner constants
 const PARTNER_CONSTANTS = {
     DEFAULT_OPACITY: 0.1,
+    INTERSECTION_OPACITY: 0.4,
     DEFAULT_PRIMARY_COLOR: '#0000ff',
     DEFAULT_PRIMARY_H3_RESOLUTION: 9,
     DEFAULT_PRIMARY_NUM_ZONES: 18,
@@ -412,7 +413,6 @@ function saveData() {
     const data = {
         type: "HexagonMapperData",
         version: "1.0",
-        timestamp: new Date().toISOString(),
         standaloneHexagons: standaloneHexagonsData,
         partners: partnersData
     };
@@ -668,6 +668,9 @@ function addPartnerToMap(partner) {
 
     // Store partner in the main structure
     partnersById[partnerId] = partnerObject;
+    
+    // Compute hexagon intersections with delivery area
+    computeHexagonIntersections(partnerObject);
 
     // Move map view to the partner's location
     map.setView([latitude, longitude], map.getZoom());
@@ -740,21 +743,37 @@ function updatePartner(oldPartnerId, newPartnerData) {
 }
 
 /**
- * Toggles primary hexagons visibility for a partner.
+ * Toggles hexagons visibility for a partner's zone (primary or secondary).
+ * @param {string} partnerId - The partner ID
+ * @param {string} zoneType - 'primary' or 'secondary'
+ * @param {boolean} visible - Whether to show or hide the hexagons
  */
-function togglePrimaryHexagonsVisibility(partnerId, visible) {
+function toggleHexagonsVisibility(partnerId, zoneType, visible) {
     const partner = partnersById[partnerId];
-    if (!partner || partner.elements.primaryHexagons.length === 0) return;
+    if (!partner) return;
+    
+    const hexagonsKey = zoneType === 'primary' ? 'primaryHexagons' : 'secondaryHexagons';
+    const hexagons = partner.elements[hexagonsKey];
+    
+    if (!hexagons || hexagons.length === 0) return;
+
+    // Check if intersection highlight is active
+    const intersectionToggle = document.getElementById('toggle-intersection-highlight');
+    const intersectionActive = !intersectionToggle.disabled && intersectionToggle.checked;
 
     if (visible) {
-        partner.elements.primaryHexagons.forEach(hexagon => {
+        hexagons.forEach(hexagon => {
+            // If intersection is active and hexagon is intersected, use intersection opacity
+            const targetOpacity = (intersectionActive && hexagon.isIntersectedByDelivery) 
+                ? PARTNER_CONSTANTS.INTERSECTION_OPACITY 
+                : PARTNER_CONSTANTS.DEFAULT_OPACITY;
             hexagon.polygon.setStyle({
-                fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
+                fillOpacity: targetOpacity,
                 opacity: 1
             });
         });
     } else {
-        partner.elements.primaryHexagons.forEach(hexagon => {
+        hexagons.forEach(hexagon => {
             hexagon.polygon.setStyle({
                 fillOpacity: 0,
                 opacity: 0
@@ -764,27 +783,17 @@ function togglePrimaryHexagonsVisibility(partnerId, visible) {
 }
 
 /**
+ * Toggles primary hexagons visibility for a partner.
+ */
+function togglePrimaryHexagonsVisibility(partnerId, visible) {
+    toggleHexagonsVisibility(partnerId, 'primary', visible);
+}
+
+/**
  * Toggles secondary hexagons visibility for a partner.
  */
 function toggleSecondaryHexagonsVisibility(partnerId, visible) {
-    const partner = partnersById[partnerId];
-    if (!partner || partner.elements.secondaryHexagons.length === 0) return;
-
-    if (visible) {
-        partner.elements.secondaryHexagons.forEach(hexagon => {
-            hexagon.polygon.setStyle({
-                fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
-                opacity: 1
-            });
-        });
-    } else {
-        partner.elements.secondaryHexagons.forEach(hexagon => {
-            hexagon.polygon.setStyle({
-                fillOpacity: 0,
-                opacity: 0
-            });
-        });
-    }
+    toggleHexagonsVisibility(partnerId, 'secondary', visible);
 }
 
 /**
@@ -807,6 +816,116 @@ function toggleDeliveryAreaVisibility(partnerId, visible) {
             });
         }
     });
+}
+
+/**
+ * Toggles intersection highlight for hexagons intersected by delivery area.
+ * Only highlights hexagons that are currently visible.
+ * @param {string} partnerId - The partner ID
+ * @param {boolean} enabled - Whether to show highlighted opacity for intersected hexagons
+ */
+function toggleIntersectionHighlight(partnerId, enabled) {
+    const partner = partnersById[partnerId];
+    if (!partner) return;
+    
+    const hasDeliveryArea = partner.elements.deliveryAreaPolygons && partner.elements.deliveryAreaPolygons.length > 0;
+    if (!hasDeliveryArea) return;
+    
+    // Check if delivery area is visible
+    const deliveryVisible = partner.elements.deliveryAreaPolygons[0].polygon.options.fillOpacity > 0;
+    
+    // When disabling, we don't need delivery area to be visible
+    // We just need to reset hexagon opacity to default
+    if (!enabled) {
+        // Reset all visible intersected hexagons to default opacity
+        partner.elements.primaryHexagons.forEach(hexagon => {
+            if (hexagon.isIntersectedByDelivery) {
+                const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
+                if (isVisible) {
+                    hexagon.polygon.setStyle({
+                        fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY
+                    });
+                }
+            }
+        });
+        
+        partner.elements.secondaryHexagons.forEach(hexagon => {
+            if (hexagon.isIntersectedByDelivery) {
+                const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
+                if (isVisible) {
+                    hexagon.polygon.setStyle({
+                        fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY
+                    });
+                }
+            }
+        });
+        return;
+    }
+    
+    // When enabling, delivery area must be visible
+    if (!deliveryVisible) return;
+    
+    // Update primary hexagons - only highlight visible ones
+    partner.elements.primaryHexagons.forEach(hexagon => {
+        if (hexagon.isIntersectedByDelivery) {
+            const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
+            if (isVisible) {
+                hexagon.polygon.setStyle({
+                    fillOpacity: PARTNER_CONSTANTS.INTERSECTION_OPACITY
+                });
+            }
+        }
+    });
+    
+    // Update secondary hexagons - only highlight visible ones
+    partner.elements.secondaryHexagons.forEach(hexagon => {
+        if (hexagon.isIntersectedByDelivery) {
+            const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
+            if (isVisible) {
+                hexagon.polygon.setStyle({
+                    fillOpacity: PARTNER_CONSTANTS.INTERSECTION_OPACITY
+                });
+            }
+        }
+    });
+}
+
+/**
+ * Updates the intersection highlight toggle state based on current conditions.
+ * Toggle is enabled when: delivery area exists AND is visible AND (primary OR secondary is visible).
+ * @param {string} partnerId - The partner ID
+ */
+function updateIntersectionToggleState(partnerId) {
+    const partner = partnersById[partnerId];
+    if (!partner) return;
+    
+    const intersectionToggle = document.getElementById('toggle-intersection-highlight');
+    const intersectionContainer = intersectionToggle.closest('.zone-toggle') || intersectionToggle.parentElement;
+    
+    const hasDeliveryArea = partner.elements.deliveryAreaPolygons && partner.elements.deliveryAreaPolygons.length > 0;
+    const deliveryVisible = hasDeliveryArea && partner.elements.deliveryAreaPolygons[0].polygon.options.fillOpacity > 0;
+    const primaryVisible = partner.elements.primaryHexagons.length > 0 && partner.elements.primaryHexagons[0].polygon.options.fillOpacity > 0;
+    const secondaryVisible = partner.elements.secondaryHexagons.length > 0 && partner.elements.secondaryHexagons[0].polygon.options.fillOpacity > 0;
+    const anyZoneVisible = primaryVisible || secondaryVisible;
+    
+    // Enable toggle only if delivery area exists, is visible, and at least one zone is visible
+    const shouldBeEnabled = hasDeliveryArea && deliveryVisible && anyZoneVisible;
+    
+    if (shouldBeEnabled) {
+        intersectionToggle.disabled = false;
+        if (intersectionContainer) {
+            intersectionContainer.classList.remove('opacity-50', 'cursor-not-allowed');
+            intersectionContainer.style.pointerEvents = 'auto';
+        }
+    } else {
+        intersectionToggle.disabled = true;
+        if (intersectionContainer) {
+            intersectionContainer.classList.add('opacity-50', 'cursor-not-allowed');
+            intersectionContainer.style.pointerEvents = 'none';
+        }
+        // Also uncheck the toggle when disabling
+        intersectionToggle.checked = false;
+    }
 }
 
 /**
@@ -1037,27 +1156,41 @@ function updatePartnerSidebarContent(partner) {
     const primaryCount = partner.elements.primaryHexagons.length;
     const secondaryCount = partner.elements.secondaryHexagons.length;
     const hasDeliveryArea = partner.elements.deliveryAreaPolygons && partner.elements.deliveryAreaPolygons.length > 0;
+    
+    // Count intersected hexagons
+    const primaryIntersected = partner.elements.primaryHexagons.filter(h => h.isIntersectedByDelivery).length;
+    const secondaryIntersected = partner.elements.secondaryHexagons.filter(h => h.isIntersectedByDelivery).length;
 
     // Primary zone row
+    let primaryStats = `Resolution: ${partner.primaryH3Resolution}<br>Zones: ${partner.primaryNumZones} (${primaryCount} hexagons`;
+    if (hasDeliveryArea && primaryIntersected > 0) {
+        primaryStats += `, <span class="text-blue-600 font-medium">${primaryIntersected} intersected</span>`;
+    }
+    primaryStats += ')';
     const primaryRow = document.createElement('tr');
     primaryRow.innerHTML = `
         <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Primary</td>
-        <td class="py-2 text-gray-600">Resolution: ${partner.primaryH3Resolution}<br>Zones: ${partner.primaryNumZones} (${primaryCount} hexagons)</td>
+        <td class="py-2 text-gray-600">${primaryStats}</td>
     `;
     tableBody.appendChild(primaryRow);
 
     // Secondary zone row (if exists)
     if (secondaryCount > 0 && partner.secondaryNumZones !== undefined) {
+        let secondaryStats = `Resolution: ${partner.secondaryH3Resolution}<br>Zones: ${partner.secondaryNumZones} (${secondaryCount} hexagons`;
+        if (hasDeliveryArea && secondaryIntersected > 0) {
+            secondaryStats += `, <span class="text-blue-600 font-medium">${secondaryIntersected} intersected</span>`;
+        }
+        secondaryStats += ')';
         const secondaryRow = document.createElement('tr');
         secondaryRow.innerHTML = `
             <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Secondary</td>
-            <td class="py-2 text-gray-600">Resolution: ${partner.secondaryH3Resolution}<br>Zones: ${partner.secondaryNumZones} (${secondaryCount} hexagons)</td>
+            <td class="py-2 text-gray-600">${secondaryStats}</td>
         `;
         tableBody.appendChild(secondaryRow);
     }
 
-    // Delivery area row (if exists)
-    if (hasDeliveryArea) {
+    // Delivery Area row (if content exists)
+    if (partner.deliveryAreaContent) {
         const deliveryRow = document.createElement('tr');
         deliveryRow.innerHTML = `
             <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Delivery Area</td>
@@ -1111,6 +1244,19 @@ function updatePartnerSidebarContent(partner) {
             deliveryContainer.style.pointerEvents = 'none';
         }
     }
+    
+    // Initialize intersection highlight toggle state
+    // Check if intersection highlight is currently active by checking hexagon opacity
+    const primaryIntersectedHighlighted = partner.elements.primaryHexagons.some(hexagon => 
+        hexagon.isIntersectedByDelivery && hexagon.polygon.options.fillOpacity === PARTNER_CONSTANTS.INTERSECTION_OPACITY
+    );
+    const secondaryIntersectedHighlighted = partner.elements.secondaryHexagons.some(hexagon => 
+        hexagon.isIntersectedByDelivery && hexagon.polygon.options.fillOpacity === PARTNER_CONSTANTS.INTERSECTION_OPACITY
+    );
+    const intersectionCurrentlyActive = primaryIntersectedHighlighted || secondaryIntersectedHighlighted;
+    
+    document.getElementById('toggle-intersection-highlight').checked = intersectionCurrentlyActive;
+    updateIntersectionToggleState(partner.partnerId);
 }
 
 /**
@@ -1202,8 +1348,11 @@ function openSidebarForEdit(partner) {
     }
 
     // Handle delivery area fields
+    // Check if delivery area content exists (polygon rendered on map)
     const hasDeliveryArea = partner.deliveryAreaContent && partner.elements.deliveryAreaPolygons && partner.elements.deliveryAreaPolygons.length > 0;
+    
     if (hasDeliveryArea) {
+        // Delivery area is enabled and rendered
         document.getElementById('sidebar-enable-delivery-area').checked = true;
         document.getElementById('delivery-area-fields').classList.remove('hidden');
         document.getElementById('sidebar-polygon-content').value = partner.deliveryAreaContent || '';
@@ -1215,6 +1364,7 @@ function openSidebarForEdit(partner) {
         document.getElementById('sidebar-delivery-color').value = deliveryColor;
         document.getElementById('sidebar-delivery-color').disabled = deliveryColorSame;
     } else {
+        // No delivery area (disabled or never defined)
         document.getElementById('sidebar-enable-delivery-area').checked = false;
         document.getElementById('delivery-area-fields').classList.add('hidden');
         document.getElementById('sidebar-same-color-delivery').checked = true;
@@ -1475,18 +1625,31 @@ document.getElementById('delete-partner-btn').addEventListener('click', function
 document.getElementById('toggle-primary-zone').addEventListener('change', function() {
     if (!currentPartnerId) return;
     togglePrimaryHexagonsVisibility(currentPartnerId, this.checked);
+    updateIntersectionToggleState(currentPartnerId);
 });
 
 // Partner info sidebar - toggle secondary zone
 document.getElementById('toggle-secondary-zone').addEventListener('change', function() {
     if (!currentPartnerId) return;
     toggleSecondaryHexagonsVisibility(currentPartnerId, this.checked);
+    updateIntersectionToggleState(currentPartnerId);
 });
 
 // Partner info sidebar - toggle delivery area
 document.getElementById('toggle-delivery-area').addEventListener('change', function() {
     if (!currentPartnerId) return;
     toggleDeliveryAreaVisibility(currentPartnerId, this.checked);
+    // Turn off intersection highlight when delivery area is hidden
+    if (!this.checked) {
+        toggleIntersectionHighlight(currentPartnerId, false);
+    }
+    updateIntersectionToggleState(currentPartnerId);
+});
+
+// Partner info sidebar - toggle intersection highlight
+document.getElementById('toggle-intersection-highlight').addEventListener('change', function() {
+    if (!currentPartnerId) return;
+    toggleIntersectionHighlight(currentPartnerId, this.checked);
 });
 
 // ==========================================
@@ -1555,6 +1718,99 @@ function isPointInHexagon(lat, lng, hexagonPolygon) {
     }
     
     return inside;
+}
+
+/**
+ * Checks if a point is inside a polygon using ray casting algorithm.
+ * @param {number} lat - Latitude of the point
+ * @param {number} lng - Longitude of the point
+ * @param {Array} polygonCoords - Array of [lat, lng] coordinates
+ * @returns {boolean} True if point is inside polygon
+ */
+function isPointInPolygon(lat, lng, polygonCoords) {
+    const n = polygonCoords.length;
+    let inside = false;
+    
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+        const xi = polygonCoords[i][0];
+        const yi = polygonCoords[i][1];
+        const xj = polygonCoords[j][0];
+        const yj = polygonCoords[j][1];
+        
+        if (((yi > lng) !== (yj > lng)) && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi)) {
+            inside = !inside;
+        }
+    }
+    
+    return inside;
+}
+
+/**
+ * Checks if a hexagon intersects with a delivery area polygon.
+ * A hexagon is intersected if:
+ * - Any of its boundary vertices is inside the delivery polygon, OR
+ * - The delivery polygon has vertices inside the hexagon
+ * @param {Array} hexagonBoundary - H3 hexagon boundary (array of [lat, lng])
+ * @param {Array} deliveryPolygonCoords - Delivery polygon coordinates (array of [lat, lng])
+ * @returns {boolean} True if hexagon intersects with delivery area
+ */
+function isHexagonIntersectedByPolygon(hexagonBoundary, deliveryPolygonCoords) {
+    // Check if any hexagon vertex is inside the delivery polygon
+    for (const vertex of hexagonBoundary) {
+        if (isPointInPolygon(vertex[0], vertex[1], deliveryPolygonCoords)) {
+            return true;
+        }
+    }
+    
+    // Check if any delivery polygon vertex is inside the hexagon
+    for (const vertex of deliveryPolygonCoords) {
+        if (isPointInPolygon(vertex[0], vertex[1], hexagonBoundary)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Computes intersection state for all hexagons of a partner.
+ * Updates the isIntersectedByDelivery property on each hexagon.
+ * @param {Object} partnerObject - The partner object with elements
+ */
+function computeHexagonIntersections(partnerObject) {
+    const deliveryPolygons = partnerObject.elements.deliveryAreaPolygons;
+    
+    // If no delivery area, mark all hexagons as not intersected
+    if (!deliveryPolygons || deliveryPolygons.length === 0) {
+        partnerObject.elements.primaryHexagons.forEach(hexagon => {
+            hexagon.isIntersectedByDelivery = false;
+        });
+        partnerObject.elements.secondaryHexagons.forEach(hexagon => {
+            hexagon.isIntersectedByDelivery = false;
+        });
+        return;
+    }
+    
+    // Get all delivery polygon coordinates
+    const allDeliveryCoords = [];
+    deliveryPolygons.forEach(polyObj => {
+        const latlngs = polyObj.polygon.getLatLngs()[0];
+        latlngs.forEach(ll => {
+            allDeliveryCoords.push([ll.lat, ll.lng]);
+        });
+    });
+    
+    // Check primary hexagons
+    partnerObject.elements.primaryHexagons.forEach(hexagon => {
+        const hexBoundary = h3.cellToBoundary(hexagon.h3Index);
+        hexagon.isIntersectedByDelivery = isHexagonIntersectedByPolygon(hexBoundary, allDeliveryCoords);
+    });
+    
+    // Check secondary hexagons
+    partnerObject.elements.secondaryHexagons.forEach(hexagon => {
+        const hexBoundary = h3.cellToBoundary(hexagon.h3Index);
+        hexagon.isIntersectedByDelivery = isHexagonIntersectedByPolygon(hexBoundary, allDeliveryCoords);
+    });
 }
 
 /**
@@ -1952,6 +2208,9 @@ function closeAllSidebars() {
     closeSidebar(partnerFormSidebar);
     closeSidebar(partnerInfoSidebar);
     closeSidebar(customerLocationSidebar);
+    
+    // Reset currentPartnerId when closing partner info sidebar
+    currentPartnerId = null;
     
     // Remove cross marker when closing all sidebars
     removeCrossMarker();

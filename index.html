@@ -351,7 +351,10 @@
                                 <strong class="text-gray-900 font-medium">Toggles:</strong> Show/hide zones & delivery area
                             </li>
                             <li class="text-[13px] leading-relaxed text-gray-600">
-                                <strong class="text-gray-900 font-medium">Statistics:</strong> Resolution, zones, hexagon count
+                                <strong class="text-gray-900 font-medium">Highlight Intersection:</strong> When a delivery area is defined, highlight hexagons that intersect with it. Available when delivery area and at least one zone are visible.
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Statistics:</strong> Resolution, zones, hexagon count, and intersection count when delivery area exists
                             </li>
                         </ul>
                     </div>
@@ -643,6 +646,18 @@
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-delivery-area" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+            
+            <!-- Intersection Highlight Toggle -->
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Highlight Intersection</h4>
+                    <p class="m-0 text-xs text-gray-500">Hexagons intersected by delivery area</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-intersection-highlight" class="sr-only peer">
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
             </div>

@@ -92,7 +92,8 @@ When viewing a partner's info panel:
 - **Primary Zone Toggle**: Show/hide the primary H3 hexagonal zones for the selected partner.
 - **Secondary Zone Toggle**: Show/hide the secondary H3 hexagonal zones for the selected partner (if configured).
 - **Delivery Area Toggle**: Show/hide the delivery area polygon for the selected partner (if configured).
-- **Partner Statistics**: View the resolution, number of zones, and hexagon count for both primary and secondary zones.
+- **Highlight Intersection Toggle**: When a delivery area is defined, highlight hexagons that intersect with the delivery polygon. This toggle is enabled only when the delivery area and at least one zone (primary or secondary) are visible.
+- **Partner Statistics**: View the resolution, number of zones, hexagon count, and intersection count (when delivery area exists) for both primary and secondary zones.
 
 ### Data Management
 
