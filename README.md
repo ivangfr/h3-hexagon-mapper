@@ -42,9 +42,10 @@ Standalone hexagons are individual hexagons you can add anywhere on the map. You
 
 #### Measurement Mode
 
-- **Activate**: Click the "Start Measurement" button to enable measurement mode. An overlay and indicator will appear.
+- **Activate**: Click the "Measurement" button to enable measurement mode. An overlay will appear, controls will be dimmed and disabled, and a "Measurement Mode" indicator bar will show at the top of the screen with a pulsing "Stop" button.
 - **Measure Distance**: Click on the map to set a starting point, then move your mouse to see the distance in kilometers. A dashed line shows the measurement path.
-- **Clear or Exit**: Click again to clear the current measurement and start a new one, or click "Stop Measurement" to exit measurement mode.
+- **Continuous Measurement**: Click again on the map to clear the current measurement and start a new one immediately. This allows for consecutive measurements without exiting measurement mode.
+- **Exit**: Click the "Stop" button in the top indicator bar, or press the `Esc` key to exit measurement mode.
 
 ### Right-Click Context Menu
 

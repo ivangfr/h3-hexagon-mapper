@@ -35,6 +35,7 @@ let standaloneHexagonsEnabled = true;
 let isMeasuring = false;
 let measurementStart = null;
 let measurementLine = null;
+let measurementStartMarker = null;
 
 // Grayscale state
 let isGrayscale = true;
@@ -126,17 +127,31 @@ function startMeasurement() {
     closeAllSidebars();
 
     isMeasuring = true;
-    // Clean up any existing measurement line
+    // Clean up any existing measurement line and marker
     if (measurementLine) {
         map.removeLayer(measurementLine);
         measurementLine = null;
     }
+    if (measurementStartMarker) {
+        map.removeLayer(measurementStartMarker);
+        measurementStartMarker = null;
+    }
     measurementStart = null;
+
+    // Disable all controls in the controls panel
+    const controlsPanel = document.getElementById('controls');
+    controlsPanel.classList.add('controls-disabled');
+    
+    // Disable all interactive elements within the controls panel
+    const interactiveElements = controlsPanel.querySelectorAll('button, input, label');
+    interactiveElements.forEach(el => {
+        el.style.pointerEvents = 'none';
+    });
 
     // Show measurement mode indicator and overlay
     document.getElementById('measurement-overlay').classList.remove('hidden');
-    document.getElementById('measurement-mode-indicator').textContent = 'Measurement Mode Active';
-    document.getElementById('measurement-mode-indicator').classList.remove('hidden');
+    const measurementModeIndicator = document.getElementById('measurement-mode-indicator');
+    measurementModeIndicator.classList.remove('hidden');
     const measurementDisplay = document.getElementById('measurement-display');
     measurementDisplay.textContent = '0.00 km';
     measurementDisplay.classList.remove('hidden');
@@ -151,7 +166,21 @@ function stopMeasurement() {
         map.removeLayer(measurementLine);
         measurementLine = null;
     }
+    if (measurementStartMarker) {
+        map.removeLayer(measurementStartMarker);
+        measurementStartMarker = null;
+    }
     measurementStart = null;
+
+    // Re-enable all controls in the controls panel
+    const controlsPanel = document.getElementById('controls');
+    controlsPanel.classList.remove('controls-disabled');
+    
+    // Re-enable all interactive elements within the controls panel
+    const interactiveElements = controlsPanel.querySelectorAll('button, input, label');
+    interactiveElements.forEach(el => {
+        el.style.pointerEvents = 'auto';
+    });
 
     // Hide measurement mode indicator, overlay, and measurement display
     document.getElementById('measurement-overlay').classList.add('hidden');
@@ -191,15 +220,33 @@ map.on('click', function(e) {
     if (isMeasuring) {
         const { lat, lng } = e.latlng;
         if (!measurementStart) {
-            // First click - set measurement start point
+            // First click - set measurement start point and add marker
             measurementStart = { lat, lng };
+            
+            // Add a small filled circle marker at the start point
+            measurementStartMarker = L.circleMarker([lat, lng], {
+                radius: 8,
+                color: '#ffffff',
+                fillColor: '#000000',
+                fillOpacity: 1,
+                weight: 2
+            }).addTo(map);
         } else {
-            // Second click - clear measurement and reset button
-            stopMeasurement();
-            const measurementToggle = document.getElementById('measurement-toggle');
-            measurementToggle.innerHTML = '<i data-lucide="ruler" class="icon-btn"></i> Start Measurement';
-            measurementToggle.style.backgroundColor = '';
-            lucide.createIcons();
+            // Second click - complete measurement but stay in measurement mode
+            // Clear the line and marker for the next measurement
+            if (measurementLine) {
+                map.removeLayer(measurementLine);
+                measurementLine = null;
+            }
+            if (measurementStartMarker) {
+                map.removeLayer(measurementStartMarker);
+                measurementStartMarker = null;
+            }
+            measurementStart = null;
+            
+            // Reset the display
+            const measurementDisplay = document.getElementById('measurement-display');
+            measurementDisplay.textContent = '0.00 km';
         }
         return;
     }
@@ -328,19 +375,18 @@ document.getElementById('help-close-btn').addEventListener('click', closeHelpSid
 // TOOLBAR CONTROLS
 // ==========================================
 
-// Measurement toggle button
+// Measurement toggle button - one-way entry into measurement mode
 const measurementToggle = document.getElementById('measurement-toggle');
 measurementToggle.addEventListener('click', function() {
     if (!isMeasuring) {
         startMeasurement();
-        measurementToggle.innerHTML = '<i data-lucide="square" class="icon-btn"></i> Stop Measurement';
-        measurementToggle.style.backgroundColor = '#16a34a';
-        lucide.createIcons();
-    } else {
+    }
+});
+
+// Stop measurement button in the indicator
+document.getElementById('stop-measurement-btn').addEventListener('click', function() {
+    if (isMeasuring) {
         stopMeasurement();
-        measurementToggle.innerHTML = '<i data-lucide="ruler" class="icon-btn"></i> Start Measurement';
-        measurementToggle.style.backgroundColor = '';
-        lucide.createIcons();
     }
 });
 
@@ -1161,6 +1207,11 @@ function parseWKTRing(ringContent) {
  * Shows the partner info sidebar.
  */
 function showPartnerSidebar(partnerId) {
+    // Block partner marker clicks during measurement mode
+    if (isMeasuring) {
+        return;
+    }
+
     const partner = partnersById[partnerId];
     if (!partner) return;
 
@@ -2014,6 +2065,17 @@ document.addEventListener('click', function(e) {
     const contextMenu = document.getElementById('context-menu');
     if (!contextMenu.contains(e.target)) {
         hideContextMenu();
+    }
+});
+
+// Escape key handler - exit measurement mode
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && isMeasuring) {
+        stopMeasurement();
+        const measurementToggle = document.getElementById('measurement-toggle');
+        measurementToggle.innerHTML = '<i data-lucide="ruler" class="icon-btn"></i> Start Measurement';
+        measurementToggle.style.backgroundColor = '';
+        lucide.createIcons();
     }
 });
 

@@ -178,3 +178,31 @@ input[type="color"]::-moz-color-swatch {
 .map-grayscale .leaflet-tile-pane {
     filter: grayscale(100%);
 }
+
+/* ==========================================
+   CONTROLS DISABLED STATE
+   ========================================== */
+
+.controls-disabled {
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+}
+
+/* ==========================================
+   PULSE ANIMATION
+   ========================================== */
+
+@keyframes pulse-custom {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+}
+
+.animate-pulse-custom {
+    animation: pulse-custom 1.5s ease-in-out infinite;
+}

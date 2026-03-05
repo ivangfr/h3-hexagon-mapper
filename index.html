@@ -37,8 +37,12 @@
     <div id="map" class="h-screen"></div>
     <div id="measurement-overlay" class="fixed inset-0 bg-black/20 hidden" style="z-index: 9997; pointer-events: none;"></div>
     
-    <div id="measurement-mode-indicator" class="fixed top-5 left-1/2 -translate-x-1/2 hidden bg-gray-900/95 backdrop-blur-sm text-white font-semibold px-6 py-2.5 text-sm rounded-full shadow-lg" style="z-index: 9998;">
-        <span>Measurement Mode Active</span>
+    <div id="measurement-mode-indicator" class="fixed top-5 left-1/2 -translate-x-1/2 hidden flex bg-gray-900/95 backdrop-blur-sm text-white font-semibold px-4 py-2 text-sm rounded-full shadow-lg items-center gap-3" style="z-index: 9998;">
+        <span>Measurement Mode</span>
+        <button id="stop-measurement-btn" class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-full transition-colors animate-pulse-custom">
+            <i data-lucide="square" class="w-3.5 h-3.5"></i>
+            Stop
+        </button>
     </div>
     
     <!-- Controls Panel -->
@@ -125,7 +129,7 @@
                     </button>
                     <button id="measurement-toggle" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-md shadow-emerald-500/30 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-200">
                         <i data-lucide="ruler" class="w-4 h-4"></i>
-                        Start Measurement
+                        Measurement
                     </button>
                 </div>
             </div>
@@ -265,13 +269,16 @@
                     <p class="text-[13px] leading-relaxed text-gray-900 font-semibold m-0 mb-2">Measurement Mode</p>
                     <ul class="space-y-2">
                         <li class="text-[13px] leading-relaxed text-gray-600">
-                            <strong class="text-gray-900 font-semibold">Activate:</strong> Click "Start Measurement" to enable measurement mode.
+                            <strong class="text-gray-900 font-semibold">Activate:</strong> Click "Measurement" to enable measurement mode. Controls will be dimmed and disabled, and a "Measurement Mode" indicator bar will appear at the top with a pulsing "Stop" button.
                         </li>
                         <li class="text-[13px] leading-relaxed text-gray-600">
                             <strong class="text-gray-900 font-semibold">Measure:</strong> Click to set start point, move mouse to see distance in km.
                         </li>
                         <li class="text-[13px] leading-relaxed text-gray-600">
-                            <strong class="text-gray-900 font-semibold">Exit:</strong> Click again or "Stop Measurement" to exit.
+                            <strong class="text-gray-900 font-semibold">Continuous:</strong> Click again to clear and start a new measurement immediately.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Exit:</strong> Click the "Stop" button or press <kbd class="px-1.5 py-0.5 text-xs font-mono bg-gray-200 rounded border border-gray-300">Esc</kbd>.
                         </li>
                     </ul>
                 </div>
