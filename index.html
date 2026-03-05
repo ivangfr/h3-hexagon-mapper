@@ -665,11 +665,69 @@
             <!-- Partner Stats -->
             <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
                 <h4 class="m-0 text-sm font-semibold text-gray-900 mb-3">Statistics</h4>
-                <table id="partner-stats-table" class="w-full text-[13px]">
-                    <tbody class="divide-y divide-gray-200">
-                        <!-- Stats rows will be populated by JavaScript -->
-                    </tbody>
-                </table>
+                
+                <!-- Primary Zone Statistics -->
+                <div id="primary-stats-container" class="bg-white rounded-lg p-3 mb-3 border border-gray-200">
+                    <div class="text-xs font-semibold text-gray-900 mb-2 uppercase tracking-wide">Primary Zone</div>
+                    <div class="space-y-1 text-[12px] mb-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Resolution:</span>
+                            <span id="primary-resolution-stat" class="font-semibold text-gray-900">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Hexagons:</span>
+                            <span id="primary-hexagons-stat" class="font-semibold text-gray-900">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Intersected:</span>
+                            <span id="primary-intersected-stat" class="font-semibold text-blue-600">-</span>
+                        </div>
+                    </div>
+                    <!-- Coverage Bar -->
+                    <div id="primary-coverage-bar-container">
+                        <div class="relative w-full h-6 bg-gray-300 rounded-full overflow-hidden">
+                            <div id="primary-coverage-bar" class="h-full bg-blue-300 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <span id="primary-coverage-percent" class="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-gray-900">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Secondary Zone Statistics -->
+                <div id="secondary-stats-container" class="bg-white rounded-lg p-3 mb-3 border border-gray-200 hidden">
+                    <div class="text-xs font-semibold text-gray-900 mb-2 uppercase tracking-wide">Secondary Zone</div>
+                    <div class="space-y-1 text-[12px] mb-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Resolution:</span>
+                            <span id="secondary-resolution-stat" class="font-semibold text-gray-900">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Hexagons:</span>
+                            <span id="secondary-hexagons-stat" class="font-semibold text-gray-900">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Intersected:</span>
+                            <span id="secondary-intersected-stat" class="font-semibold text-blue-600">-</span>
+                        </div>
+                    </div>
+                    <!-- Coverage Bar -->
+                    <div id="secondary-coverage-bar-container">
+                        <div class="relative w-full h-6 bg-gray-300 rounded-full overflow-hidden">
+                            <div id="secondary-coverage-bar" class="h-full bg-blue-300 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <span id="secondary-coverage-percent" class="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-gray-900">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Delivery Area Statistics -->
+                <div id="delivery-stats-container" class="bg-white rounded-lg p-3 border border-gray-200 hidden">
+                    <div class="text-xs font-semibold text-gray-900 mb-2 uppercase tracking-wide">Delivery Area</div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 flex items-center justify-center bg-green-100 rounded-full">
+                            <i data-lucide="check" class="w-3.5 h-3.5 text-green-600"></i>
+                        </div>
+                        <span class="text-[12px] text-gray-700">Custom polygon defined</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Partner Edit -->

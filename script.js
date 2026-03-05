@@ -79,9 +79,9 @@ function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
     const h3Index = h3.latLngToCell(latitude, longitude, resolution);
     
     if (standaloneHexagons[h3Index]) {
-        removeHexagon({ h3Index, latitude, longitude, resolution, color, opacity });
+        removeHexagon(h3Index);
     } else {
-        addHexagon({ h3Index, latitude, longitude, resolution, color, opacity });
+        addHexagon({ h3Index, latitude, longitude, color, opacity });
     }
 }
 
@@ -89,7 +89,7 @@ function generateH3Grid(latitude, longitude, resolution, color, opacity, map) {
  * Adds a hexagon polygon to the map.
  */
 function addHexagon(hexagon) {
-    const { h3Index, latitude, longitude, resolution, color, opacity } = hexagon;
+    const { h3Index, latitude, longitude, color, opacity } = hexagon;
     const hexagonBoundary = h3.cellToBoundary(h3Index);
     const polygon = L.polygon(hexagonBoundary, {
         color: color,
@@ -105,8 +105,7 @@ function addHexagon(hexagon) {
 /**
  * Removes a hexagon polygon from the map.
  */
-function removeHexagon(hexagon) {
-    const { h3Index } = hexagon;
+function removeHexagon(h3Index) {
     if (standaloneHexagons[h3Index]) {
         map.removeLayer(standaloneHexagons[h3Index].polygon);
         delete standaloneHexagons[h3Index];
@@ -582,7 +581,7 @@ function addPartnerToMap(partner) {
     // Draw primary hexagons
     const centerCell = h3.latLngToCell(latitude, longitude, primaryH3Resolution);
     const disk = h3.gridDisk(centerCell, primaryNumZones - 1);
-    disk.forEach((cell, index) => {
+    disk.forEach(cell => {
         const boundary = h3.cellToBoundary(cell);
         const polygon = L.polygon(boundary, {
             color: actualPrimaryColor,
@@ -607,7 +606,7 @@ function addPartnerToMap(partner) {
         const actualSecondaryColor = secondaryColor || actualPrimaryColor;
         const centerCell2 = h3.latLngToCell(latitude, longitude, secondaryH3Resolution);
         const disk2 = h3.gridDisk(centerCell2, secondaryNumZones - 1);
-        disk2.forEach((cell, index) => {
+        disk2.forEach(cell => {
             const boundary = h3.cellToBoundary(cell);
             const polygon = L.polygon(boundary, {
                 color: actualSecondaryColor,
@@ -891,6 +890,37 @@ function toggleIntersectionHighlight(partnerId, enabled) {
 }
 
 /**
+
+ * Updates the coverage bar display for delivery area intersection.
+ * @param {string} zoneType - 'primary' or 'secondary'
+ * @param {number} intersected - Number of intersected hexagons
+ * @param {number} total - Total number of hexagons
+ */
+function updateCoverageBar(zoneType, intersected, total) {
+    const percentage = total > 0 ? Math.round((intersected / total) * 100) : 0;
+    
+    const barId = zoneType === 'primary' ? 'primary-coverage-bar' : 'secondary-coverage-bar';
+    const percentId = zoneType === 'primary' ? 'primary-coverage-percent' : 'secondary-coverage-percent';
+    const containerId = zoneType === 'primary' ? 'primary-coverage-bar-container' : 'secondary-coverage-bar-container';
+    
+    const barElement = document.getElementById(barId);
+    const percentElement = document.getElementById(percentId);
+    const containerElement = document.getElementById(containerId);
+    
+    if (!barElement || !percentElement || !containerElement) return;
+    
+    // Update the bar width
+    barElement.style.width = `${percentage}%`;
+    
+    // Update the percentage text
+    percentElement.textContent = `${percentage}%`;
+    
+    // Show/hide container based on whether there's a delivery area
+    // The container should always be visible when there's delivery area data
+    containerElement.classList.remove('hidden');
+}
+
+/**
  * Updates the intersection highlight toggle state based on current conditions.
  * Toggle is enabled when: delivery area exists AND is visible AND (primary OR secondary is visible).
  * @param {string} partnerId - The partner ID
@@ -1149,10 +1179,6 @@ function showPartnerSidebar(partnerId) {
 function updatePartnerSidebarContent(partner) {
     document.getElementById('slide-partner-id').textContent = partner.partnerId;
 
-    // Update partner statistics table
-    const tableBody = document.getElementById('partner-stats-table').querySelector('tbody');
-    tableBody.innerHTML = '';
-
     const primaryCount = partner.elements.primaryHexagons.length;
     const secondaryCount = partner.elements.secondaryHexagons.length;
     const hasDeliveryArea = partner.elements.deliveryAreaPolygons && partner.elements.deliveryAreaPolygons.length > 0;
@@ -1160,43 +1186,35 @@ function updatePartnerSidebarContent(partner) {
     // Count intersected hexagons
     const primaryIntersected = partner.elements.primaryHexagons.filter(h => h.isIntersectedByDelivery).length;
     const secondaryIntersected = partner.elements.secondaryHexagons.filter(h => h.isIntersectedByDelivery).length;
-
-    // Primary zone row
-    let primaryStats = `Resolution: ${partner.primaryH3Resolution}<br>Zones: ${partner.primaryNumZones} (${primaryCount} hexagons`;
-    if (hasDeliveryArea && primaryIntersected > 0) {
-        primaryStats += `, <span class="text-blue-600 font-medium">${primaryIntersected} intersected</span>`;
+    
+    // Update Primary Zone Statistics
+    document.getElementById('primary-resolution-stat').textContent = partner.primaryH3Resolution;
+    document.getElementById('primary-hexagons-stat').textContent = primaryCount;
+    document.getElementById('primary-intersected-stat').textContent = primaryIntersected > 0 ? `${primaryIntersected}` : '-';
+    
+    // Update primary coverage bar
+    updateCoverageBar('primary', primaryIntersected, primaryCount);
+    
+    // Update Secondary Zone Statistics
+    const secondaryStatsContainer = document.getElementById('secondary-stats-container');
+    if (secondaryCount > 0) {
+        secondaryStatsContainer.classList.remove('hidden');
+        document.getElementById('secondary-resolution-stat').textContent = partner.secondaryH3Resolution;
+        document.getElementById('secondary-hexagons-stat').textContent = secondaryCount;
+        document.getElementById('secondary-intersected-stat').textContent = secondaryIntersected > 0 ? `${secondaryIntersected}` : '-';
+        
+        // Update secondary coverage bar
+        updateCoverageBar('secondary', secondaryIntersected, secondaryCount);
+    } else {
+        secondaryStatsContainer.classList.add('hidden');
     }
-    primaryStats += ')';
-    const primaryRow = document.createElement('tr');
-    primaryRow.innerHTML = `
-        <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Primary</td>
-        <td class="py-2 text-gray-600">${primaryStats}</td>
-    `;
-    tableBody.appendChild(primaryRow);
-
-    // Secondary zone row (if exists)
-    if (secondaryCount > 0 && partner.secondaryNumZones !== undefined) {
-        let secondaryStats = `Resolution: ${partner.secondaryH3Resolution}<br>Zones: ${partner.secondaryNumZones} (${secondaryCount} hexagons`;
-        if (hasDeliveryArea && secondaryIntersected > 0) {
-            secondaryStats += `, <span class="text-blue-600 font-medium">${secondaryIntersected} intersected</span>`;
-        }
-        secondaryStats += ')';
-        const secondaryRow = document.createElement('tr');
-        secondaryRow.innerHTML = `
-            <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Secondary</td>
-            <td class="py-2 text-gray-600">${secondaryStats}</td>
-        `;
-        tableBody.appendChild(secondaryRow);
-    }
-
-    // Delivery Area row (if content exists)
-    if (partner.deliveryAreaContent) {
-        const deliveryRow = document.createElement('tr');
-        deliveryRow.innerHTML = `
-            <td class="py-2 pr-2 font-semibold text-gray-700 align-top w-24">Delivery Area</td>
-            <td class="py-2 text-gray-600">Custom polygon defined</td>
-        `;
-        tableBody.appendChild(deliveryRow);
+    
+    // Update Delivery Area Statistics
+    const deliveryStatsContainer = document.getElementById('delivery-stats-container');
+    if (hasDeliveryArea) {
+        deliveryStatsContainer.classList.remove('hidden');
+    } else {
+        deliveryStatsContainer.classList.add('hidden');
     }
 
     // Set initial toggle states
@@ -1257,6 +1275,9 @@ function updatePartnerSidebarContent(partner) {
     
     document.getElementById('toggle-intersection-highlight').checked = intersectionCurrentlyActive;
     updateIntersectionToggleState(partner.partnerId);
+    
+    // Re-initialize Lucide icons for any new elements
+    lucide.createIcons();
 }
 
 /**
