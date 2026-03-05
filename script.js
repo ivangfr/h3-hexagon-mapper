@@ -13,6 +13,9 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
+// Apply grayscale filter to map on initial load (since grayscale toggle is checked by default)
+document.getElementById('map').classList.add('map-grayscale');
+
 // ==========================================
 // STATE MANAGEMENT
 // ==========================================
@@ -34,7 +37,7 @@ let measurementStart = null;
 let measurementLine = null;
 
 // Grayscale state
-let isGrayscale = false;
+let isGrayscale = true;
 
 // Partner state
 const partnersById = {};
@@ -1510,6 +1513,10 @@ document.getElementById('sidebar-same-color').addEventListener('change', functio
 document.getElementById('sidebar-enable-delivery-area').addEventListener('change', function() {
     if (this.checked) {
         document.getElementById('delivery-area-fields').classList.remove('hidden');
+        // Uncheck "Same as primary" and set color to black
+        document.getElementById('sidebar-same-color-delivery').checked = false;
+        document.getElementById('sidebar-delivery-color').value = '#000000';
+        document.getElementById('sidebar-delivery-color').disabled = false;
     } else {
         document.getElementById('delivery-area-fields').classList.add('hidden');
     }
