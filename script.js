@@ -36,6 +36,7 @@ let isMeasuring = false;
 let measurementStart = null;
 let measurementLine = null;
 let measurementStartMarker = null;
+let measurementLineColor = '#555555';
 
 // Grayscale state
 let isGrayscale = true;
@@ -299,9 +300,9 @@ map.on('mousemove', function(e) {
             map.removeLayer(measurementLine);
         }
 
-        // Create new measurement line (black)
+        // Create new measurement line with selected color
         measurementLine = L.polyline([measurementStart, currentPoint], {
-            color: '#000000',
+            color: measurementLineColor,
             weight: 10,
             opacity: 0.8,
             dashArray: '5, 15'
@@ -388,6 +389,11 @@ document.getElementById('stop-measurement-btn').addEventListener('click', functi
     if (isMeasuring) {
         stopMeasurement();
     }
+});
+
+// Measurement color picker
+document.getElementById('measurement-color-picker').addEventListener('input', function() {
+    measurementLineColor = this.value;
 });
 
 // Grayscale toggle

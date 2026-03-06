@@ -35,10 +35,11 @@
 </head>
 <body class="font-roboto m-0 p-0 h-screen">
     <div id="map" class="h-screen"></div>
-    <div id="measurement-overlay" class="fixed inset-0 bg-black/20 hidden" style="z-index: 9997; pointer-events: none;"></div>
+    <div id="measurement-overlay" class="fixed inset-0 hidden" style="z-index: 9997; pointer-events: none;"></div>
     
     <div id="measurement-mode-indicator" class="fixed top-5 left-1/2 -translate-x-1/2 hidden flex bg-gray-900/95 backdrop-blur-sm text-white font-semibold px-4 py-2 text-sm rounded-full shadow-lg items-center gap-3" style="z-index: 9998;">
         <span>Measurement Mode</span>
+        <input type="color" id="measurement-color-picker" value="#555555" class="measurement-color-picker" title="Line Color">
         <button id="stop-measurement-btn" class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-full transition-colors animate-pulse-custom">
             <i data-lucide="square" class="w-3.5 h-3.5"></i>
             Stop

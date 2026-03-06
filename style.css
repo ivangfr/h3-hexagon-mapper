@@ -171,6 +171,43 @@ input[type="color"]::-moz-color-swatch {
     border-radius: 5px;
 }
 
+/* Measurement Color Picker - Dark theme for indicator bar */
+.measurement-color-picker {
+    -webkit-appearance: none;
+    width: 32px !important;
+    height: 32px !important;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 2px;
+    background: transparent;
+    flex-shrink: 0;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.measurement-color-picker:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: scale(1.1);
+}
+
+.measurement-color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.measurement-color-picker::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+.measurement-color-picker::-moz-color-swatch-wrapper {
+    padding: 0;
+}
+
+.measurement-color-picker::-moz-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
 /* ==========================================
    GRAYSCALE MAP
    ========================================== */
