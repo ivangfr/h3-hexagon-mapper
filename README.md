@@ -80,7 +80,14 @@ When adding or editing a partner, you can configure:
 - **Coordinates**: Latitude and longitude of the partner location.
 - **Primary Zone**: H3 resolution (0-15), number of zones (1-50), and color.
 - **Secondary Zone**: Optional additional zone layer with its own resolution, number of zones, and color. Enable the toggle to configure.
-- **Delivery Area**: Optional custom delivery polygon. Enable and paste KML or WKT content to define the boundary.
+- **Delivery Area**: Optional custom delivery polygon. Enable to define a boundary.
+  - **Draw Delivery Area**: Click the "Draw Delivery Area" button to interactively draw a polygon on the map:
+    - **Add Points**: Click on the map to add polygon vertices (minimum 3 points required).
+    - **Close Polygon**: Click near the start point (turns green when close) to complete the polygon.
+    - **Save**: Choose "Save as WKT" or "Save as KML" to save the polygon to the form.
+    - **Cancel**: Click Cancel to exit drawing mode without saving.
+    - **Undo**: Press `Esc` to remove the last point, or cancel if no points exist.
+  - **Or Paste Content**: Manually paste KML or WKT content in the textarea.
   - **Supported Formats**:
     - **KML**: XML-based format with coordinates tags.
     - **WKT**: Single polygon with coordinate pairs or multiple polygons for complex areas.

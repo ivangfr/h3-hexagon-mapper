@@ -57,6 +57,17 @@ let contextMenuState = {
     crossMarker: null
 };
 
+// Delivery area drawing state
+let deliveryAreaMode = false;
+let deliveryAreaPoints = [];
+let deliveryAreaLines = [];
+let deliveryAreaTempLine = null;
+let deliveryAreaStartMarker = null;
+let deliveryAreaVertexMarkers = [];
+let deliveryAreaCompletedPolygon = null;
+let deliveryAreaNearStartPoint = false;
+let deliveryAreaHadCrossMarker = false;
+
 // Partner constants
 const PARTNER_CONSTANTS = {
     DEFAULT_OPACITY: 0.1,
@@ -211,6 +222,12 @@ map.on('click', function(e) {
         return;
     }
     
+    // Handle delivery area mode clicks
+    if (deliveryAreaMode) {
+        handleDeliveryAreaClick(e);
+        return;
+    }
+    
     // If cross marker is on the map, remove it and close sidebars
     if (contextMenuState.crossMarker) {
         removeCrossMarker();
@@ -290,7 +307,10 @@ map.on('mousemove', function(e) {
     const lat = e.latlng.lat.toFixed(6);
     const lng = e.latlng.lng.toFixed(6);
 
-    if (isMeasuring && measurementStart) {
+    if (deliveryAreaMode) {
+        // Handle delivery area drawing
+        handleDeliveryAreaMouseMove(e);
+    } else if (isMeasuring && measurementStart) {
         // Update measurement line and show distance
         const currentPoint = { lat: e.latlng.lat, lng: e.latlng.lng };
         const distance = calculateDistance(measurementStart, currentPoint);
@@ -2311,3 +2331,536 @@ function closeAllSidebars() {
     // Remove cross marker when closing all sidebars
     removeCrossMarker();
 }
+
+// ==========================================
+// DELIVERY AREA DRAWING MODE
+// ==========================================
+
+const DELIVERY_AREA_CONSTANTS = {
+    LINE_COLOR: '#3b82f6',
+    LINE_WEIGHT: 4,
+    LINE_OPACITY: 0.8,
+    TEMP_LINE_COLOR: '#3b82f6',
+    TEMP_LINE_WEIGHT: 3,
+    TEMP_LINE_OPACITY: 0.5,
+    TEMP_LINE_DASH_ARRAY: '8, 8',
+    POLYGON_FILL_COLOR: '#3b82f6',
+    POLYGON_FILL_OPACITY: 0.2,
+    START_POINT_RADIUS: 12,
+    VERTEX_RADIUS: 8,
+    SNAP_TOLERANCE_PIXELS: 20
+};
+
+/**
+ * Creates a start point marker icon for delivery area drawing.
+ */
+function createDeliveryAreaStartIcon(isNearStart = false) {
+    const colorClass = isNearStart ? 'bg-emerald-500' : 'bg-blue-500';
+    const scale = isNearStart ? 'scale(1.3)' : 'scale(1)';
+    return L.divIcon({
+        className: 'delivery-area-start-marker',
+        html: `<div class="delivery-area-start-marker-icon ${isNearStart ? 'near-start' : ''}" style="transform: ${scale};"></div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+    });
+}
+
+/**
+ * Creates a vertex marker icon for delivery area polygon points.
+ */
+function createDeliveryAreaVertexIcon() {
+    return L.divIcon({
+        className: 'delivery-area-vertex-marker',
+        html: '<div class="delivery-area-vertex-marker"></div>',
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+    });
+}
+
+/**
+ * Activates delivery area drawing mode.
+ */
+function startDeliveryAreaMode() {
+    // Remember if there was a cross marker before starting
+    deliveryAreaHadCrossMarker = !!contextMenuState.crossMarker;
+    
+    // Hide the partner form sidebar
+    const partnerFormSidebar = document.getElementById('partner-form-sidebar');
+    closeSidebar(partnerFormSidebar);
+    
+    // Initialize drawing state
+    deliveryAreaMode = true;
+    deliveryAreaPoints = [];
+    deliveryAreaLines = [];
+    deliveryAreaTempLine = null;
+    deliveryAreaStartMarker = null;
+    deliveryAreaVertexMarkers = [];
+    deliveryAreaCompletedPolygon = null;
+    deliveryAreaNearStartPoint = false;
+    
+    // Disable all controls in the controls panel
+    const controlsPanel = document.getElementById('controls');
+    controlsPanel.classList.add('controls-disabled');
+    
+    // Disable all interactive elements within the controls panel
+    const interactiveElements = controlsPanel.querySelectorAll('button, input, label');
+    interactiveElements.forEach(el => {
+        el.style.pointerEvents = 'none';
+    });
+    
+    // Disable partner marker clicks
+    Object.values(partnersById).forEach(partner => {
+        if (partner.marker) {
+            partner.marker.off('click');
+        }
+    });
+    
+    // Show measurement overlay (for dimming effect)
+    document.getElementById('measurement-overlay').classList.remove('hidden');
+    
+    // Show delivery area mode indicator
+    const indicator = document.getElementById('delivery-area-mode-indicator');
+    indicator.classList.remove('hidden');
+    
+    // Re-initialize Lucide icons for the indicator
+    lucide.createIcons();
+}
+
+/**
+ * Exits delivery area drawing mode and cleans up.
+ */
+function exitDeliveryAreaMode() {
+    deliveryAreaMode = false;
+    
+    // Clear all drawing elements
+    clearDeliveryAreaDrawing();
+    
+    // Re-enable all controls in the controls panel
+    const controlsPanel = document.getElementById('controls');
+    controlsPanel.classList.remove('controls-disabled');
+    
+    // Re-enable all interactive elements within the controls panel
+    const interactiveElements = controlsPanel.querySelectorAll('button, input, label');
+    interactiveElements.forEach(el => {
+        el.style.pointerEvents = 'auto';
+    });
+    
+    // Re-enable partner marker clicks
+    Object.values(partnersById).forEach(partner => {
+        if (partner.marker) {
+            partner.marker.on('click', function() {
+                showPartnerSidebar(partner.partnerId);
+            });
+        }
+    });
+    
+    // Hide measurement overlay
+    document.getElementById('measurement-overlay').classList.add('hidden');
+    
+    // Hide delivery area mode indicator
+    const indicator = document.getElementById('delivery-area-mode-indicator');
+    indicator.classList.add('hidden');
+    
+    // Hide save dropdown
+    document.getElementById('delivery-area-save-dropdown').classList.add('hidden');
+    
+    // Remove pulse animation from Save button
+    const saveBtn = document.getElementById('delivery-area-save-btn');
+    saveBtn.classList.remove('animate-pulse-custom');
+}
+
+/**
+ * Clears all delivery area drawing elements from the map.
+ */
+function clearDeliveryAreaDrawing() {
+    // Clear temporary line
+    if (deliveryAreaTempLine) {
+        map.removeLayer(deliveryAreaTempLine);
+        deliveryAreaTempLine = null;
+    }
+    
+    // Clear all lines
+    deliveryAreaLines.forEach(line => {
+        map.removeLayer(line);
+    });
+    deliveryAreaLines = [];
+    
+    // Clear start marker
+    if (deliveryAreaStartMarker) {
+        map.removeLayer(deliveryAreaStartMarker);
+        deliveryAreaStartMarker = null;
+    }
+    
+    // Clear vertex markers
+    deliveryAreaVertexMarkers.forEach(marker => {
+        map.removeLayer(marker);
+    });
+    deliveryAreaVertexMarkers = [];
+    
+    // Clear completed polygon
+    if (deliveryAreaCompletedPolygon) {
+        map.removeLayer(deliveryAreaCompletedPolygon);
+        deliveryAreaCompletedPolygon = null;
+    }
+    
+    // Clear points
+    deliveryAreaPoints = [];
+    deliveryAreaNearStartPoint = false;
+}
+
+/**
+ * Removes the last point from the delivery area drawing.
+ * Allows users to undo mistakes while drawing.
+ */
+function removeLastDeliveryAreaPoint() {
+    if (deliveryAreaPoints.length === 0) return;
+    
+    // Remove the last point
+    deliveryAreaPoints.pop();
+    
+    // Reset near start point indicator
+    deliveryAreaNearStartPoint = false;
+    if (deliveryAreaStartMarker) {
+        deliveryAreaStartMarker.setIcon(createDeliveryAreaStartIcon(false));
+    }
+    
+    // If no points left, remove the start marker
+    if (deliveryAreaPoints.length === 0) {
+        if (deliveryAreaStartMarker) {
+            map.removeLayer(deliveryAreaStartMarker);
+            deliveryAreaStartMarker = null;
+        }
+        // Clear temporary line if exists
+        if (deliveryAreaTempLine) {
+            map.removeLayer(deliveryAreaTempLine);
+            deliveryAreaTempLine = null;
+        }
+        return;
+    }
+    
+    // If only one point left, remove the last vertex marker and last line
+    if (deliveryAreaPoints.length === 1) {
+        // Remove the last vertex marker
+        if (deliveryAreaVertexMarkers.length > 0) {
+            const lastVertexMarker = deliveryAreaVertexMarkers.pop();
+            map.removeLayer(lastVertexMarker);
+        }
+        
+        // Remove the last line
+        if (deliveryAreaLines.length > 0) {
+            const lastLine = deliveryAreaLines.pop();
+            map.removeLayer(lastLine);
+        }
+        
+        // Clear temporary line
+        if (deliveryAreaTempLine) {
+            map.removeLayer(deliveryAreaTempLine);
+            deliveryAreaTempLine = null;
+        }
+        return;
+    }
+    
+    // For 2+ points remaining: remove last vertex marker and last line
+    if (deliveryAreaVertexMarkers.length > 0) {
+        const lastVertexMarker = deliveryAreaVertexMarkers.pop();
+        map.removeLayer(lastVertexMarker);
+    }
+    
+    if (deliveryAreaLines.length > 0) {
+        const lastLine = deliveryAreaLines.pop();
+        map.removeLayer(lastLine);
+    }
+    
+    // Update temporary line to connect to the new last point
+    // (The temporary line will be updated on the next mouse move event)
+    if (deliveryAreaTempLine) {
+        map.removeLayer(deliveryAreaTempLine);
+        deliveryAreaTempLine = null;
+    }
+}
+
+/**
+ * Cancels delivery area mode and returns to partner form.
+ */
+function cancelDeliveryAreaMode() {
+    exitDeliveryAreaMode();
+    
+    // Restore cross marker if it was there before
+    if (deliveryAreaHadCrossMarker) {
+        const lat = parseFloat(document.getElementById('sidebar-latitude').value);
+        const lng = parseFloat(document.getElementById('sidebar-longitude').value);
+        if (!isNaN(lat) && !isNaN(lng)) {
+            placeCrossMarker(lat, lng);
+        }
+    }
+    
+    // Show the partner form sidebar again
+    const partnerFormSidebar = document.getElementById('partner-form-sidebar');
+    openSidebar(partnerFormSidebar);
+}
+
+/**
+ * Handles click events during delivery area drawing mode.
+ */
+function handleDeliveryAreaClick(e) {
+    if (!deliveryAreaMode) return;
+    
+    const { lat, lng } = e.latlng;
+    
+    // Check if we're near the start point and have at least 3 points (minimum for polygon)
+    if (deliveryAreaPoints.length >= 3 && deliveryAreaNearStartPoint) {
+        // Close the polygon
+        finishDeliveryAreaPolygon();
+        return;
+    }
+    
+    // Add new point
+    deliveryAreaPoints.push({ lat, lng });
+    
+    // If this is the first point, add start marker
+    if (deliveryAreaPoints.length === 1) {
+        deliveryAreaStartMarker = L.marker([lat, lng], {
+            icon: createDeliveryAreaStartIcon(false),
+            zIndexOffset: 1000
+        }).addTo(map);
+    } else {
+        // Add vertex marker for subsequent points
+        const vertexMarker = L.marker([lat, lng], {
+            icon: createDeliveryAreaVertexIcon(),
+            zIndexOffset: 999
+        }).addTo(map);
+        deliveryAreaVertexMarkers.push(vertexMarker);
+        
+        // Draw line from previous point to new point
+        const prevPoint = deliveryAreaPoints[deliveryAreaPoints.length - 2];
+        const line = L.polyline([[prevPoint.lat, prevPoint.lng], [lat, lng]], {
+            color: DELIVERY_AREA_CONSTANTS.LINE_COLOR,
+            weight: DELIVERY_AREA_CONSTANTS.LINE_WEIGHT,
+            opacity: DELIVERY_AREA_CONSTANTS.LINE_OPACITY
+        }).addTo(map);
+        deliveryAreaLines.push(line);
+    }
+}
+
+/**
+ * Handles mouse move events during delivery area drawing mode.
+ */
+function handleDeliveryAreaMouseMove(e) {
+    if (!deliveryAreaMode || deliveryAreaPoints.length === 0) return;
+    
+    const { lat, lng } = e.latlng;
+    const lastPoint = deliveryAreaPoints[deliveryAreaPoints.length - 1];
+    
+    // Remove existing temporary line
+    if (deliveryAreaTempLine) {
+        map.removeLayer(deliveryAreaTempLine);
+    }
+    
+    // Create new temporary line from last point to cursor
+    deliveryAreaTempLine = L.polyline([[lastPoint.lat, lastPoint.lng], [lat, lng]], {
+        color: DELIVERY_AREA_CONSTANTS.TEMP_LINE_COLOR,
+        weight: DELIVERY_AREA_CONSTANTS.TEMP_LINE_WEIGHT,
+        opacity: DELIVERY_AREA_CONSTANTS.TEMP_LINE_OPACITY,
+        dashArray: DELIVERY_AREA_CONSTANTS.TEMP_LINE_DASH_ARRAY
+    }).addTo(map);
+    
+    // Check if cursor is near the start point (for closing the polygon)
+    if (deliveryAreaPoints.length >= 3) {
+        const startPoint = deliveryAreaPoints[0];
+        const startLatLng = L.latLng(startPoint.lat, startPoint.lng);
+        const currentLatLng = L.latLng(lat, lng);
+        
+        // Calculate pixel distance to start point
+        const startPointPixels = map.latLngToContainerPoint(startLatLng);
+        const currentPointPixels = map.latLngToContainerPoint(currentLatLng);
+        const pixelDistance = Math.sqrt(
+            Math.pow(startPointPixels.x - currentPointPixels.x, 2) +
+            Math.pow(startPointPixels.y - currentPointPixels.y, 2)
+        );
+        
+        // Check if within snap tolerance
+        const wasNearStart = deliveryAreaNearStartPoint;
+        deliveryAreaNearStartPoint = pixelDistance <= DELIVERY_AREA_CONSTANTS.SNAP_TOLERANCE_PIXELS;
+        
+        // Update start marker appearance if near state changed
+        if (wasNearStart !== deliveryAreaNearStartPoint && deliveryAreaStartMarker) {
+            deliveryAreaStartMarker.setIcon(createDeliveryAreaStartIcon(deliveryAreaNearStartPoint));
+        }
+    }
+}
+
+/**
+ * Finishes the delivery area polygon.
+ */
+function finishDeliveryAreaPolygon() {
+    // Stop drawing mode - polygon is complete
+    deliveryAreaMode = false;
+    
+    // Remove temporary line
+    if (deliveryAreaTempLine) {
+        map.removeLayer(deliveryAreaTempLine);
+        deliveryAreaTempLine = null;
+    }
+    
+    // Draw closing line from last point to start point
+    const lastPoint = deliveryAreaPoints[deliveryAreaPoints.length - 1];
+    const startPoint = deliveryAreaPoints[0];
+    const closingLine = L.polyline([[lastPoint.lat, lastPoint.lng], [startPoint.lat, startPoint.lng]], {
+        color: DELIVERY_AREA_CONSTANTS.LINE_COLOR,
+        weight: DELIVERY_AREA_CONSTANTS.LINE_WEIGHT,
+        opacity: DELIVERY_AREA_CONSTANTS.LINE_OPACITY
+    }).addTo(map);
+    deliveryAreaLines.push(closingLine);
+    
+    // Create polygon outline only (no fill)
+    const polygonCoords = deliveryAreaPoints.map(p => [p.lat, p.lng]);
+    deliveryAreaCompletedPolygon = L.polygon(polygonCoords, {
+        color: DELIVERY_AREA_CONSTANTS.LINE_COLOR,
+        fillColor: DELIVERY_AREA_CONSTANTS.POLYGON_FILL_COLOR,
+        fillOpacity: 0, // No fill
+        weight: DELIVERY_AREA_CONSTANTS.LINE_WEIGHT
+    }).addTo(map);
+    
+    // Reset near start point indicator
+    deliveryAreaNearStartPoint = false;
+    if (deliveryAreaStartMarker) {
+        deliveryAreaStartMarker.setIcon(createDeliveryAreaStartIcon(false));
+    }
+    
+    // Add pulse animation to Save button
+    const saveBtn = document.getElementById('delivery-area-save-btn');
+    saveBtn.classList.add('animate-pulse-custom');
+}
+
+/**
+ * Converts polygon coordinates to WKT format.
+ */
+function polygonToWKT(points) {
+    if (points.length < 3) return '';
+    
+    // WKT format: POLYGON((lon1 lat1, lon2 lat2, ..., lon1 lat1))
+    const coords = points.map(p => `${p.lng} ${p.lat}`);
+    // Close the polygon by repeating the first point
+    coords.push(`${points[0].lng} ${points[0].lat}`);
+    
+    return `POLYGON((${coords.join(', ')}))`;
+}
+
+/**
+ * Converts polygon coordinates to KML format.
+ */
+function polygonToKML(points) {
+    if (points.length < 3) return '';
+    
+    // KML format: coordinates are lon,lat,alt (altitude is optional)
+    // Close the polygon by repeating the first point
+    const coords = points.map(p => `${p.lng},${p.lat},0`);
+    coords.push(`${points[0].lng},${points[0].lat},0`);
+    
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Delivery Area</name>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>${coords.join(' ')}</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>`;
+}
+
+/**
+ * Saves the delivery area in the specified format.
+ */
+function saveDeliveryArea(format) {
+    if (deliveryAreaPoints.length < 3) {
+        alert('Please draw a polygon with at least 3 points before saving.');
+        return;
+    }
+    
+    let content = '';
+    if (format === 'wkt') {
+        content = polygonToWKT(deliveryAreaPoints);
+    } else if (format === 'kml') {
+        content = polygonToKML(deliveryAreaPoints);
+    }
+    
+    // Update the textarea
+    document.getElementById('sidebar-polygon-content').value = content;
+    
+    // Exit delivery area mode
+    exitDeliveryAreaMode();
+    
+    // Restore cross marker if it was there before
+    if (deliveryAreaHadCrossMarker) {
+        const lat = parseFloat(document.getElementById('sidebar-latitude').value);
+        const lng = parseFloat(document.getElementById('sidebar-longitude').value);
+        if (!isNaN(lat) && !isNaN(lng)) {
+            placeCrossMarker(lat, lng);
+        }
+    }
+    
+    // Show the partner form sidebar
+    const partnerFormSidebar = document.getElementById('partner-form-sidebar');
+    openSidebar(partnerFormSidebar);
+}
+
+// ==========================================
+// DELIVERY AREA EVENT LISTENERS
+// ==========================================
+
+// Draw delivery area button
+document.getElementById('draw-delivery-area-btn').addEventListener('click', function() {
+    startDeliveryAreaMode();
+});
+
+// Save dropdown toggle
+document.getElementById('delivery-area-save-btn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    const dropdown = document.getElementById('delivery-area-save-dropdown');
+    dropdown.classList.toggle('hidden');
+});
+
+// Save as WKT
+document.getElementById('delivery-area-save-wkt').addEventListener('click', function() {
+    document.getElementById('delivery-area-save-dropdown').classList.add('hidden');
+    saveDeliveryArea('wkt');
+});
+
+// Save as KML
+document.getElementById('delivery-area-save-kml').addEventListener('click', function() {
+    document.getElementById('delivery-area-save-dropdown').classList.add('hidden');
+    saveDeliveryArea('kml');
+});
+
+// Cancel button
+document.getElementById('delivery-area-cancel-btn').addEventListener('click', function() {
+    cancelDeliveryAreaMode();
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('delivery-area-save-dropdown');
+    const saveBtn = document.getElementById('delivery-area-save-btn');
+    if (!dropdown.contains(e.target) && !saveBtn.contains(e.target)) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+// Escape key handler for delivery area mode
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && deliveryAreaMode) {
+        if (deliveryAreaPoints.length > 0) {
+            // Remove last point and continue drawing
+            removeLastDeliveryAreaPoint();
+        } else {
+            // No points, cancel the whole mode
+            cancelDeliveryAreaMode();
+        }
+    }
+});
