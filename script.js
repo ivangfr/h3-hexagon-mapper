@@ -1352,40 +1352,28 @@ function updatePartnerSidebarContent(partner) {
     document.getElementById('toggle-secondary-zone').checked = secondaryVisible;
     document.getElementById('toggle-delivery-area').checked = deliveryVisible;
 
-    // Configure secondary toggle based on availability
-    const secondaryToggle = document.getElementById('toggle-secondary-zone');
-    const secondaryContainer = secondaryToggle.closest('.zone-toggle');
-
+    // Show/hide Secondary Zone toggle based on availability
+    const secondaryZoneContainer = document.getElementById('toggle-secondary-zone-container');
     if (hasSecondaryHexagons) {
-        secondaryToggle.disabled = false;
-        if (secondaryContainer) {
-            secondaryContainer.classList.remove('opacity-50', 'cursor-not-allowed');
-            secondaryContainer.style.pointerEvents = 'auto';
-        }
+        secondaryZoneContainer.classList.remove('hidden');
     } else {
-        secondaryToggle.disabled = true;
-        if (secondaryContainer) {
-            secondaryContainer.classList.add('opacity-50', 'cursor-not-allowed');
-            secondaryContainer.style.pointerEvents = 'none';
-        }
+        secondaryZoneContainer.classList.add('hidden');
     }
 
-    // Configure delivery area toggle based on availability
-    const deliveryToggle = document.getElementById('toggle-delivery-area');
-    const deliveryContainer = deliveryToggle.closest('.zone-toggle');
-
+    // Show/hide Delivery Area toggle based on availability
+    const deliveryAreaContainer = document.getElementById('toggle-delivery-area-container');
     if (hasDeliveryArea) {
-        deliveryToggle.disabled = false;
-        if (deliveryContainer) {
-            deliveryContainer.classList.remove('opacity-50', 'cursor-not-allowed');
-            deliveryContainer.style.pointerEvents = 'auto';
-        }
+        deliveryAreaContainer.classList.remove('hidden');
     } else {
-        deliveryToggle.disabled = true;
-        if (deliveryContainer) {
-            deliveryContainer.classList.add('opacity-50', 'cursor-not-allowed');
-            deliveryContainer.style.pointerEvents = 'none';
-        }
+        deliveryAreaContainer.classList.add('hidden');
+    }
+
+    // Show/hide Intersection Highlight toggle based on delivery area availability
+    const intersectionHighlightContainer = document.getElementById('toggle-intersection-highlight-container');
+    if (hasDeliveryArea) {
+        intersectionHighlightContainer.classList.remove('hidden');
+    } else {
+        intersectionHighlightContainer.classList.add('hidden');
     }
     
     // Initialize intersection highlight toggle state
@@ -2172,11 +2160,88 @@ document.getElementById('tools-add-partner').addEventListener('click', function(
 // ==========================================
 
 /**
+ * Finds partners arriving at a given location.
+ * For partners with delivery area: only hexagons intersected by delivery area are included
+ * For partners without delivery area: all hexagons at the location are included
+ */
+function findPartnersArrivingAtLocation(lat, lng) {
+    const arrivingPartners = {};
+    
+    // Check partner hexagons
+    Object.keys(partnersById).forEach(partnerId => {
+        const partner = partnersById[partnerId];
+        const hasDeliveryArea = partner.elements.deliveryAreaPolygons && partner.elements.deliveryAreaPolygons.length > 0;
+        
+        // Check primary hexagons
+        partner.elements.primaryHexagons.forEach(hexagon => {
+            if (isPointInHexagon(lat, lng, hexagon.polygon)) {
+                // If partner has delivery area, only include if hexagon is intersected
+                if (hasDeliveryArea && !hexagon.isIntersectedByDelivery) {
+                    return; // Skip this hexagon
+                }
+                
+                if (!arrivingPartners[partnerId]) {
+                    arrivingPartners[partnerId] = {
+                        partnerId: partnerId,
+                        primaryColor: partner.primaryColor || PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR,
+                        secondaryColor: partner.secondaryColor,
+                        hasDeliveryArea: hasDeliveryArea,
+                        hexagons: []
+                    };
+                }
+                
+                arrivingPartners[partnerId].hexagons.push({
+                    h3Index: hexagon.h3Index,
+                    resolution: hexagon.h3Resolution,
+                    layerType: 'primary',
+                    zoneNumber: hexagon.zoneNumber,
+                    color: hexagon.polygon.options.color,
+                    isIntersectedByDelivery: hexagon.isIntersectedByDelivery
+                });
+            }
+        });
+        
+        // Check secondary hexagons
+        partner.elements.secondaryHexagons.forEach(hexagon => {
+            if (isPointInHexagon(lat, lng, hexagon.polygon)) {
+                // If partner has delivery area, only include if hexagon is intersected
+                if (hasDeliveryArea && !hexagon.isIntersectedByDelivery) {
+                    return; // Skip this hexagon
+                }
+                
+                if (!arrivingPartners[partnerId]) {
+                    arrivingPartners[partnerId] = {
+                        partnerId: partnerId,
+                        primaryColor: partner.primaryColor || PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR,
+                        secondaryColor: partner.secondaryColor,
+                        hasDeliveryArea: hasDeliveryArea,
+                        hexagons: []
+                    };
+                }
+                
+                arrivingPartners[partnerId].hexagons.push({
+                    h3Index: hexagon.h3Index,
+                    resolution: hexagon.h3Resolution,
+                    layerType: 'secondary',
+                    zoneNumber: hexagon.zoneNumber,
+                    color: hexagon.polygon.options.color,
+                    isIntersectedByDelivery: hexagon.isIntersectedByDelivery
+                });
+            }
+        });
+    });
+    
+    // Convert to array
+    return Object.values(arrivingPartners);
+}
+
+/**
  * Updates the customer location sidebar content with detected hexagons.
  */
 function updateCustomerLocationSidebarContent(lat, lng) {
     const customerLocationCoords = document.getElementById('customer-location-coords');
     const customerLocationHexagonList = document.getElementById('customer-location-hexagon-list');
+    const customerLocationPartnerList = document.getElementById('customer-location-partner-list');
     const summaryHexagonCount = document.getElementById('summary-hexagon-count');
     const summaryPartnerCount = document.getElementById('summary-partner-count');
     
@@ -2189,15 +2254,68 @@ function updateCustomerLocationSidebarContent(lat, lng) {
     // Find hexagons at location
     const detectedHexagons = findHexagonsAtLocation(lat, lng);
     
-    // Update summary counts
-    const uniquePartners = new Set();
-    detectedHexagons.forEach(hex => {
-        if (hex.partnerId) {
-            uniquePartners.add(hex.partnerId);
-        }
-    });
-    summaryHexagonCount.textContent = detectedHexagons.length;
-    summaryPartnerCount.textContent = uniquePartners.size;
+    // Find partners arriving at location
+    const arrivingPartners = findPartnersArrivingAtLocation(lat, lng);
+    
+    // Update summary counts based on partners ARRIVING at the location
+    const arrivingHexagonCount = arrivingPartners.reduce((sum, p) => sum + p.hexagons.length, 0);
+    summaryHexagonCount.textContent = arrivingHexagonCount;
+    summaryPartnerCount.textContent = arrivingPartners.length;
+    
+    // Update partners arriving at location list
+    customerLocationPartnerList.innerHTML = '';
+    
+    if (arrivingPartners.length > 0) {
+        arrivingPartners.forEach(partner => {
+            const partnerCard = document.createElement('div');
+            partnerCard.className = 'bg-gray-50 rounded-xl p-4 border border-gray-200';
+            
+            // Build hexagons list HTML
+            let hexagonsHtml = partner.hexagons.map(hex => {
+                return `<div class="mt-2 pl-3 py-1.5 border-l-4 rounded-r bg-white" style="border-left-color: ${hex.color};">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-[11px] font-semibold text-gray-700">${hex.layerType}, zone ${hex.zoneNumber}</span>
+                        <span class="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Res ${hex.resolution}</span>
+                        <span class="text-[10px] text-gray-400 font-mono">${hex.h3Index}</span>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            // Delivery area indicator
+            const deliveryIndicator = partner.hasDeliveryArea 
+                ? '<span class="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Has delivery area</span>'
+                : '<span class="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">No delivery area</span>';
+            
+            partnerCard.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i data-lucide="store" class="w-5 h-5 flex-shrink-0" style="color: ${partner.primaryColor};"></i>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-sm font-semibold text-gray-900">${partner.partnerId}</span>
+                            ${deliveryIndicator}
+                        </div>
+                        <div class="text-[11px] text-gray-500 mt-1">${partner.hexagons.length} hexagon${partner.hexagons.length !== 1 ? 's' : ''} at this location</div>
+                    </div>
+                </div>
+                ${hexagonsHtml}
+            `;
+            
+            customerLocationPartnerList.appendChild(partnerCard);
+        });
+        
+        // Initialize Lucide icons for the new content
+        lucide.createIcons();
+    } else {
+        // No partners arriving
+        const noPartnersMsg = document.createElement('div');
+        noPartnersMsg.className = 'text-center py-8 text-gray-400';
+        noPartnersMsg.innerHTML = `
+            <i data-lucide="store" class="w-12 h-12 mx-auto mb-3 text-gray-300"></i>
+            <p class="text-sm">No partners arriving at this location</p>
+        `;
+        customerLocationPartnerList.appendChild(noPartnersMsg);
+        lucide.createIcons();
+    }
     
     // Update hexagon list
     customerLocationHexagonList.innerHTML = '';

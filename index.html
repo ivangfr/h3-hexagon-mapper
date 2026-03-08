@@ -660,6 +660,13 @@
                 </div>
             </div>
             
+            <!-- Partners Arriving at Location -->
+            <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                <i data-lucide="store" class="w-4 h-4"></i>
+                Partners arriving at the location
+            </div>
+            <div id="customer-location-partner-list" class="space-y-3"></div>
+            
             <!-- Hexagon List -->
             <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
                 <i data-lucide="hexagon" class="w-4 h-4"></i>
@@ -682,7 +689,7 @@
         </div>
         <div class="p-4 space-y-3">
             <!-- Primary Zone Toggle -->
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <div id="toggle-primary-zone-container" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div>
                     <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Primary Zone</h4>
                     <p class="m-0 text-xs text-gray-500">Primary H3 hexagons</p>
@@ -694,7 +701,7 @@
             </div>
             
             <!-- Secondary Zone Toggle -->
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <div id="toggle-secondary-zone-container" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div>
                     <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Secondary Zone</h4>
                     <p class="m-0 text-xs text-gray-500">Secondary H3 hexagons</p>
@@ -706,7 +713,7 @@
             </div>
             
             <!-- Delivery Area Toggle -->
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <div id="toggle-delivery-area-container" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div>
                     <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Delivery Area</h4>
                     <p class="m-0 text-xs text-gray-500">Custom polygon (KML/WKT)</p>
@@ -718,7 +725,7 @@
             </div>
             
             <!-- Intersection Highlight Toggle -->
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <div id="toggle-intersection-highlight-container" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div>
                     <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Highlight Intersection</h4>
                     <p class="m-0 text-xs text-gray-500">Hexagons intersected by delivery area</p>
