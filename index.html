@@ -296,6 +296,9 @@
                             <strong class="text-gray-900 font-semibold">Measure:</strong> Click to set start point, move mouse to see distance in km.
                         </li>
                         <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Line Color:</strong> Use the color picker in the indicator bar to customize the measurement line color.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
                             <strong class="text-gray-900 font-semibold">Continuous:</strong> Click again to clear and start a new measurement immediately.
                         </li>
                         <li class="text-[13px] leading-relaxed text-gray-600">
@@ -385,10 +388,19 @@
                                 <strong class="text-gray-900 font-medium">Close:</strong> Click near start point (turns green)
                             </li>
                             <li class="text-[13px] leading-relaxed text-gray-600">
-                                <strong class="text-gray-900 font-medium">Save:</strong> Choose WKT or KML format
+                                <strong class="text-gray-900 font-medium">Multi-Polygon:</strong> After closing, draw another polygon or save
                             </li>
                             <li class="text-[13px] leading-relaxed text-gray-600">
-                                <strong class="text-gray-900 font-medium">Undo/Cancel:</strong> Press <kbd class="px-1.5 py-0.5 text-xs font-mono bg-gray-200 rounded border border-gray-300">Esc</kbd>
+                                <strong class="text-gray-900 font-medium">Save:</strong> Choose WKT or KML format (supports MULTIPOLYGON)
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Undo point:</strong> Press <kbd class="px-1.5 py-0.5 text-xs font-mono bg-gray-200 rounded border border-gray-300">Esc</kbd> to remove last point
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Undo polygon:</strong> Press <kbd class="px-1.5 py-0.5 text-xs font-mono bg-gray-200 rounded border border-gray-300">Esc</kbd> to remove last completed polygon (confirmation required)
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Cancel:</strong> Press <kbd class="px-1.5 py-0.5 text-xs font-mono bg-gray-200 rounded border border-gray-300">Esc</kbd> when no points or polygons, or click Cancel button
                             </li>
                         </ul>
                     </div>

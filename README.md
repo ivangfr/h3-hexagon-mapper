@@ -44,6 +44,7 @@ Standalone hexagons are individual hexagons you can add anywhere on the map. You
 
 - **Activate**: Click the "Measurement" button to enable measurement mode. An overlay will appear, controls will be dimmed and disabled, and a "Measurement Mode" indicator bar will show at the top of the screen with a pulsing "Stop" button.
 - **Measure Distance**: Click on the map to set a starting point, then move your mouse to see the distance in kilometers. A dashed line shows the measurement path.
+- **Line Color**: Use the color picker in the indicator bar to customize the measurement line color.
 - **Continuous Measurement**: Click again on the map to clear the current measurement and start a new one immediately. This allows for consecutive measurements without exiting measurement mode.
 - **Exit**: Click the "Stop" button in the top indicator bar, or press the `Esc` key to exit measurement mode.
 
@@ -84,9 +85,11 @@ When adding or editing a partner, you can configure:
   - **Draw Delivery Area**: Click the "Draw Delivery Area" button to interactively draw a polygon on the map:
     - **Add Points**: Click on the map to add polygon vertices (minimum 3 points required).
     - **Close Polygon**: Click near the start point (turns green when close) to complete the polygon.
-    - **Save**: Choose "Save as WKT" or "Save as KML" to save the polygon to the form.
+    - **Multi-Polygon**: After closing a polygon, you can immediately start drawing another one. All polygons will be combined when saved.
+    - **Save**: Choose "Save as WKT" or "Save as KML" to save the polygon(s) to the form. Multiple polygons are exported as `MULTIPOLYGON` in WKT or multiple `<Placemark>` elements in KML.
     - **Cancel**: Click Cancel to exit drawing mode without saving.
-    - **Undo**: Press `Esc` to remove the last point, or cancel if no points exist.
+    - **Undo Point**: Press `Esc` to remove the last point while drawing.
+    - **Undo Polygon**: Press `Esc` to remove the last completed polygon (with confirmation). If no polygons exist, cancels the mode.
   - **Or Paste Content**: Manually paste KML or WKT content in the textarea.
   - **Supported Formats**:
     - **KML**: XML-based format with coordinates tags.

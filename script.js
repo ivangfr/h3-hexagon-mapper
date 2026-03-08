@@ -64,9 +64,10 @@ let deliveryAreaLines = [];
 let deliveryAreaTempLine = null;
 let deliveryAreaStartMarker = null;
 let deliveryAreaVertexMarkers = [];
-let deliveryAreaCompletedPolygon = null;
 let deliveryAreaNearStartPoint = false;
 let deliveryAreaHadCrossMarker = false;
+let deliveryAreaCompletedPolygons = []; // Array to store all completed polygons for multi-polygon support
+let pendingDeliveryAreaPolygons = []; // Array to store pending delivery area polygons (drawn but not yet saved to partner)
 
 // Partner constants
 const PARTNER_CONSTANTS = {
@@ -1044,7 +1045,22 @@ function parsePolygonContent(content) {
     
     // Detect format: KML has XML structure, WKT starts with POLYGON or MULTIPOLYGON
     if (trimmedContent.includes('<coordinates') || trimmedContent.includes('<Coordinates')) {
-        // KML format - returns single polygon coordinates
+        // KML format - check if there are multiple placemarks
+        const kmlMultiResult = parseKMLMultiPolygon(trimmedContent);
+        if (kmlMultiResult.length > 1) {
+            // Multiple placemarks found - return as multi-polygon
+            return {
+                type: 'multi',
+                coordinates: kmlMultiResult
+            };
+        } else if (kmlMultiResult.length === 1) {
+            // Single placemark - return as single polygon
+            return {
+                type: 'single',
+                coordinates: kmlMultiResult[0]
+            };
+        }
+        // Fallback to original parsing if no placemarks found
         return {
             type: 'single',
             coordinates: parseKMLCoordinates(trimmedContent)
@@ -1064,11 +1080,16 @@ function parsePolygonContent(content) {
     }
     
     // Try to auto-detect by attempting parsers
-    const kmlResult = parseKMLCoordinates(trimmedContent);
-    if (kmlResult.length > 0) {
+    const kmlMultiResult = parseKMLMultiPolygon(trimmedContent);
+    if (kmlMultiResult.length > 1) {
+        return {
+            type: 'multi',
+            coordinates: kmlMultiResult
+        };
+    } else if (kmlMultiResult.length === 1) {
         return {
             type: 'single',
-            coordinates: kmlResult
+            coordinates: kmlMultiResult[0]
         };
     }
     
@@ -1087,7 +1108,7 @@ function parsePolygonContent(content) {
 }
 
 /**
- * Parses KML content and extracts polygon coordinates.
+ * Parses KML content and extracts polygon coordinates from a single placemark.
  */
 function parseKMLCoordinates(kmlContent) {
     const coordinates = [];
@@ -1111,6 +1132,30 @@ function parseKMLCoordinates(kmlContent) {
     }
     
     return coordinates;
+}
+
+/**
+ * Parses KML content with multiple placemarks and extracts all polygon coordinates.
+ * Returns an array of coordinate arrays (one for each polygon).
+ */
+function parseKMLMultiPolygon(kmlContent) {
+    const polygons = [];
+    
+    // Find all <Placemark> elements
+    const placemarkRegex = /<Placemark[^>]*>([\s\S]*?)<\/Placemark>/gi;
+    let match;
+    
+    while ((match = placemarkRegex.exec(kmlContent)) !== null) {
+        const placemarkContent = match[1];
+        
+        // Extract coordinates from this placemark
+        const coords = parseKMLCoordinates(placemarkContent);
+        if (coords.length > 0) {
+            polygons.push(coords);
+        }
+    }
+    
+    return polygons;
 }
 
 /**
@@ -1371,8 +1416,12 @@ function closePartnerSidebar() {
 
 /**
  * Resets the add/edit partner form to default values.
+ * Also clears any pending delivery area polygons.
  */
 function resetSidebarForm() {
+    // Clear pending delivery area polygons
+    clearPendingDeliveryAreaPolygons();
+    
     document.getElementById('partner-form').reset();
     document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
     document.getElementById('sidebar-primary-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_H3_RESOLUTION.toString();
@@ -2345,9 +2394,6 @@ const DELIVERY_AREA_CONSTANTS = {
     TEMP_LINE_OPACITY: 0.5,
     TEMP_LINE_DASH_ARRAY: '8, 8',
     POLYGON_FILL_COLOR: '#3b82f6',
-    POLYGON_FILL_OPACITY: 0.2,
-    START_POINT_RADIUS: 12,
-    VERTEX_RADIUS: 8,
     SNAP_TOLERANCE_PIXELS: 20
 };
 
@@ -2355,7 +2401,6 @@ const DELIVERY_AREA_CONSTANTS = {
  * Creates a start point marker icon for delivery area drawing.
  */
 function createDeliveryAreaStartIcon(isNearStart = false) {
-    const colorClass = isNearStart ? 'bg-emerald-500' : 'bg-blue-500';
     const scale = isNearStart ? 'scale(1.3)' : 'scale(1)';
     return L.divIcon({
         className: 'delivery-area-start-marker',
@@ -2383,6 +2428,9 @@ function createDeliveryAreaVertexIcon() {
 function startDeliveryAreaMode() {
     // Remember if there was a cross marker before starting
     deliveryAreaHadCrossMarker = !!contextMenuState.crossMarker;
+    
+    // Clear any existing pending delivery area polygons from previous sessions
+    clearPendingDeliveryAreaPolygons();
     
     // Hide the partner form sidebar
     const partnerFormSidebar = document.getElementById('partner-form-sidebar');
@@ -2497,11 +2545,22 @@ function clearDeliveryAreaDrawing() {
     });
     deliveryAreaVertexMarkers = [];
     
-    // Clear completed polygon
+    // Clear completed polygon (legacy single polygon)
     if (deliveryAreaCompletedPolygon) {
         map.removeLayer(deliveryAreaCompletedPolygon);
         deliveryAreaCompletedPolygon = null;
     }
+    
+    // Clear all completed polygons (multi-polygon support)
+    deliveryAreaCompletedPolygons.forEach(polyObj => {
+        if (polyObj.layer) {
+            map.removeLayer(polyObj.layer);
+        }
+        if (polyObj.closingLine) {
+            map.removeLayer(polyObj.closingLine);
+        }
+    });
+    deliveryAreaCompletedPolygons = [];
     
     // Clear points
     deliveryAreaPoints = [];
@@ -2621,13 +2680,15 @@ function handleDeliveryAreaClick(e) {
     if (deliveryAreaPoints.length === 1) {
         deliveryAreaStartMarker = L.marker([lat, lng], {
             icon: createDeliveryAreaStartIcon(false),
-            zIndexOffset: 1000
+            zIndexOffset: 1000,
+            interactive: false
         }).addTo(map);
     } else {
         // Add vertex marker for subsequent points
         const vertexMarker = L.marker([lat, lng], {
             icon: createDeliveryAreaVertexIcon(),
-            zIndexOffset: 999
+            zIndexOffset: 999,
+            interactive: false
         }).addTo(map);
         deliveryAreaVertexMarkers.push(vertexMarker);
         
@@ -2636,7 +2697,8 @@ function handleDeliveryAreaClick(e) {
         const line = L.polyline([[prevPoint.lat, prevPoint.lng], [lat, lng]], {
             color: DELIVERY_AREA_CONSTANTS.LINE_COLOR,
             weight: DELIVERY_AREA_CONSTANTS.LINE_WEIGHT,
-            opacity: DELIVERY_AREA_CONSTANTS.LINE_OPACITY
+            opacity: DELIVERY_AREA_CONSTANTS.LINE_OPACITY,
+            interactive: false
         }).addTo(map);
         deliveryAreaLines.push(line);
     }
@@ -2661,7 +2723,8 @@ function handleDeliveryAreaMouseMove(e) {
         color: DELIVERY_AREA_CONSTANTS.TEMP_LINE_COLOR,
         weight: DELIVERY_AREA_CONSTANTS.TEMP_LINE_WEIGHT,
         opacity: DELIVERY_AREA_CONSTANTS.TEMP_LINE_OPACITY,
-        dashArray: DELIVERY_AREA_CONSTANTS.TEMP_LINE_DASH_ARRAY
+        dashArray: DELIVERY_AREA_CONSTANTS.TEMP_LINE_DASH_ARRAY,
+        interactive: false
     }).addTo(map);
     
     // Check if cursor is near the start point (for closing the polygon)
@@ -2690,11 +2753,27 @@ function handleDeliveryAreaMouseMove(e) {
 }
 
 /**
- * Finishes the delivery area polygon.
+ * Finishes the delivery area polygon and continues drawing mode for multi-polygon support.
  */
 function finishDeliveryAreaPolygon() {
-    // Stop drawing mode - polygon is complete
-    deliveryAreaMode = false;
+    // Store the current polygon points before clearing
+    const completedPoints = [...deliveryAreaPoints];
+    
+    // Create polygon outline only (no fill)
+    const polygonCoords = completedPoints.map(p => [p.lat, p.lng]);
+    const completedPolygon = L.polygon(polygonCoords, {
+        color: DELIVERY_AREA_CONSTANTS.LINE_COLOR,
+        fillColor: DELIVERY_AREA_CONSTANTS.POLYGON_FILL_COLOR,
+        fillOpacity: 0, // No fill
+        weight: DELIVERY_AREA_CONSTANTS.LINE_WEIGHT,
+        interactive: false
+    }).addTo(map);
+    
+    // Store the completed polygon (points + layer) for multi-polygon support
+    deliveryAreaCompletedPolygons.push({
+        points: completedPoints,
+        layer: completedPolygon
+    });
     
     // Remove temporary line
     if (deliveryAreaTempLine) {
@@ -2703,29 +2782,43 @@ function finishDeliveryAreaPolygon() {
     }
     
     // Draw closing line from last point to start point
-    const lastPoint = deliveryAreaPoints[deliveryAreaPoints.length - 1];
-    const startPoint = deliveryAreaPoints[0];
+    const lastPoint = completedPoints[completedPoints.length - 1];
+    const startPoint = completedPoints[0];
     const closingLine = L.polyline([[lastPoint.lat, lastPoint.lng], [startPoint.lat, startPoint.lng]], {
         color: DELIVERY_AREA_CONSTANTS.LINE_COLOR,
         weight: DELIVERY_AREA_CONSTANTS.LINE_WEIGHT,
-        opacity: DELIVERY_AREA_CONSTANTS.LINE_OPACITY
-    }).addTo(map);
-    deliveryAreaLines.push(closingLine);
-    
-    // Create polygon outline only (no fill)
-    const polygonCoords = deliveryAreaPoints.map(p => [p.lat, p.lng]);
-    deliveryAreaCompletedPolygon = L.polygon(polygonCoords, {
-        color: DELIVERY_AREA_CONSTANTS.LINE_COLOR,
-        fillColor: DELIVERY_AREA_CONSTANTS.POLYGON_FILL_COLOR,
-        fillOpacity: 0, // No fill
-        weight: DELIVERY_AREA_CONSTANTS.LINE_WEIGHT
+        opacity: DELIVERY_AREA_CONSTANTS.LINE_OPACITY,
+        interactive: false
     }).addTo(map);
     
-    // Reset near start point indicator
-    deliveryAreaNearStartPoint = false;
+    // Store closing line with the polygon (for cleanup later)
+    deliveryAreaCompletedPolygons[deliveryAreaCompletedPolygons.length - 1].closingLine = closingLine;
+    
+    // Clear current drawing state but keep drawing mode active
+    // Clear all lines
+    deliveryAreaLines.forEach(line => {
+        map.removeLayer(line);
+    });
+    deliveryAreaLines = [];
+    
+    // Clear start marker
     if (deliveryAreaStartMarker) {
-        deliveryAreaStartMarker.setIcon(createDeliveryAreaStartIcon(false));
+        map.removeLayer(deliveryAreaStartMarker);
+        deliveryAreaStartMarker = null;
     }
+    
+    // Clear vertex markers
+    deliveryAreaVertexMarkers.forEach(marker => {
+        map.removeLayer(marker);
+    });
+    deliveryAreaVertexMarkers = [];
+    
+    // Clear points for new polygon
+    deliveryAreaPoints = [];
+    deliveryAreaNearStartPoint = false;
+    
+    // Keep drawing mode active for multi-polygon support
+    // User can immediately start drawing another polygon or save
     
     // Add pulse animation to Save button
     const saveBtn = document.getElementById('delivery-area-save-btn');
@@ -2733,7 +2826,7 @@ function finishDeliveryAreaPolygon() {
 }
 
 /**
- * Converts polygon coordinates to WKT format.
+ * Converts a single polygon's coordinates to WKT format.
  */
 function polygonToWKT(points) {
     if (points.length < 3) return '';
@@ -2747,7 +2840,27 @@ function polygonToWKT(points) {
 }
 
 /**
- * Converts polygon coordinates to KML format.
+ * Converts multiple polygons to WKT MULTIPOLYGON format.
+ */
+function multiPolygonToWKT(polygonsArray) {
+    if (polygonsArray.length === 0) return '';
+    if (polygonsArray.length === 1) {
+        return polygonToWKT(polygonsArray[0]);
+    }
+    
+    // WKT MULTIPOLYGON format: MULTIPOLYGON(((lon1 lat1, lon2 lat2, ...)), ((lon3 lat3, lon4 lat4, ...)))
+    const polygonStrings = polygonsArray.map(points => {
+        const coords = points.map(p => `${p.lng} ${p.lat}`);
+        // Close the polygon by repeating the first point
+        coords.push(`${points[0].lng} ${points[0].lat}`);
+        return `((${coords.join(', ')}))`;
+    });
+    
+    return `MULTIPOLYGON(${polygonStrings.join(', ')})`;
+}
+
+/**
+ * Converts a single polygon's coordinates to KML format.
  */
 function polygonToKML(points) {
     if (points.length < 3) return '';
@@ -2775,26 +2888,163 @@ function polygonToKML(points) {
 }
 
 /**
+ * Converts multiple polygons to KML format with multiple placemarks.
+ */
+function multiPolygonToKML(polygonsArray) {
+    if (polygonsArray.length === 0) return '';
+    if (polygonsArray.length === 1) {
+        return polygonToKML(polygonsArray[0]);
+    }
+    
+    // KML format with multiple placemarks
+    const placemarks = polygonsArray.map((points, index) => {
+        const coords = points.map(p => `${p.lng},${p.lat},0`);
+        coords.push(`${points[0].lng},${points[0].lat},0`);
+        return `    <Placemark>
+      <name>Delivery Area ${index + 1}</name>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>${coords.join(' ')}</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>`;
+    }).join('\n');
+    
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+${placemarks}
+  </Document>
+</kml>`;
+}
+
+/**
+ * Removes the last completed polygon from the delivery area.
+ * Used for undo functionality in multi-polygon mode.
+ */
+function removeLastCompletedPolygon() {
+    if (deliveryAreaCompletedPolygons.length === 0) return;
+    
+    const lastPolygon = deliveryAreaCompletedPolygons.pop();
+    
+    // Remove the polygon layer from map
+    if (lastPolygon.layer) {
+        map.removeLayer(lastPolygon.layer);
+    }
+    
+    // Remove the closing line from map
+    if (lastPolygon.closingLine) {
+        map.removeLayer(lastPolygon.closingLine);
+    }
+    
+    // If no more completed polygons, remove pulse animation from Save button
+    if (deliveryAreaCompletedPolygons.length === 0) {
+        const saveBtn = document.getElementById('delivery-area-save-btn');
+        saveBtn.classList.remove('animate-pulse-custom');
+    }
+}
+
+/**
+ * Clears all pending delivery area polygons from the map.
+ * Called when the user cancels partner creation or successfully creates a partner.
+ */
+function clearPendingDeliveryAreaPolygons() {
+    pendingDeliveryAreaPolygons.forEach(polyObj => {
+        if (polyObj.layer) {
+            map.removeLayer(polyObj.layer);
+        }
+        if (polyObj.closingLine) {
+            map.removeLayer(polyObj.closingLine);
+        }
+    });
+    pendingDeliveryAreaPolygons = [];
+}
+
+/**
  * Saves the delivery area in the specified format.
+ * Handles both single and multi-polygon cases.
+ * Keeps the drawn polygons visible as pending polygons.
  */
 function saveDeliveryArea(format) {
-    if (deliveryAreaPoints.length < 3) {
-        alert('Please draw a polygon with at least 3 points before saving.');
+    // Combine completed polygons with current drawing (if any)
+    const allPolygons = [...deliveryAreaCompletedPolygons.map(p => p.points)];
+    
+    // Add current drawing if it has enough points
+    if (deliveryAreaPoints.length >= 3) {
+        allPolygons.push([...deliveryAreaPoints]);
+    }
+    
+    // Check if we have any valid polygons
+    if (allPolygons.length === 0) {
+        alert('Please draw at least one polygon with 3 or more points before saving.');
         return;
     }
     
     let content = '';
     if (format === 'wkt') {
-        content = polygonToWKT(deliveryAreaPoints);
+        content = multiPolygonToWKT(allPolygons);
     } else if (format === 'kml') {
-        content = polygonToKML(deliveryAreaPoints);
+        content = multiPolygonToKML(allPolygons);
     }
     
     // Update the textarea
     document.getElementById('sidebar-polygon-content').value = content;
     
-    // Exit delivery area mode
-    exitDeliveryAreaMode();
+    // Transfer completed polygons to pending polygons (keep them visible on map)
+    // First clear any existing pending polygons
+    clearPendingDeliveryAreaPolygons();
+    
+    // Move the completed polygons to pending state
+    pendingDeliveryAreaPolygons = [...deliveryAreaCompletedPolygons];
+    
+    // Clear the drawing state arrays (but don't remove the layers since they're now pending)
+    deliveryAreaCompletedPolygons = [];
+    
+    // Exit delivery area mode (without clearing the now-pending polygons)
+    deliveryAreaMode = false;
+    
+    // Re-enable all controls in the controls panel
+    const controlsPanel = document.getElementById('controls');
+    controlsPanel.classList.remove('controls-disabled');
+    
+    // Re-enable all interactive elements within the controls panel
+    const interactiveElements = controlsPanel.querySelectorAll('button, input, label');
+    interactiveElements.forEach(el => {
+        el.style.pointerEvents = 'auto';
+    });
+    
+    // Re-enable partner marker clicks
+    Object.values(partnersById).forEach(partner => {
+        if (partner.marker) {
+            partner.marker.on('click', function() {
+                showPartnerSidebar(partner.partnerId);
+            });
+        }
+    });
+    
+    // Hide measurement overlay
+    document.getElementById('measurement-overlay').classList.add('hidden');
+    
+    // Hide delivery area mode indicator
+    const indicator = document.getElementById('delivery-area-mode-indicator');
+    indicator.classList.add('hidden');
+    
+    // Hide save dropdown
+    document.getElementById('delivery-area-save-dropdown').classList.add('hidden');
+    
+    // Remove pulse animation from Save button
+    const saveBtn = document.getElementById('delivery-area-save-btn');
+    saveBtn.classList.remove('animate-pulse-custom');
+    
+    // Clear drawing state
+    deliveryAreaPoints = [];
+    deliveryAreaLines = [];
+    deliveryAreaTempLine = null;
+    deliveryAreaStartMarker = null;
+    deliveryAreaVertexMarkers = [];
+    deliveryAreaNearStartPoint = false;
     
     // Restore cross marker if it was there before
     if (deliveryAreaHadCrossMarker) {
@@ -2858,8 +3108,14 @@ document.addEventListener('keydown', function(e) {
         if (deliveryAreaPoints.length > 0) {
             // Remove last point and continue drawing
             removeLastDeliveryAreaPoint();
+        } else if (deliveryAreaCompletedPolygons.length > 0) {
+            // No current points but has completed polygons - ask for confirmation before removing
+            const confirmed = confirm('Remove the last completed polygon?');
+            if (confirmed) {
+                removeLastCompletedPolygon();
+            }
         } else {
-            // No points, cancel the whole mode
+            // No points and no completed polygons, cancel the whole mode
             cancelDeliveryAreaMode();
         }
     }
