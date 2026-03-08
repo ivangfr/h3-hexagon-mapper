@@ -744,6 +744,9 @@ function addPartnerToMap(partner) {
     // Store partner in the main structure
     partnersById[partnerId] = partnerObject;
     
+    // Initialize limitDeliveryToPrimary to true (default: enabled)
+    partnerObject.limitDeliveryToPrimary = true;
+    
     // Compute hexagon intersections with delivery area
     computeHexagonIntersections(partnerObject);
 
@@ -1376,6 +1379,16 @@ function updatePartnerSidebarContent(partner) {
         intersectionHighlightContainer.classList.add('hidden');
     }
     
+    // Show/hide Limit Delivery to Primary toggle based on delivery area AND secondary hexagons availability
+    const limitDeliveryContainer = document.getElementById('toggle-limit-delivery-container');
+    if (hasDeliveryArea && hasSecondaryHexagons) {
+        limitDeliveryContainer.classList.remove('hidden');
+        // Set the toggle state from the partner's limitDeliveryToPrimary property
+        document.getElementById('toggle-limit-delivery').checked = partner.limitDeliveryToPrimary !== false;
+    } else {
+        limitDeliveryContainer.classList.add('hidden');
+    }
+    
     // Initialize intersection highlight toggle state
     // Check if intersection highlight is currently active by checking hexagon opacity
     const primaryIntersectedHighlighted = partner.elements.primaryHexagons.some(hexagon => 
@@ -1794,6 +1807,53 @@ document.getElementById('toggle-intersection-highlight').addEventListener('chang
     toggleIntersectionHighlight(currentPartnerId, this.checked);
 });
 
+// Partner info sidebar - toggle limit delivery to primary
+document.getElementById('toggle-limit-delivery').addEventListener('change', function() {
+    if (!currentPartnerId) return;
+    const partner = partnersById[currentPartnerId];
+    if (!partner) return;
+    
+    // Update the partner's limitDeliveryToPrimary state
+    partner.limitDeliveryToPrimary = this.checked;
+    
+    // Recompute intersections with the new setting
+    computeHexagonIntersections(partner);
+    
+    // Check if intersection highlight is active
+    const intersectionToggle = document.getElementById('toggle-intersection-highlight');
+    const intersectionActive = intersectionToggle.checked && !intersectionToggle.disabled;
+    
+    // Directly update hexagon opacities on the map (keep highlight toggle state)
+    // For primary hexagons
+    partner.elements.primaryHexagons.forEach(hexagon => {
+        const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
+        if (isVisible) {
+            const targetOpacity = (intersectionActive && hexagon.isIntersectedByDelivery) 
+                ? PARTNER_CONSTANTS.INTERSECTION_OPACITY 
+                : PARTNER_CONSTANTS.DEFAULT_OPACITY;
+            hexagon.polygon.setStyle({
+                fillOpacity: targetOpacity
+            });
+        }
+    });
+    
+    // For secondary hexagons
+    partner.elements.secondaryHexagons.forEach(hexagon => {
+        const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
+        if (isVisible) {
+            const targetOpacity = (intersectionActive && hexagon.isIntersectedByDelivery) 
+                ? PARTNER_CONSTANTS.INTERSECTION_OPACITY 
+                : PARTNER_CONSTANTS.DEFAULT_OPACITY;
+            hexagon.polygon.setStyle({
+                fillOpacity: targetOpacity
+            });
+        }
+    });
+    
+    // Update the statistics display
+    updatePartnerSidebarContent(partner);
+});
+
 // ==========================================
 // RIGHT-CLICK CONTEXT MENU
 // ==========================================
@@ -1915,8 +1975,51 @@ function isHexagonIntersectedByPolygon(hexagonBoundary, deliveryPolygonCoords) {
 }
 
 /**
+ * Checks if the entire delivery area is inside the primary zone.
+ * This is used to skip secondary zone intersection computation when
+ * the delivery area is completely contained within the primary zone.
+ * @param {Array} deliveryCoords - Array of [lat, lng] coordinates for all delivery polygon vertices
+ * @param {Array} primaryHexagons - Array of primary hexagon objects
+ * @returns {boolean} True if all delivery vertices are inside at least one primary hexagon
+ */
+function isDeliveryAreaInsidePrimaryZone(deliveryCoords, primaryHexagons) {
+    if (!deliveryCoords || deliveryCoords.length === 0 || !primaryHexagons || primaryHexagons.length === 0) {
+        return false;
+    }
+    
+    // Check if every delivery vertex is inside at least one primary hexagon
+    for (const vertex of deliveryCoords) {
+        const [lat, lng] = vertex;
+        let isInsideAnyHexagon = false;
+        
+        for (const hexagon of primaryHexagons) {
+            // Use the polygon's contains method for efficient point-in-polygon check
+            const bounds = hexagon.polygon.getBounds();
+            if (bounds.contains([lat, lng])) {
+                // Detailed check using the hexagon boundary
+                const hexBoundary = h3.cellToBoundary(hexagon.h3Index);
+                if (isPointInPolygon(lat, lng, hexBoundary)) {
+                    isInsideAnyHexagon = true;
+                    break;
+                }
+            }
+        }
+        
+        // If this vertex is not inside any primary hexagon, delivery area is not fully inside primary zone
+        if (!isInsideAnyHexagon) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+/**
  * Computes intersection state for all hexagons of a partner.
  * Updates the isIntersectedByDelivery property on each hexagon.
+ * When limitDeliveryToPrimary is enabled AND the delivery area is 
+ * completely inside the primary zone, secondary hexagons are marked 
+ * as NOT intersected (optimization to avoid double-counting).
  * @param {Object} partnerObject - The partner object with elements
  */
 function computeHexagonIntersections(partnerObject) {
@@ -1948,11 +2051,28 @@ function computeHexagonIntersections(partnerObject) {
         hexagon.isIntersectedByDelivery = isHexagonIntersectedByPolygon(hexBoundary, allDeliveryCoords);
     });
     
-    // Check secondary hexagons
-    partnerObject.elements.secondaryHexagons.forEach(hexagon => {
-        const hexBoundary = h3.cellToBoundary(hexagon.h3Index);
-        hexagon.isIntersectedByDelivery = isHexagonIntersectedByPolygon(hexBoundary, allDeliveryCoords);
-    });
+    // Check if we should skip secondary intersection when delivery is inside primary
+    // This is controlled by the limitDeliveryToPrimary toggle (default: true)
+    const shouldLimitToPrimary = partnerObject.limitDeliveryToPrimary !== false; // Default to true if not set
+    
+    // Check if delivery area is completely inside the primary zone
+    const deliveryInsidePrimary = isDeliveryAreaInsidePrimaryZone(allDeliveryCoords, partnerObject.elements.primaryHexagons);
+    
+    // Check secondary hexagons - skip if limitDeliveryToPrimary is enabled AND delivery area is entirely inside primary zone
+    if (shouldLimitToPrimary && deliveryInsidePrimary) {
+        // Delivery area is completely inside primary zone and limit is enabled, 
+        // so secondary hexagons are not intersected
+        partnerObject.elements.secondaryHexagons.forEach(hexagon => {
+            hexagon.isIntersectedByDelivery = false;
+        });
+    } else {
+        // Either limit is disabled, or delivery area extends outside primary zone
+        // Compute intersections normally
+        partnerObject.elements.secondaryHexagons.forEach(hexagon => {
+            const hexBoundary = h3.cellToBoundary(hexagon.h3Index);
+            hexagon.isIntersectedByDelivery = isHexagonIntersectedByPolygon(hexBoundary, allDeliveryCoords);
+        });
+    }
 }
 
 /**

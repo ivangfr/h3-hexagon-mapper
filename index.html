@@ -91,7 +91,7 @@
                     <!-- Enable Standalone Hexagons Toggle -->
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="standalone-hexagons-toggle" class="sr-only peer" checked>
-                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                        <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                     </label>
                 </div>
                 
@@ -131,7 +131,7 @@
                     <!-- Grayscale Map Toggle -->
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="grayscale-toggle" class="sr-only peer" checked>
-                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                        <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                     </label>
                 </div>
             </div>
@@ -415,6 +415,9 @@
                                 <strong class="text-gray-900 font-medium">Highlight Intersection:</strong> When a delivery area is defined, highlight hexagons that intersect with it. Available when delivery area and at least one zone are visible.
                             </li>
                             <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Limit Delivery to Primary:</strong> When enabled (default), if the delivery area is entirely inside the primary zone, secondary zone hexagons are marked as NOT intersected. This prevents double-counting. Only visible when both delivery area AND secondary zone exist.
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
                                 <strong class="text-gray-900 font-medium">Statistics:</strong> Resolution, zones, hexagon count, and intersection count when delivery area exists
                             </li>
                         </ul>
@@ -491,18 +494,18 @@
             <form id="partner-form" class="space-y-4">
                 <div class="space-y-2">
                     <label for="sidebar-partnerId" class="block text-[13px] font-semibold text-gray-700">Partner ID</label>
-                    <input type="text" id="sidebar-partnerId" placeholder="Enter partner ID" value="partner1" required class="w-full px-3.5 py-3 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
+                    <input type="text" id="sidebar-partnerId" placeholder="Enter partner ID" value="partner1" required class="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
                 </div>
                 
                 <!-- Latitude and Longitude on same line -->
                 <div class="grid grid-cols-2 gap-3">
                     <div class="space-y-2">
                         <label for="sidebar-latitude" class="block text-[13px] font-semibold text-gray-700">Latitude</label>
-                        <input type="number" id="sidebar-latitude" placeholder="-90 to 90" value="52.52" step="any" required class="w-full px-3.5 py-3 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
+                        <input type="number" id="sidebar-latitude" placeholder="-90 to 90" value="52.52" step="any" required class="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
                     </div>
                     <div class="space-y-2">
                         <label for="sidebar-longitude" class="block text-[13px] font-semibold text-gray-700">Longitude</label>
-                        <input type="number" id="sidebar-longitude" placeholder="-180 to 180" value="13.4" step="any" required class="w-full px-3.5 py-3 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
+                        <input type="number" id="sidebar-longitude" placeholder="-180 to 180" value="13.4" step="any" required class="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
                     </div>
                 </div>
                 
@@ -531,7 +534,7 @@
                         </div>
                         <div class="space-y-2">
                             <label class="block text-[13px] font-medium text-gray-700 mb-0">Color</label>
-                            <input type="color" id="sidebar-primary-color" value="#0000ff" class="color-picker-compact" required>
+                            <input type="color" id="sidebar-primary-color" value="#0000ff" class="w-full h-9 cursor-pointer" required>
                         </div>
                     </div>
                 </div>
@@ -543,7 +546,7 @@
                     <label class="flex items-center gap-3 cursor-pointer w-full">
                         <div class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="sidebar-enable-secondary" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                            <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                         </div>
                         <span class="text-sm font-medium text-gray-700">Enable Secondary Zone</span>
                     </label>
@@ -572,10 +575,10 @@
                     <!-- Secondary Color and Same as primary on same line -->
                     <div class="flex items-center gap-2">
                         <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
-                            <input type="checkbox" id="sidebar-same-color" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <input type="checkbox" id="sidebar-same-color" checked class="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
                             <span>Same as primary</span>
                         </label>
-                        <input type="color" id="sidebar-secondary-color" value="#0000ff" class="color-picker-compact">
+                        <input type="color" id="sidebar-secondary-color" value="#0000ff" class="w-full h-9 cursor-pointer">
                     </div>
                 </div>
                 
@@ -586,7 +589,7 @@
                     <label class="flex items-center gap-3 cursor-pointer w-full">
                         <div class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="sidebar-enable-delivery-area" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                            <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                         </div>
                         <span class="text-sm font-medium text-gray-700">Enable Delivery Area</span>
                     </label>
@@ -603,16 +606,16 @@
                     <!-- Polygon Content Textarea (KML or WKT) -->
                     <div class="space-y-2">
                         <label for="sidebar-polygon-content" class="block text-[13px] font-semibold text-gray-700">Polygon Content</label>
-                        <textarea id="sidebar-polygon-content" placeholder="Paste KML or WKT content here..." rows="4" class="w-full px-3.5 py-3 text-[13px] font-mono border-2 border-gray-200 rounded-xl resize-y min-h-[100px] bg-white outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all placeholder:text-gray-400"></textarea>
+                        <textarea id="sidebar-polygon-content" placeholder="Paste KML or WKT content here..." rows="4" class="w-full px-3 py-2 text-[13px] font-mono border-2 border-gray-200 rounded-xl resize-y min-h-[100px] bg-white outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all placeholder:text-gray-400"></textarea>
                     </div>
                     
                     <!-- Delivery Area Color -->
                     <div class="flex items-center gap-2">
                         <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
-                            <input type="checkbox" id="sidebar-same-color-delivery" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <input type="checkbox" id="sidebar-same-color-delivery" checked class="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
                             <span>Same as primary</span>
                         </label>
-                        <input type="color" id="sidebar-delivery-color" value="#0000ff" class="color-picker-compact" disabled>
+                        <input type="color" id="sidebar-delivery-color" value="#0000ff" class="w-full h-9 cursor-pointer" disabled>
                     </div>
                 </div>
                 
@@ -696,7 +699,7 @@
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-primary-zone" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                 </label>
             </div>
             
@@ -708,7 +711,7 @@
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-secondary-zone" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                 </label>
             </div>
             
@@ -720,7 +723,7 @@
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-delivery-area" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                 </label>
             </div>
             
@@ -732,7 +735,19 @@
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="toggle-intersection-highlight" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                </label>
+            </div>
+            
+            <!-- Limit Delivery to Primary Toggle -->
+            <div id="toggle-limit-delivery-container" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Limit Delivery to Primary</h4>
+                    <p class="m-0 text-xs text-gray-500">Skip secondary intersection if delivery inside primary</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-limit-delivery" class="sr-only peer" checked>
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
                 </label>
             </div>
 
