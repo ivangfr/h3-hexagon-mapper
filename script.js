@@ -2276,7 +2276,7 @@ document.getElementById('tools-add-partner').addEventListener('click', function(
 });
 
 // ==========================================
-// CUSTOMER LOCATION SIDEBAR
+// CUSTOMER INFO SIDEBAR
 // ==========================================
 
 /**
@@ -2356,20 +2356,20 @@ function findPartnersArrivingAtLocation(lat, lng) {
 }
 
 /**
- * Updates the customer location sidebar content with detected hexagons.
+ * Updates the customer info sidebar content with detected hexagons.
  */
-function updateCustomerLocationSidebarContent(lat, lng) {
-    const customerLocationCoords = document.getElementById('customer-location-coords');
-    const customerLocationHexagonList = document.getElementById('customer-location-hexagon-list');
-    const customerLocationPartnerList = document.getElementById('customer-location-partner-list');
+function updateCustomerInfoSidebarContent(lat, lng) {
+    const customerInfoCoords = document.getElementById('customer-info-coords');
+    const customerInfoHexagonList = document.getElementById('customer-info-hexagon-list');
+    const customerInfoPartnerList = document.getElementById('customer-info-partner-list');
     const summaryHexagonCount = document.getElementById('summary-hexagon-count');
     const summaryPartnerCount = document.getElementById('summary-partner-count');
     
-    // Place cross marker at customer location
+    // Place cross marker at customer info location
     placeCrossMarker(lat, lng);
     
     // Update coordinates display
-    customerLocationCoords.textContent = `Lat: ${lat.toFixed(6)}, Lon: ${lng.toFixed(6)}`;
+    customerInfoCoords.textContent = `Lat: ${lat.toFixed(6)}, Lon: ${lng.toFixed(6)}`;
     
     // Find hexagons at location
     const detectedHexagons = findHexagonsAtLocation(lat, lng);
@@ -2383,7 +2383,7 @@ function updateCustomerLocationSidebarContent(lat, lng) {
     summaryPartnerCount.textContent = arrivingPartners.length;
     
     // Update partners arriving at location list
-    customerLocationPartnerList.innerHTML = '';
+    customerInfoPartnerList.innerHTML = '';
     
     if (arrivingPartners.length > 0) {
         arrivingPartners.forEach(partner => {
@@ -2395,7 +2395,7 @@ function updateCustomerLocationSidebarContent(lat, lng) {
                 return `<div class="mt-2 pl-3 py-1.5 border-l-4 rounded-r bg-white" style="border-left-color: ${hex.color};">
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="text-[11px] font-semibold text-gray-700">${hex.layerType}, zone ${hex.zoneNumber}</span>
-                        <span class="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Res ${hex.resolution}</span>
+                        <span class="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">H3 Res ${hex.resolution}</span>
                         <span class="text-[10px] text-gray-400 font-mono">${hex.h3Index}</span>
                     </div>
                 </div>`;
@@ -2420,7 +2420,7 @@ function updateCustomerLocationSidebarContent(lat, lng) {
                 ${hexagonsHtml}
             `;
             
-            customerLocationPartnerList.appendChild(partnerCard);
+            customerInfoPartnerList.appendChild(partnerCard);
         });
         
         // Initialize Lucide icons for the new content
@@ -2433,12 +2433,12 @@ function updateCustomerLocationSidebarContent(lat, lng) {
             <i data-lucide="store" class="w-12 h-12 mx-auto mb-3 text-gray-300"></i>
             <p class="text-sm">No partners arriving at this location</p>
         `;
-        customerLocationPartnerList.appendChild(noPartnersMsg);
+        customerInfoPartnerList.appendChild(noPartnersMsg);
         lucide.createIcons();
     }
     
     // Update hexagon list
-    customerLocationHexagonList.innerHTML = '';
+    customerInfoHexagonList.innerHTML = '';
     
     if (detectedHexagons.length > 0) {
         // Group hexagons by H3 index
@@ -2500,14 +2500,14 @@ function updateCustomerLocationSidebarContent(lat, lng) {
                     <i data-lucide="hexagon" class="w-5 h-5 flex-shrink-0" style="color: ${group.color};"></i>
                     <div class="flex-1 min-w-0">
                         <div class="text-sm font-mono text-gray-900 break-all">${group.h3Index}</div>
-                        <div class="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded inline-block mt-1">Res ${group.resolution}</div>
+                        <div class="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded inline-block mt-1">H3 Res ${group.resolution}</div>
                     </div>
                 </div>
                 ${partnersHtml}
                 ${standaloneHtml}
             `;
             
-            customerLocationHexagonList.appendChild(hexagonCard);
+            customerInfoHexagonList.appendChild(hexagonCard);
         });
         
         // Initialize Lucide icons for the new content
@@ -2520,40 +2520,40 @@ function updateCustomerLocationSidebarContent(lat, lng) {
             <i data-lucide="hexagon" class="w-12 h-12 mx-auto mb-3 text-gray-300"></i>
             <p class="text-sm">No hexagons at this location</p>
         `;
-        customerLocationHexagonList.appendChild(noHexagonsMsg);
+        customerInfoHexagonList.appendChild(noHexagonsMsg);
         lucide.createIcons();
     }
 }
 
 /**
- * Shows the customer location sidebar with hexagon detection.
+ * Shows the customer info sidebar with hexagon detection.
  */
-function showCustomerLocationSidebar(lat, lng) {
+function showCustomerInfoSidebar(lat, lng) {
     closeAllSidebars();
-    updateCustomerLocationSidebarContent(lat, lng);
-    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
-    openSidebar(customerLocationSidebar);
+    updateCustomerInfoSidebarContent(lat, lng);
+    const customerInfoSidebar = document.getElementById('customer-info-sidebar');
+    openSidebar(customerInfoSidebar);
 }
 
 /**
- * Closes the customer location sidebar.
+ * Closes the customer info sidebar.
  */
-function closeCustomerLocationSidebar() {
-    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
-    closeSidebar(customerLocationSidebar);
+function closeCustomerInfoSidebar() {
+    const customerInfoSidebar = document.getElementById('customer-info-sidebar');
+    closeSidebar(customerInfoSidebar);
     removeCrossMarker();
 }
 
-// Context menu - "Customer Location" button
-document.getElementById('context-menu-customer-location').addEventListener('click', function() {
+// Context menu - "Customer Info" button
+document.getElementById('context-menu-customer-info').addEventListener('click', function() {
     hideContextMenu();
     if (contextMenuState.latitude !== null && contextMenuState.longitude !== null) {
-        showCustomerLocationSidebar(contextMenuState.latitude, contextMenuState.longitude);
+        showCustomerInfoSidebar(contextMenuState.latitude, contextMenuState.longitude);
     }
 });
 
-// Customer location sidebar - close button
-document.getElementById('customer-location-close-btn').addEventListener('click', closeCustomerLocationSidebar);
+// Customer info sidebar - close button
+document.getElementById('customer-info-close-btn').addEventListener('click', closeCustomerInfoSidebar);
 
 // Drawer overlay - click to close all sidebars
 document.getElementById('drawer-overlay').addEventListener('click', closeAllSidebars);
@@ -2604,13 +2604,12 @@ function hideDrawerOverlay() {
 function closeAllSidebars() {
     const helpSidebar = document.getElementById('help-sidebar');
     const partnerFormSidebar = document.getElementById('partner-form-sidebar');
+    const customerInfoSidebar = document.getElementById('customer-info-sidebar');
     const partnerInfoSidebar = document.getElementById('partner-info-sidebar');
-    const customerLocationSidebar = document.getElementById('customer-location-sidebar');
     
     closeSidebar(helpSidebar);
     closeSidebar(partnerFormSidebar);
-    closeSidebar(partnerInfoSidebar);
-    closeSidebar(customerLocationSidebar);
+    closeSidebar(customerInfoSidebar);
     
     // Reset currentPartnerId when closing partner info sidebar
     currentPartnerId = null;
@@ -2747,12 +2746,12 @@ function exitDeliveryAreaMode() {
     const indicator = document.getElementById('delivery-area-mode-indicator');
     indicator.classList.add('hidden');
     
-    // Hide save dropdown
-    document.getElementById('delivery-area-save-dropdown').classList.add('hidden');
+    // Hide export dropdown
+    document.getElementById('delivery-area-export-dropdown').classList.add('hidden');
     
-    // Remove pulse animation from Save button
-    const saveBtn = document.getElementById('delivery-area-save-btn');
-    saveBtn.classList.remove('animate-pulse-custom');
+    // Remove pulse animation from Export button
+    const exportBtn = document.getElementById('delivery-area-export-btn');
+    exportBtn.classList.remove('animate-pulse-custom');
 }
 
 /**
@@ -3058,9 +3057,9 @@ function finishDeliveryAreaPolygon() {
     // Keep drawing mode active for multi-polygon support
     // User can immediately start drawing another polygon or save
     
-    // Add pulse animation to Save button
-    const saveBtn = document.getElementById('delivery-area-save-btn');
-    saveBtn.classList.add('animate-pulse-custom');
+    // Add pulse animation to Export button
+    const exportBtn = document.getElementById('delivery-area-export-btn');
+    exportBtn.classList.add('animate-pulse-custom');
 }
 
 /**
@@ -3179,8 +3178,8 @@ function removeLastCompletedPolygon() {
     
     // If no more completed polygons, remove pulse animation from Save button
     if (deliveryAreaCompletedPolygons.length === 0) {
-        const saveBtn = document.getElementById('delivery-area-save-btn');
-        saveBtn.classList.remove('animate-pulse-custom');
+        const exportBtn = document.getElementById('delivery-area-export-btn');
+        exportBtn.classList.remove('animate-pulse-custom');
     }
 }
 
@@ -3205,7 +3204,7 @@ function clearPendingDeliveryAreaPolygons() {
  * Handles both single and multi-polygon cases.
  * Keeps the drawn polygons visible as pending polygons.
  */
-function saveDeliveryArea(format) {
+function exportDeliveryArea(format) {
     // Combine completed polygons with current drawing (if any)
     const allPolygons = [...deliveryAreaCompletedPolygons.map(p => p.points)];
     
@@ -3269,12 +3268,12 @@ function saveDeliveryArea(format) {
     const indicator = document.getElementById('delivery-area-mode-indicator');
     indicator.classList.add('hidden');
     
-    // Hide save dropdown
-    document.getElementById('delivery-area-save-dropdown').classList.add('hidden');
+    // Hide export dropdown
+    document.getElementById('delivery-area-export-dropdown').classList.add('hidden');
     
-    // Remove pulse animation from Save button
-    const saveBtn = document.getElementById('delivery-area-save-btn');
-    saveBtn.classList.remove('animate-pulse-custom');
+    // Remove pulse animation from Export button
+    const exportBtn = document.getElementById('delivery-area-export-btn');
+    exportBtn.classList.remove('animate-pulse-custom');
     
     // Clear drawing state
     deliveryAreaPoints = [];
@@ -3307,23 +3306,23 @@ document.getElementById('draw-delivery-area-btn').addEventListener('click', func
     startDeliveryAreaMode();
 });
 
-// Save dropdown toggle
-document.getElementById('delivery-area-save-btn').addEventListener('click', function(e) {
+// Export dropdown toggle
+document.getElementById('delivery-area-export-btn').addEventListener('click', function(e) {
     e.stopPropagation();
-    const dropdown = document.getElementById('delivery-area-save-dropdown');
+    const dropdown = document.getElementById('delivery-area-export-dropdown');
     dropdown.classList.toggle('hidden');
 });
 
-// Save as WKT
-document.getElementById('delivery-area-save-wkt').addEventListener('click', function() {
-    document.getElementById('delivery-area-save-dropdown').classList.add('hidden');
-    saveDeliveryArea('wkt');
+// Export as WKT
+document.getElementById('delivery-area-export-wkt').addEventListener('click', function() {
+    document.getElementById('delivery-area-export-dropdown').classList.add('hidden');
+    exportDeliveryArea('wkt');
 });
 
-// Save as KML
-document.getElementById('delivery-area-save-kml').addEventListener('click', function() {
-    document.getElementById('delivery-area-save-dropdown').classList.add('hidden');
-    saveDeliveryArea('kml');
+// Export as KML
+document.getElementById('delivery-area-export-kml').addEventListener('click', function() {
+    document.getElementById('delivery-area-export-dropdown').classList.add('hidden');
+    exportDeliveryArea('kml');
 });
 
 // Cancel button
@@ -3333,9 +3332,9 @@ document.getElementById('delivery-area-cancel-btn').addEventListener('click', fu
 
 // Close dropdown when clicking outside
 document.addEventListener('click', function(e) {
-    const dropdown = document.getElementById('delivery-area-save-dropdown');
-    const saveBtn = document.getElementById('delivery-area-save-btn');
-    if (!dropdown.contains(e.target) && !saveBtn.contains(e.target)) {
+    const dropdown = document.getElementById('delivery-area-export-dropdown');
+    const exportBtn = document.getElementById('delivery-area-export-btn');
+    if (!dropdown.contains(e.target) && !exportBtn.contains(e.target)) {
         dropdown.classList.add('hidden');
     }
 });

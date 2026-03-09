@@ -52,7 +52,7 @@ Standalone hexagons are individual hexagons you can add anywhere on the map. You
 
 - **Open Context Menu**: Right-click anywhere on the map to open a context menu at that location.
 - **Add Partner Here**: Click "Add Partner Here" to open the partner form pre-filled with the clicked coordinates. A cross marker shows the selected position.
-- **Customer Location**: Click "Customer Location" to view all H3 hexagon IDs at the clicked location in a dedicated sidebar.
+- **Customer Info Here**: Click "Customer Info Here" to view detailed information about hexagons and partners at the clicked location.
 
 ### Partner Management
 
@@ -86,7 +86,7 @@ When adding or editing a partner, you can configure:
     - **Add Points**: Click on the map to add polygon vertices (minimum 3 points required).
     - **Close Polygon**: Click near the start point (turns green when close) to complete the polygon.
     - **Multi-Polygon**: After closing a polygon, you can immediately start drawing another one. All polygons will be combined when saved.
-    - **Save**: Choose "Save as WKT" or "Save as KML" to save the polygon(s) to the form. Multiple polygons are exported as `MULTIPOLYGON` in WKT or multiple `<Placemark>` elements in KML.
+    - **Export**: Choose "WKT" or "KML" to export the polygon(s) to the form. Multiple polygons are exported as `MULTIPOLYGON` in WKT or multiple `<Placemark>` elements in KML.
     - **Cancel**: Click Cancel to exit drawing mode without saving.
     - **Undo Point**: Press `Esc` to remove the last point while drawing.
     - **Undo Polygon**: Press `Esc` to remove the last completed polygon (with confirmation). If no polygons exist, cancels the mode.
@@ -95,6 +95,21 @@ When adding or editing a partner, you can configure:
     - **KML**: XML-based format with coordinates tags.
     - **WKT**: Single polygon with coordinate pairs or multiple polygons for complex areas.
   - **Color**: Choose a custom color for the delivery area polygon, or use the same color as the primary zone.
+
+### Customer Info
+
+The Customer Info sidebar provides detailed information about hexagons and partners at a specific location.
+
+- **Open**: Right-click on the map and select "Customer Info Here" from the context menu.
+- **Coordinates**: Displays the latitude and longitude of the clicked location.
+- **Summary**: Shows the total hexagon count and partner count at the location.
+- **Partners Arriving at Location**: Lists partners whose hexagons cover this location.
+  - If a partner has a delivery area defined, only hexagons intersected by that delivery area are included (partners only "arrive" at locations within their delivery zone).
+  - Shows partner ID, delivery area status, zone type (primary/secondary), zone number, and H3 index.
+- **Hexagons at Location**: Shows all H3 hexagons at the clicked location.
+  - Displays H3 index, resolution, and associated partner (if any).
+  - Includes both standalone hexagons and partner hexagons.
+  - Hexagons are sorted by resolution (highest first).
 
 #### Partner Info
 
