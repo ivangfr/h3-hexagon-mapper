@@ -279,7 +279,6 @@ map.on('click', function(e) {
     generateH3Grid(lat, lng, resolution, color, opacity, map);
 });
 
-// Resolution slider
 const resolutionSlider = document.getElementById('resolution');
 const resolutionValue = document.getElementById('resolution-value');
 resolutionSlider.addEventListener('input', function() {
@@ -287,13 +286,11 @@ resolutionSlider.addEventListener('input', function() {
     resolutionValue.textContent = resolution;
 });
 
-// Color picker
 const colorPicker = document.getElementById('color-picker');
 colorPicker.addEventListener('input', function() {
     color = this.value;
 });
 
-// Opacity slider
 const opacitySlider = document.getElementById('opacity');
 const opacityValue = document.getElementById('opacity-value');
 opacitySlider.addEventListener('input', function() {
@@ -386,11 +383,9 @@ function toggleHelpSidebar() {
     }
 }
 
-// Help sidebar toggle button
 const helpSidebarToggle = document.getElementById('help-sidebar-toggle');
 helpSidebarToggle.addEventListener('click', toggleHelpSidebar);
 
-// Help sidebar close button
 document.getElementById('help-close-btn').addEventListener('click', closeHelpSidebar);
 
 // ==========================================
@@ -708,37 +703,28 @@ function addPartnerToMap(partner) {
         const actualDeliveryColor = deliveryAreaColor || actualPrimaryColor;
         const parsedContent = parsePolygonContent(deliveryAreaContent);
         
-        if (parsedContent.type === 'single' && parsedContent.coordinates.length > 0) {
-            // Single polygon
-            const polygon = L.polygon(parsedContent.coordinates, {
-                color: actualDeliveryColor,
-                fillColor: actualDeliveryColor,
-                fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
-                weight: PARTNER_CONSTANTS.DEFAULT_DELIVERY_AREA_WEIGHT
-            }).addTo(map);
-            
-            partnerObject.elements.deliveryAreaPolygons.push({
-                polygon: polygon,
-                type: 'single'
-            });
-        } else if (parsedContent.type === 'multi' && parsedContent.coordinates.length > 0) {
-            // Multiple polygons (MULTIPOLYGON)
-            parsedContent.coordinates.forEach(coords => {
-                if (coords.length > 0) {
-                    const polygon = L.polygon(coords, {
-                        color: actualDeliveryColor,
-                        fillColor: actualDeliveryColor,
-                        fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
-                        weight: PARTNER_CONSTANTS.DEFAULT_DELIVERY_AREA_WEIGHT
-                    }).addTo(map);
-                    
-                    partnerObject.elements.deliveryAreaPolygons.push({
-                        polygon: polygon,
-                        type: 'multi'
-                    });
-                }
-            });
-        }
+        // Normalize to array of polygon data (handles both single and multi)
+        const polygonDataArray = parsedContent.type === 'single' 
+            ? [parsedContent.coordinates] 
+            : parsedContent.coordinates;
+        
+        polygonDataArray.forEach(polygonData => {
+            const coords = polygonDataToLeafletCoords(polygonData);
+            if (coords.length > 0 && coords[0].length > 0) {
+                const polygon = L.polygon(coords, {
+                    color: actualDeliveryColor,
+                    fillColor: actualDeliveryColor,
+                    fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
+                    weight: PARTNER_CONSTANTS.DEFAULT_DELIVERY_AREA_WEIGHT
+                }).addTo(map);
+                
+                partnerObject.elements.deliveryAreaPolygons.push({
+                    polygon: polygon,
+                    type: parsedContent.type,
+                    holes: polygonData.holes || []
+                });
+            }
+        });
     }
 
     // Store partner in the main structure
@@ -969,7 +955,6 @@ function toggleIntersectionHighlight(partnerId, enabled) {
 }
 
 /**
-
  * Updates the coverage bar display for delivery area intersection.
  * @param {string} zoneType - 'primary' or 'secondary'
  * @param {number} intersected - Number of intersected hexagons
@@ -1038,10 +1023,40 @@ function updateIntersectionToggleState(partnerId) {
 }
 
 /**
+ * Converts a polygon data object (with outer and holes) to Leaflet-compatible coordinates.
+ * Leaflet expects: [outerRing, hole1, hole2, ...] where each ring is [[lat, lng], ...]
+ * @param {Object} polygonData - {outer: [[lat, lng], ...], holes: [[[lat, lng], ...], ...]}
+ * @returns {Array} Leaflet-compatible coordinates array
+ */
+function polygonDataToLeafletCoords(polygonData) {
+    if (!polygonData || !polygonData.outer || polygonData.outer.length === 0) {
+        return [];
+    }
+    
+    // If it's a simple array (legacy format), return as-is
+    if (Array.isArray(polygonData) && polygonData.length > 0 && Array.isArray(polygonData[0])) {
+        return polygonData;
+    }
+    
+    // Start with outer ring
+    const result = [polygonData.outer];
+    
+    // Add holes if present
+    if (polygonData.holes && polygonData.holes.length > 0) {
+        polygonData.holes.forEach(hole => {
+            result.push(hole);
+        });
+    }
+    
+    return result;
+}
+
+/**
  * Parses polygon content (KML or WKT) and extracts coordinates.
  * Returns an object with:
  *   - type: 'single' or 'multi'
- *   - coordinates: array of coordinates for single polygon, or array of coordinate arrays for multi-polygon
+ *   - coordinates: for single polygon: {outer: [[lat, lng], ...], holes: [...]}
+ *                  for multi-polygon: array of {outer, holes} objects
  */
 function parsePolygonContent(content) {
     const trimmedContent = content.trim();
@@ -1066,19 +1081,21 @@ function parsePolygonContent(content) {
         // Fallback to original parsing if no placemarks found
         return {
             type: 'single',
-            coordinates: parseKMLCoordinates(trimmedContent)
+            coordinates: { outer: parseKMLCoordinates(trimmedContent), holes: [] }
         };
     } else if (trimmedContent.toUpperCase().startsWith('MULTIPOLYGON')) {
-        // WKT MULTIPOLYGON format
+        // WKT MULTIPOLYGON format - returns array of simple coordinate arrays (no holes support for multipolygon yet)
+        const result = parseWKTMultiPolygon(trimmedContent);
         return {
             type: 'multi',
-            coordinates: parseWKTMultiPolygon(trimmedContent)
+            coordinates: result
         };
     } else if (trimmedContent.toUpperCase().startsWith('POLYGON')) {
-        // WKT POLYGON format
+        // WKT POLYGON format - returns {outer, holes}
+        const result = parseWKTPolygon(trimmedContent);
         return {
             type: 'single',
-            coordinates: parseWKTPolygon(trimmedContent)
+            coordinates: result
         };
     }
     
@@ -1111,38 +1128,83 @@ function parsePolygonContent(content) {
 }
 
 /**
+ * Parses KML coordinates string into array of [lat, lng] pairs.
+ */
+function parseKMLCoordsString(coordText) {
+    const coordinates = [];
+    const coordPairs = coordText.trim().split(/\s+/);
+    coordPairs.forEach(pair => {
+        const parts = pair.split(',');
+        if (parts.length >= 2) {
+            const lon = parseFloat(parts[0]);
+            const lat = parseFloat(parts[1]);
+            if (!isNaN(lat) && !isNaN(lon)) {
+                coordinates.push([lat, lon]);
+            }
+        }
+    });
+    return coordinates;
+}
+
+/**
  * Parses KML content and extracts polygon coordinates from a single placemark.
+ * Also detects innerBoundaryIs (holes) if present.
  */
 function parseKMLCoordinates(kmlContent) {
     const coordinates = [];
     
-    // Try to extract coordinates from KML <coordinates> tag
+    // Try to extract coordinates from KML <coordinates> tag (outer boundary)
     const coordMatch = kmlContent.match(/<coordinates[^>]*>([\s\S]*?)<\/coordinates>/i);
     if (coordMatch) {
-        const coordText = coordMatch[1].trim();
-        // KML coordinates are in format: lon,lat,alt lon,lat,alt ...
-        const coordPairs = coordText.split(/\s+/);
-        coordPairs.forEach(pair => {
-            const parts = pair.split(',');
-            if (parts.length >= 2) {
-                const lon = parseFloat(parts[0]);
-                const lat = parseFloat(parts[1]);
-                if (!isNaN(lat) && !isNaN(lon)) {
-                    coordinates.push([lat, lon]);
-                }
-            }
-        });
+        const coords = parseKMLCoordsString(coordMatch[1]);
+        coordinates.push(...coords);
     }
     
     return coordinates;
 }
 
 /**
+ * Parses KML Polygon element with support for innerBoundaryIs (holes).
+ * Returns {outer: coordinates, holes: [coordinates, ...]}
+ */
+function parseKMLPolygonWithHoles(polygonContent) {
+    const result = { outer: [], holes: [] };
+    
+    // Extract outer boundary
+    const outerMatch = polygonContent.match(/<outerBoundaryIs[^>]*>([\s\S]*?)<\/outerBoundaryIs>/i);
+    if (outerMatch) {
+        const coordMatch = outerMatch[1].match(/<coordinates[^>]*>([\s\S]*?)<\/coordinates>/i);
+        if (coordMatch) {
+            result.outer = parseKMLCoordsString(coordMatch[1]);
+        }
+    }
+    
+    // Extract inner boundaries (holes)
+    const innerRegex = /<innerBoundaryIs[^>]*>([\s\S]*?)<\/innerBoundaryIs>/gi;
+    let innerMatch;
+    while ((innerMatch = innerRegex.exec(polygonContent)) !== null) {
+        const coordMatch = innerMatch[1].match(/<coordinates[^>]*>([\s\S]*?)<\/coordinates>/i);
+        if (coordMatch) {
+            const holeCoords = parseKMLCoordsString(coordMatch[1]);
+            if (holeCoords.length > 0) {
+                result.holes.push(holeCoords);
+            }
+        }
+    }
+    
+    return result;
+}
+
+/**
  * Parses KML content with multiple placemarks and extracts all polygon coordinates.
- * Returns an array of coordinate arrays (one for each polygon).
+ * Returns an array of objects: {outer: coordinates, holes: [coordinates, ...]}
+ * For backward compatibility, if no holes are detected, returns simple coordinate arrays.
  */
 function parseKMLMultiPolygon(kmlContent) {
     const polygons = [];
+    
+    // Check if any polygon has innerBoundaryIs
+    const hasInnerBoundaries = /<innerBoundaryIs/i.test(kmlContent);
     
     // Find all <Placemark> elements
     const placemarkRegex = /<Placemark[^>]*>([\s\S]*?)<\/Placemark>/gi;
@@ -1151,10 +1213,19 @@ function parseKMLMultiPolygon(kmlContent) {
     while ((match = placemarkRegex.exec(kmlContent)) !== null) {
         const placemarkContent = match[1];
         
-        // Extract coordinates from this placemark
-        const coords = parseKMLCoordinates(placemarkContent);
-        if (coords.length > 0) {
-            polygons.push(coords);
+        // Check if this placemark has a Polygon with innerBoundaryIs
+        const polygonMatch = placemarkContent.match(/<Polygon[^>]*>([\s\S]*?)<\/Polygon>/i);
+        if (polygonMatch && hasInnerBoundaries) {
+            const polygonData = parseKMLPolygonWithHoles(polygonMatch[1]);
+            if (polygonData.outer.length > 0) {
+                polygons.push(polygonData);
+            }
+        } else {
+            // Simple polygon without holes
+            const coords = parseKMLCoordinates(placemarkContent);
+            if (coords.length > 0) {
+                polygons.push({ outer: coords, holes: [] });
+            }
         }
     }
     
@@ -1162,10 +1233,11 @@ function parseKMLMultiPolygon(kmlContent) {
 }
 
 /**
- * Parses WKT POLYGON content and extracts coordinates.
+ * Parses WKT POLYGON content and extracts coordinates including holes.
+ * Returns {outer: coordinates, holes: [coordinates, ...]}
  */
 function parseWKTPolygon(wktContent) {
-    const coordinates = [];
+    const result = { outer: [], holes: [] };
     
     // WKT POLYGON format: POLYGON((lon1 lat1, lon2 lat2, lon3 lat3, ...))
     // or with multiple rings: POLYGON((outer_ring),(inner_ring1),...)
@@ -1173,31 +1245,38 @@ function parseWKTPolygon(wktContent) {
     // Match the content inside POLYGON(...)
     const polygonMatch = wktContent.match(/POLYGON\s*\(\s*\(([\s\S]+)\)\s*\)/i);
     if (polygonMatch) {
-        // Get the first (outer) ring
-        let ringContent = polygonMatch[1];
+        const ringContent = polygonMatch[1];
         
-        // Handle multiple rings - take only the first (outer) ring
+        // Handle multiple rings - split by "),(" pattern
         const rings = ringContent.split(/\)\s*,\s*\(/);
-        if (rings.length > 0) {
-            ringContent = rings[0];
-        }
         
-        // Parse coordinate pairs: lon1 lat1, lon2 lat2, ...
-        const coordPairs = ringContent.split(',');
-        coordPairs.forEach(pair => {
-            const trimmedPair = pair.trim();
-            const parts = trimmedPair.split(/\s+/);
-            if (parts.length >= 2) {
-                const lon = parseFloat(parts[0]);
-                const lat = parseFloat(parts[1]);
-                if (!isNaN(lat) && !isNaN(lon)) {
-                    coordinates.push([lat, lon]);
+        // Parse each ring
+        rings.forEach((ring, index) => {
+            const coordinates = [];
+            const coordPairs = ring.split(',');
+            coordPairs.forEach(pair => {
+                const trimmedPair = pair.trim();
+                const parts = trimmedPair.split(/\s+/);
+                if (parts.length >= 2) {
+                    const lon = parseFloat(parts[0]);
+                    const lat = parseFloat(parts[1]);
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        coordinates.push([lat, lon]);
+                    }
+                }
+            });
+            
+            if (coordinates.length > 0) {
+                if (index === 0) {
+                    result.outer = coordinates;
+                } else {
+                    result.holes.push(coordinates);
                 }
             }
         });
     }
     
-    return coordinates;
+    return result;
 }
 
 /**
@@ -1923,59 +2002,89 @@ function isPointInHexagon(lat, lng, hexagonPolygon) {
 }
 
 /**
- * Checks if a point is inside a polygon using ray casting algorithm.
+ * Checks if a point is inside a polygon using Turf.js.
  * @param {number} lat - Latitude of the point
  * @param {number} lng - Longitude of the point
  * @param {Array} polygonCoords - Array of [lat, lng] coordinates
  * @returns {boolean} True if point is inside polygon
  */
 function isPointInPolygon(lat, lng, polygonCoords) {
-    const n = polygonCoords.length;
-    let inside = false;
+    // Turf.js uses [lng, lat] format, so we need to convert
+    const point = turf.point([lng, lat]);
     
-    for (let i = 0, j = n - 1; i < n; j = i++) {
-        const xi = polygonCoords[i][0];
-        const yi = polygonCoords[i][1];
-        const xj = polygonCoords[j][0];
-        const yj = polygonCoords[j][1];
-        
-        if (((yi > lng) !== (yj > lng)) && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi)) {
-            inside = !inside;
-        }
-    }
+    // Convert [lat, lng] coordinates to [lng, lat] for Turf.js
+    const coords = polygonCoords.map(v => [v[1], v[0]]);
+    // Close the ring (Turf.js requires closed rings)
+    coords.push(coords[0]);
     
-    return inside;
+    const polygon = turf.polygon([coords]);
+    return turf.booleanPointInPolygon(point, polygon);
 }
 
 /**
- * Checks if a hexagon intersects with a delivery area polygon.
- * A hexagon is intersected if:
- * - Any of its boundary vertices is inside the delivery polygon, OR
- * - The delivery polygon has vertices inside the hexagon
+ * Checks if a hexagon intersects with a delivery area polygon using Turf.js.
+ * Uses proper geospatial intersection detection that catches all cases:
+ * - Vertex containment (any vertex of A inside B)
+ * - Edge crossings (edges of A and B crossing)
+ * - Partial overlap without vertex containment
+ * - Full containment (A inside B or B inside A)
  * @param {Array} hexagonBoundary - H3 hexagon boundary (array of [lat, lng])
  * @param {Array} deliveryPolygonCoords - Delivery polygon coordinates (array of [lat, lng])
  * @returns {boolean} True if hexagon intersects with delivery area
  */
 function isHexagonIntersectedByPolygon(hexagonBoundary, deliveryPolygonCoords) {
-    // Check if any hexagon vertex is inside the delivery polygon
-    for (const vertex of hexagonBoundary) {
-        if (isPointInPolygon(vertex[0], vertex[1], deliveryPolygonCoords)) {
-            return true;
-        }
-    }
+    // Turf.js uses [lng, lat] format, so we need to convert
+    // Convert hexagon boundary from [lat, lng] to [lng, lat]
+    const hexagonCoords = hexagonBoundary.map(v => [v[1], v[0]]);
+    // Close the ring (Turf.js requires closed rings)
+    hexagonCoords.push(hexagonCoords[0]);
     
-    // Check if any delivery polygon vertex is inside the hexagon
-    for (const vertex of deliveryPolygonCoords) {
-        if (isPointInPolygon(vertex[0], vertex[1], hexagonBoundary)) {
-            return true;
-        }
-    }
+    // Convert delivery polygon from [lat, lng] to [lng, lat]
+    const deliveryCoords = deliveryPolygonCoords.map(v => [v[1], v[0]]);
+    // Close the ring
+    deliveryCoords.push(deliveryCoords[0]);
     
-    return false;
+    // Create Turf.js polygons
+    const hexagon = turf.polygon([hexagonCoords]);
+    const deliveryArea = turf.polygon([deliveryCoords]);
+    
+    // Check for intersection or containment
+    // intersects() catches: edge crossings, partial overlaps, vertex containment
+    // contains() catches: one polygon fully inside the other (either direction)
+    return turf.booleanIntersects(hexagon, deliveryArea) || 
+           turf.booleanContains(deliveryArea, hexagon) ||
+           turf.booleanContains(hexagon, deliveryArea);
 }
 
 /**
- * Checks if the entire delivery area is inside the primary zone.
+ * Checks if a hexagon is completely inside a polygon (e.g., a hole) using Turf.js.
+ * This is used to exclude hexagons that fall within holes in delivery areas.
+ * @param {Array} hexagonBoundary - H3 hexagon boundary (array of [lat, lng])
+ * @param {Array} polygonCoords - Polygon coordinates (array of [lat, lng])
+ * @returns {boolean} True if hexagon is completely inside the polygon
+ */
+function isHexagonCompletelyInsidePolygon(hexagonBoundary, polygonCoords) {
+    // Convert hexagon boundary to Turf.js format [lng, lat]
+    const hexagonCoords = hexagonBoundary.map(v => [v[1], v[0]]);
+    hexagonCoords.push(hexagonCoords[0]); // Close the ring
+    
+    // Convert polygon from [lat, lng] to [lng, lat]
+    const polyCoords = polygonCoords.map(v => [v[1], v[0]]);
+    polyCoords.push(polyCoords[0]); // Close the ring
+    
+    try {
+        const hexagon = turf.polygon([hexagonCoords]);
+        const polygon = turf.polygon([polyCoords]);
+        
+        // Check if hexagon is completely within the polygon (hole)
+        return turf.booleanWithin(hexagon, polygon);
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Checks if the entire delivery area is inside the primary zone using Turf.js.
  * This is used to skip secondary zone intersection computation when
  * the delivery area is completely contained within the primary zone.
  * @param {Array} deliveryCoords - Array of [lat, lng] coordinates for all delivery polygon vertices
@@ -1987,26 +2096,26 @@ function isDeliveryAreaInsidePrimaryZone(deliveryCoords, primaryHexagons) {
         return false;
     }
     
-    // Check if every delivery vertex is inside at least one primary hexagon
+    // Build a multi-polygon from all primary hexagons for efficient batch checking
+    const hexagonPolygons = primaryHexagons.map(hexagon => {
+        const boundary = h3.cellToBoundary(hexagon.h3Index);
+        // Convert [lat, lng] to [lng, lat] for Turf.js and close the ring
+        const coords = boundary.map(v => [v[1], v[0]]);
+        coords.push(coords[0]);
+        return coords;
+    });
+    
+    // Create a multi-polygon from all primary hexagons
+    // Each hexagon is a single-ring polygon, so wrap each in an array for Turf.js format
+    const primaryMultiPolygon = turf.multiPolygon(hexagonPolygons.map(p => [p]));
+    
+    // Check if all delivery vertices are inside the primary zone using Turf.js
     for (const vertex of deliveryCoords) {
         const [lat, lng] = vertex;
-        let isInsideAnyHexagon = false;
+        // Turf.js uses [lng, lat] format
+        const point = turf.point([lng, lat]);
         
-        for (const hexagon of primaryHexagons) {
-            // Use the polygon's contains method for efficient point-in-polygon check
-            const bounds = hexagon.polygon.getBounds();
-            if (bounds.contains([lat, lng])) {
-                // Detailed check using the hexagon boundary
-                const hexBoundary = h3.cellToBoundary(hexagon.h3Index);
-                if (isPointInPolygon(lat, lng, hexBoundary)) {
-                    isInsideAnyHexagon = true;
-                    break;
-                }
-            }
-        }
-        
-        // If this vertex is not inside any primary hexagon, delivery area is not fully inside primary zone
-        if (!isInsideAnyHexagon) {
+        if (!turf.booleanPointInPolygon(point, primaryMultiPolygon)) {
             return false;
         }
     }
@@ -2017,6 +2126,8 @@ function isDeliveryAreaInsidePrimaryZone(deliveryCoords, primaryHexagons) {
 /**
  * Computes intersection state for all hexagons of a partner.
  * Updates the isIntersectedByDelivery property on each hexagon.
+ * Takes into account holes in delivery polygons - hexagons inside holes
+ * are marked as NOT intersected.
  * When limitDeliveryToPrimary is enabled AND the delivery area is 
  * completely inside the primary zone, secondary hexagons are marked 
  * as NOT intersected (optimization to avoid double-counting).
@@ -2036,7 +2147,42 @@ function computeHexagonIntersections(partnerObject) {
         return;
     }
     
-    // Get all delivery polygon coordinates
+    // Helper function to check if a hexagon intersects with delivery area (excluding holes)
+    function checkHexagonIntersection(hexagon) {
+        const hexBoundary = h3.cellToBoundary(hexagon.h3Index);
+        
+        // Check if hexagon intersects with ANY delivery polygon's outer boundary
+        const intersectsOuter = deliveryPolygons.some(polyObj => {
+            const latlngs = polyObj.polygon.getLatLngs()[0];
+            const polyCoords = latlngs.map(ll => [ll.lat, ll.lng]);
+            return isHexagonIntersectedByPolygon(hexBoundary, polyCoords);
+        });
+        
+        // If not intersecting outer boundary, not intersected
+        if (!intersectsOuter) return false;
+        
+        // Check if hexagon is completely inside ANY hole
+        // If so, it should NOT be marked as intersected
+        const insideHole = deliveryPolygons.some(polyObj => {
+            const holes = polyObj.holes || [];
+            return holes.some(hole => {
+                return isHexagonCompletelyInsidePolygon(hexBoundary, hole);
+            });
+        });
+        
+        return !insideHole;
+    }
+    
+    // Check primary hexagons
+    partnerObject.elements.primaryHexagons.forEach(hexagon => {
+        hexagon.isIntersectedByDelivery = checkHexagonIntersection(hexagon);
+    });
+    
+    // Check if we should skip secondary intersection when delivery is inside primary
+    // This is controlled by the limitDeliveryToPrimary toggle (default: true)
+    const shouldLimitToPrimary = partnerObject.limitDeliveryToPrimary !== false; // Default to true if not set
+    
+    // Get all delivery polygon coordinates for checking if inside primary zone
     const allDeliveryCoords = [];
     deliveryPolygons.forEach(polyObj => {
         const latlngs = polyObj.polygon.getLatLngs()[0];
@@ -2044,16 +2190,6 @@ function computeHexagonIntersections(partnerObject) {
             allDeliveryCoords.push([ll.lat, ll.lng]);
         });
     });
-    
-    // Check primary hexagons
-    partnerObject.elements.primaryHexagons.forEach(hexagon => {
-        const hexBoundary = h3.cellToBoundary(hexagon.h3Index);
-        hexagon.isIntersectedByDelivery = isHexagonIntersectedByPolygon(hexBoundary, allDeliveryCoords);
-    });
-    
-    // Check if we should skip secondary intersection when delivery is inside primary
-    // This is controlled by the limitDeliveryToPrimary toggle (default: true)
-    const shouldLimitToPrimary = partnerObject.limitDeliveryToPrimary !== false; // Default to true if not set
     
     // Check if delivery area is completely inside the primary zone
     const deliveryInsidePrimary = isDeliveryAreaInsidePrimaryZone(allDeliveryCoords, partnerObject.elements.primaryHexagons);
@@ -2069,8 +2205,7 @@ function computeHexagonIntersections(partnerObject) {
         // Either limit is disabled, or delivery area extends outside primary zone
         // Compute intersections normally
         partnerObject.elements.secondaryHexagons.forEach(hexagon => {
-            const hexBoundary = h3.cellToBoundary(hexagon.h3Index);
-            hexagon.isIntersectedByDelivery = isHexagonIntersectedByPolygon(hexBoundary, allDeliveryCoords);
+            hexagon.isIntersectedByDelivery = checkHexagonIntersection(hexagon);
         });
     }
 }
@@ -2610,6 +2745,7 @@ function closeAllSidebars() {
     closeSidebar(helpSidebar);
     closeSidebar(partnerFormSidebar);
     closeSidebar(customerInfoSidebar);
+    closeSidebar(partnerInfoSidebar);
     
     // Reset currentPartnerId when closing partner info sidebar
     currentPartnerId = null;
@@ -2680,7 +2816,6 @@ function startDeliveryAreaMode() {
     deliveryAreaTempLine = null;
     deliveryAreaStartMarker = null;
     deliveryAreaVertexMarkers = [];
-    deliveryAreaCompletedPolygon = null;
     deliveryAreaNearStartPoint = false;
     
     // Disable all controls in the controls panel
@@ -2781,12 +2916,6 @@ function clearDeliveryAreaDrawing() {
         map.removeLayer(marker);
     });
     deliveryAreaVertexMarkers = [];
-    
-    // Clear completed polygon (legacy single polygon)
-    if (deliveryAreaCompletedPolygon) {
-        map.removeLayer(deliveryAreaCompletedPolygon);
-        deliveryAreaCompletedPolygon = null;
-    }
     
     // Clear all completed polygons (multi-polygon support)
     deliveryAreaCompletedPolygons.forEach(polyObj => {
@@ -3063,6 +3192,145 @@ function finishDeliveryAreaPolygon() {
 }
 
 /**
+ * Checks if one polygon is contained within another using Turf.js.
+ * @param {Array} innerPoints - Array of {lat, lng} points for the potential inner polygon
+ * @param {Array} outerPoints - Array of {lat, lng} points for the potential outer polygon
+ * @returns {boolean} True if innerPoints polygon is inside outerPoints polygon
+ */
+function isPolygonInsidePolygon(innerPoints, outerPoints) {
+    // Convert to Turf.js format [lng, lat]
+    const innerCoords = innerPoints.map(p => [p.lng, p.lat]);
+    innerCoords.push(innerCoords[0]); // Close the ring
+    
+    const outerCoords = outerPoints.map(p => [p.lng, p.lat]);
+    outerCoords.push(outerCoords[0]); // Close the ring
+    
+    try {
+        const innerPolygon = turf.polygon([innerCoords]);
+        const outerPolygon = turf.polygon([outerCoords]);
+        
+        // Check if all vertices of inner are inside outer
+        return turf.booleanWithin(innerPolygon, outerPolygon);
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Groups polygons by containment relationship.
+ * Returns an array of groups, each containing {outer, holes: []}
+ * @param {Array} polygonsArray - Array of polygon point arrays
+ * @returns {Array} Array of polygon groups with outer and holes
+ */
+function groupPolygonsByContainment(polygonsArray) {
+    if (polygonsArray.length === 0) return [];
+    if (polygonsArray.length === 1) {
+        return [{ outer: polygonsArray[0], holes: [] }];
+    }
+    
+    // Build containment graph
+    const containment = {}; // polygon index -> array of indices it contains
+    const containedBy = {}; // polygon index -> index that contains it (or -1 if none)
+    
+    polygonsArray.forEach((_, i) => {
+        containment[i] = [];
+        containedBy[i] = -1;
+    });
+    
+    // Check all pairs for containment
+    for (let i = 0; i < polygonsArray.length; i++) {
+        for (let j = 0; j < polygonsArray.length; j++) {
+            if (i !== j) {
+                if (isPolygonInsidePolygon(polygonsArray[j], polygonsArray[i])) {
+                    // polygon j is inside polygon i
+                    containment[i].push(j);
+                }
+            }
+        }
+    }
+    
+    // For each polygon, find its direct container (the smallest polygon that contains it)
+    for (let i = 0; i < polygonsArray.length; i++) {
+        let smallestContainer = -1;
+        let smallestArea = Infinity;
+        
+        for (let j = 0; j < polygonsArray.length; j++) {
+            if (i !== j && containment[j].includes(i)) {
+                // j contains i, check if it's smaller than current smallest
+                const area = calculatePolygonArea(polygonsArray[j]);
+                if (area < smallestArea) {
+                    smallestArea = area;
+                    smallestContainer = j;
+                }
+            }
+        }
+        containedBy[i] = smallestContainer;
+    }
+    
+    // Build groups: outer polygons (not contained by any other) with their direct holes
+    const groups = [];
+    const processed = new Set();
+    
+    for (let i = 0; i < polygonsArray.length; i++) {
+        if (containedBy[i] === -1) {
+            // This is an outer polygon
+            const holes = containment[i]
+                .filter(j => containedBy[j] === i) // direct children only
+                .map(j => polygonsArray[j]);
+            
+            groups.push({
+                outer: polygonsArray[i],
+                holes: holes
+            });
+            processed.add(i);
+        }
+    }
+    
+    return groups;
+}
+
+/**
+ * Calculates the approximate area of a polygon.
+ * @param {Array} points - Array of {lat, lng} points
+ * @returns {number} Approximate area (square degrees)
+ */
+function calculatePolygonArea(points) {
+    if (points.length < 3) return 0;
+    
+    // Convert to Turf.js format and calculate area
+    const coords = points.map(p => [p.lng, p.lat]);
+    coords.push(coords[0]); // Close the ring
+    
+    try {
+        const polygon = turf.polygon([coords]);
+        return turf.area(polygon);
+    } catch (e) {
+        return 0;
+    }
+}
+
+/**
+ * Converts a polygon group (outer + holes) to WKT POLYGON format.
+ */
+function polygonGroupToWKT(group) {
+    const { outer, holes } = group;
+    
+    // Outer ring
+    const outerCoords = outer.map(p => `${p.lng} ${p.lat}`);
+    outerCoords.push(`${outer[0].lng} ${outer[0].lat}`);
+    
+    // Inner rings (holes)
+    const innerRings = holes.map(hole => {
+        const coords = hole.map(p => `${p.lng} ${p.lat}`);
+        coords.push(`${hole[0].lng} ${hole[0].lat}`);
+        return `(${coords.join(', ')})`;
+    });
+    
+    const allRings = [`(${outerCoords.join(', ')})`, ...innerRings];
+    return `POLYGON(${allRings.join(', ')})`;
+}
+
+/**
  * Converts a single polygon's coordinates to WKT format.
  */
 function polygonToWKT(points) {
@@ -3077,7 +3345,7 @@ function polygonToWKT(points) {
 }
 
 /**
- * Converts multiple polygons to WKT MULTIPOLYGON format.
+ * Converts multiple polygons to WKT format with automatic hole detection.
  */
 function multiPolygonToWKT(polygonsArray) {
     if (polygonsArray.length === 0) return '';
@@ -3085,15 +3353,71 @@ function multiPolygonToWKT(polygonsArray) {
         return polygonToWKT(polygonsArray[0]);
     }
     
-    // WKT MULTIPOLYGON format: MULTIPOLYGON(((lon1 lat1, lon2 lat2, ...)), ((lon3 lat3, lon4 lat4, ...)))
-    const polygonStrings = polygonsArray.map(points => {
-        const coords = points.map(p => `${p.lng} ${p.lat}`);
-        // Close the polygon by repeating the first point
-        coords.push(`${points[0].lng} ${points[0].lat}`);
-        return `((${coords.join(', ')}))`;
+    // Group polygons by containment (detect holes)
+    const groups = groupPolygonsByContainment(polygonsArray);
+    
+    // If single group with holes, output as single POLYGON
+    if (groups.length === 1) {
+        return polygonGroupToWKT(groups[0]);
+    }
+    
+    // Multiple groups - output as MULTIPOLYGON
+    const polygonStrings = groups.map(group => {
+        const { outer, holes } = group;
+        
+        // Outer ring
+        const outerCoords = outer.map(p => `${p.lng} ${p.lat}`);
+        outerCoords.push(`${outer[0].lng} ${outer[0].lat}`);
+        
+        // Inner rings (holes)
+        const innerRings = holes.map(hole => {
+            const coords = hole.map(p => `${p.lng} ${p.lat}`);
+            coords.push(`${hole[0].lng} ${hole[0].lat}`);
+            return `(${coords.join(', ')})`;
+        });
+        
+        const allRings = [`(${outerCoords.join(', ')})`, ...innerRings];
+        return `(${allRings.join(', ')})`;
     });
     
     return `MULTIPOLYGON(${polygonStrings.join(', ')})`;
+}
+
+/**
+ * Converts a polygon group (outer + holes) to KML format with innerBoundaryIs.
+ */
+function polygonGroupToKML(group, name = 'Delivery Area') {
+    const { outer, holes } = group;
+    
+    // Outer boundary coordinates
+    const outerCoords = outer.map(p => `${p.lng},${p.lat},0`);
+    outerCoords.push(`${outer[0].lng},${outer[0].lat},0`);
+    
+    // Build inner boundaries (holes)
+    let innerBoundariesXml = '';
+    if (holes && holes.length > 0) {
+        innerBoundariesXml = holes.map(hole => {
+            const holeCoords = hole.map(p => `${p.lng},${p.lat},0`);
+            holeCoords.push(`${hole[0].lng},${hole[0].lat},0`);
+            return `        <innerBoundaryIs>
+          <LinearRing>
+            <coordinates>${holeCoords.join(' ')}</coordinates>
+          </LinearRing>
+        </innerBoundaryIs>`;
+        }).join('\n');
+    }
+    
+    return `    <Placemark>
+      <name>${name}</name>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>${outerCoords.join(' ')}</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+${innerBoundariesXml}
+      </Polygon>
+    </Placemark>`;
 }
 
 /**
@@ -3125,7 +3449,7 @@ function polygonToKML(points) {
 }
 
 /**
- * Converts multiple polygons to KML format with multiple placemarks.
+ * Converts multiple polygons to KML format with automatic hole detection.
  */
 function multiPolygonToKML(polygonsArray) {
     if (polygonsArray.length === 0) return '';
@@ -3133,20 +3457,13 @@ function multiPolygonToKML(polygonsArray) {
         return polygonToKML(polygonsArray[0]);
     }
     
-    // KML format with multiple placemarks
-    const placemarks = polygonsArray.map((points, index) => {
-        const coords = points.map(p => `${p.lng},${p.lat},0`);
-        coords.push(`${points[0].lng},${points[0].lat},0`);
-        return `    <Placemark>
-      <name>Delivery Area ${index + 1}</name>
-      <Polygon>
-        <outerBoundaryIs>
-          <LinearRing>
-            <coordinates>${coords.join(' ')}</coordinates>
-          </LinearRing>
-        </outerBoundaryIs>
-      </Polygon>
-    </Placemark>`;
+    // Group polygons by containment (detect holes)
+    const groups = groupPolygonsByContainment(polygonsArray);
+    
+    // Build placemarks for each group
+    const placemarks = groups.map((group, index) => {
+        const name = groups.length === 1 ? 'Delivery Area' : `Delivery Area ${index + 1}`;
+        return polygonGroupToKML(group, name);
     }).join('\n');
     
     return `<?xml version="1.0" encoding="UTF-8"?>

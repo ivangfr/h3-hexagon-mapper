@@ -12,6 +12,7 @@ You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mappe
 
 - [Leaflet](https://github.com/Leaflet/Leaflet): A JavaScript library for interactive maps. License: [BSD 2-Clause "Simplified" License](https://github.com/Leaflet/Leaflet/blob/main/LICENSE)
 - [H3-js](https://github.com/uber/h3-js): A JavaScript library for working with H3 hexagons. License: [Apache License 2.0](https://github.com/uber/h3-js/blob/master/LICENSE)
+- [Turf.js](https://github.com/Turfjs/turf): A modular geospatial analysis library for JavaScript. License: [MIT License](https://github.com/Turfjs/turf/blob/master/LICENSE)
 - [OpenStreetMap](https://www.openstreetmap.org/): Used for map tiles. License: [Open Data Commons Open Database License (ODbL)](https://www.openstreetmap.org/copyright)
 - [Tailwind CSS](https://tailwindcss.com/): A utility-first CSS framework for rapid UI development. License: [MIT License](https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE)
 - [Lucide Icons](https://lucide.dev/): A beautiful & consistent icon toolkit. License: [ISC License](https://github.com/lucide-icons/lucide/blob/main/LICENSE)
