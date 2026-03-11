@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-CK6B6QEMLG"></script>
     <script>
@@ -74,9 +75,14 @@
                 <i data-lucide="hexagon" class="w-5 h-5"></i>
                 H3 Hexagon Mapper
             </h2>
-            <button id="help-sidebar-toggle" class="w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer flex items-center justify-center text-white hover:bg-white/30 transition-all duration-200">
-                <i data-lucide="help-circle" class="w-4 h-4"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <button id="controls-toggle" class="hidden w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer flex items-center justify-center text-white hover:bg-white/30 transition-all duration-200">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+                <button id="help-sidebar-toggle" class="w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer flex items-center justify-center text-white hover:bg-white/30 transition-all duration-200">
+                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                </button>
+            </div>
         </div>
         
         <!-- Body -->
@@ -247,6 +253,27 @@
                         <i data-lucide="coffee" class="w-4 h-4"></i>
                         Buy Me a Coffee
                     </a>
+                </div>
+            </div>
+
+            <!-- Mobile Touch Instructions Card -->
+            <div id="mobile-touch-instructions" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 md:hidden">
+                <div class="bg-gradient-to-r from-teal-500 to-teal-600 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="hand" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Touch Instructions</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <ul class="space-y-2">
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Context Menu:</strong> Long-press (hold) on the map to open the context menu.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Add Hexagon:</strong> Long-press on the map to add a hexagon at that location.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Remove Hexagon:</strong> Long-press on an existing hexagon to remove it.
+                        </li>
+                    </ul>
                 </div>
             </div>
 

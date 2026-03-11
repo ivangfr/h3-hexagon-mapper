@@ -139,6 +139,9 @@ function removeHexagon(h3Index) {
  */
 function startMeasurement() {
     closeAllSidebars();
+    
+    // Collapse controls panel on mobile
+    setControlsCollapsed(true);
 
     isMeasuring = true;
     // Clean up any existing measurement line and marker
@@ -189,6 +192,9 @@ function stopMeasurement() {
     // Re-enable all controls in the controls panel
     const controlsPanel = document.getElementById('controls');
     controlsPanel.classList.remove('controls-disabled');
+    
+    // Expand controls panel on mobile
+    setControlsCollapsed(false);
     
     // Re-enable all interactive elements within the controls panel
     const interactiveElements = controlsPanel.querySelectorAll('button, input, label');
@@ -351,6 +357,63 @@ map.on('contextmenu', function(e) {
     showContextMenu(x, y, lat, lng);
 });
 
+// Long-press touch handler for mobile context menu
+let longPressTimer = null;
+let longPressStartPos = null;
+const LONG_PRESS_DURATION = 500; // milliseconds
+const LONG_PRESS_TOLERANCE = 10; // pixels
+
+map.on('touchstart', function(e) {
+    // Disable long-press during measurement mode
+    if (isMeasuring) {
+        return;
+    }
+    
+    if (e.originalEvent.touches && e.originalEvent.touches.length === 1) {
+        const touch = e.originalEvent.touches[0];
+        longPressStartPos = { x: touch.clientX, y: touch.clientY };
+        
+        longPressTimer = setTimeout(function() {
+            // Calculate map container point from touch position
+            const mapContainer = document.getElementById('map');
+            const rect = mapContainer.getBoundingClientRect();
+            const containerX = touch.clientX - rect.left;
+            const containerY = touch.clientY - rect.top;
+            
+            // Get lat/lng from container point
+            const latlng = map.containerPointToLatLng([containerX, containerY]);
+            
+            // Show context menu
+            showContextMenu(containerX, containerY, latlng.lat, latlng.lng);
+        }, LONG_PRESS_DURATION);
+    }
+});
+
+map.on('touchend', function(e) {
+    // Clear the long-press timer on touch end
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+    longPressStartPos = null;
+});
+
+map.on('touchmove', function(e) {
+    // Cancel long-press if finger moves too much
+    if (longPressTimer && longPressStartPos && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
+        const touch = e.originalEvent.touches[0];
+        const dx = touch.clientX - longPressStartPos.x;
+        const dy = touch.clientY - longPressStartPos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > LONG_PRESS_TOLERANCE) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+            longPressStartPos = null;
+        }
+    }
+});
+
 // ==========================================
 // HELP SIDEBAR
 // ==========================================
@@ -390,6 +453,47 @@ const helpSidebarToggle = document.getElementById('help-sidebar-toggle');
 helpSidebarToggle.addEventListener('click', toggleHelpSidebar);
 
 document.getElementById('help-close-btn').addEventListener('click', closeHelpSidebar);
+
+// ==========================================
+// CONTROLS TOGGLE (MOBILE)
+// ==========================================
+
+/**
+ * Sets the controls panel collapsed state and updates the toggle icon.
+ * Used for programmatic control of the panel (e.g., when entering/exiting modes).
+ * @param {boolean} collapsed - Whether to collapse the controls panel
+ */
+function setControlsCollapsed(collapsed) {
+    const controls = document.getElementById('controls');
+    const toggleBtn = document.getElementById('controls-toggle');
+    const toggleIcon = toggleBtn ? toggleBtn.querySelector('svg') : null;
+    
+    if (collapsed) {
+        controls.classList.add('controls-collapsed');
+        if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'chevron-up');
+    } else {
+        controls.classList.remove('controls-collapsed');
+        if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'chevron-down');
+    }
+    
+    if (toggleIcon) lucide.createIcons();
+}
+
+// Controls toggle button - collapse/expand controls panel on mobile
+document.getElementById('controls-toggle').addEventListener('click', function() {
+    const controls = document.getElementById('controls');
+    const toggleIcon = this.querySelector('svg');
+    
+    controls.classList.toggle('controls-collapsed');
+    
+    if (controls.classList.contains('controls-collapsed')) {
+        toggleIcon.setAttribute('data-lucide', 'chevron-up');
+    } else {
+        toggleIcon.setAttribute('data-lucide', 'chevron-down');
+    }
+    
+    lucide.createIcons();
+});
 
 // ==========================================
 // TOOLBAR CONTROLS
@@ -2817,6 +2921,9 @@ function startDeliveryAreaMode() {
     const partnerFormSidebar = document.getElementById('partner-form-sidebar');
     closeSidebar(partnerFormSidebar);
     
+    // Collapse controls panel on mobile
+    setControlsCollapsed(true);
+    
     // Initialize drawing state
     deliveryAreaMode = true;
     deliveryAreaPoints = [];
@@ -2866,6 +2973,9 @@ function exitDeliveryAreaMode() {
     // Re-enable all controls in the controls panel
     const controlsPanel = document.getElementById('controls');
     controlsPanel.classList.remove('controls-disabled');
+    
+    // Expand controls panel on mobile
+    setControlsCollapsed(false);
     
     // Re-enable all interactive elements within the controls panel
     const interactiveElements = controlsPanel.querySelectorAll('button, input, label');
@@ -3570,6 +3680,9 @@ function exportDeliveryArea(format) {
     // Re-enable all controls in the controls panel
     const controlsPanel = document.getElementById('controls');
     controlsPanel.classList.remove('controls-disabled');
+    
+    // Expand controls panel on mobile
+    setControlsCollapsed(false);
     
     // Re-enable all interactive elements within the controls panel
     const interactiveElements = controlsPanel.querySelectorAll('button, input, label');

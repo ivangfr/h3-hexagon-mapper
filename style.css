@@ -258,3 +258,221 @@ input[type="color"]::-moz-color-swatch {
     border-radius: 50%;
     cursor: pointer;
 }
+
+/* ==========================================
+   MOBILE RESPONSIVE STYLES
+   ========================================== */
+
+/* Controls collapse toggle button - hidden on desktop */
+#controls-toggle {
+    display: none;
+}
+
+/* Controls collapsed state - hide body and footer */
+#controls.controls-collapsed .p-5,
+#controls.controls-collapsed .px-5.py-4.bg-gray-50 {
+    display: none;
+}
+
+/* Tablet breakpoint (768px and below) */
+@media (max-width: 768px) {
+    /* Show controls toggle button on mobile */
+    #controls-toggle {
+        display: flex;
+    }
+
+    /* Controls Panel - Make it collapsible on mobile */
+    #controls {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-height: 60vh;
+        overflow-y: auto;
+        border-radius: 1.5rem 1.5rem 0 0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+        transition: max-height 0.3s ease-in-out;
+    }
+
+    /* Controls collapsed state on mobile */
+    #controls.controls-collapsed {
+        max-height: 52px;
+        overflow: hidden;
+    }
+
+    /* Hide footer on mobile to save space */
+    #controls .px-5.py-4.bg-gray-50 {
+        display: none;
+    }
+
+    /* Sidebars - Full width on mobile */
+    #help-sidebar,
+    #partner-form-sidebar,
+    #customer-info-sidebar,
+    #partner-info-sidebar {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Coordinates Display - Move to top on mobile and lower z-index so indicators appear on top */
+    #cursor-coordinates {
+        left: 0.2rem;
+        right: 0.625rem;
+        width: 252px;
+        bottom: auto;
+        top: 0.625rem;
+        z-index: 9997 !important;
+    }
+
+    /* Measurement Mode Indicator - Ensure higher z-index on mobile */
+    #measurement-mode-indicator {
+        z-index: 9998 !important;
+    }
+
+    /* Delivery Area Mode Indicator - Ensure higher z-index on mobile */
+    #delivery-area-mode-indicator {
+        z-index: 9998 !important;
+    }
+
+    /* Larger touch targets for buttons */
+    button {
+        min-height: 44px;
+    }
+
+    /* Larger touch targets for inputs */
+    input[type="range"] {
+        min-height: 44px;
+    }
+
+    input[type="color"] {
+        min-height: 44px;
+        height: 44px;
+    }
+
+    /* Toggle switches - larger for touch */
+    .w-9.h-5 {
+        width: 2.5rem;
+        height: 1.5rem;
+    }
+
+    /* Increase font sizes for mobile readability */
+    .text-\[11px\] {
+        font-size: 12px;
+    }
+
+    .text-\[13px\] {
+        font-size: 14px;
+    }
+
+    /* Add padding to sidebar content */
+    #help-sidebar .p-5,
+    #partner-form-sidebar .p-6,
+    #customer-info-sidebar .p-6,
+    #partner-info-sidebar .p-4 {
+        padding: 1rem;
+    }
+
+    /* Form inputs - larger for touch */
+    input[type="text"],
+    input[type="number"],
+    textarea {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    /* Close buttons - larger for touch */
+    #help-close-btn,
+    #sidebar-close-btn,
+    #customer-info-close-btn,
+    #slide-close-btn {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* Small mobile breakpoint (480px and below) */
+@media (max-width: 480px) {
+    /* Controls Panel - Even more compact */
+    #controls {
+        max-height: 70vh;
+    }
+
+    /* Reduce padding in controls body */
+    #controls .p-5 {
+        padding: 0.75rem;
+    }
+
+    /* Stack grid items on very small screens */
+    .grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+
+    /* Sidebar headers - smaller */
+    #help-sidebar .text-xl,
+    #partner-form-sidebar .text-xl,
+    #customer-info-sidebar .text-xl,
+    #partner-info-sidebar .text-xl {
+        font-size: 1.125rem;
+    }
+
+    /* Statistics - smaller text */
+    .text-3xl {
+        font-size: 1.5rem;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Remove hover effects on touch devices */
+    .hover\:shadow-xl:hover,
+    .hover\:shadow-md:hover,
+    .hover\:shadow-lg:hover {
+        box-shadow: inherit;
+    }
+
+    .hover\:-translate-y-0\.5:hover {
+        transform: none;
+    }
+
+    /* Active states for touch feedback */
+    button:active {
+        opacity: 0.9;
+        transform: scale(0.98);
+    }
+
+    /* Larger color picker for touch */
+    input[type="color"] {
+        height: 44px;
+        width: 100%;
+    }
+
+    /* Larger measurement color picker */
+    .measurement-color-picker {
+        width: 40px !important;
+        height: 40px !important;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    /* Controls Panel - Smaller in landscape */
+    #controls {
+        max-height: 80vh;
+        width: 50%;
+        right: auto;
+    }
+
+    /* Coordinates - Move to top in landscape */
+    #cursor-coordinates {
+        top: 0.625rem;
+        bottom: auto;
+        left: 52%;
+        width: auto;
+    }
+}
