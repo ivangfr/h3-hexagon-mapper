@@ -113,7 +113,8 @@ function addHexagon(hexagon) {
         fillColor: color,
         fillOpacity: opacity,
         originalFillOpacity: opacity,
-        weight: PARTNER_CONSTANTS.DEFAULT_STANDALONE_HEXAGON_WEIGHT
+        weight: PARTNER_CONSTANTS.DEFAULT_STANDALONE_HEXAGON_WEIGHT,
+        interactive: false
     }).addTo(map);
 
     standaloneHexagons[h3Index] = { polygon, latitude, longitude };
@@ -248,7 +249,8 @@ map.on('click', function(e) {
                 color: '#ffffff',
                 fillColor: '#000000',
                 fillOpacity: 1,
-                weight: 2
+                weight: 2,
+                interactive: false
             }).addTo(map);
         } else {
             // Second click - complete measurement but stay in measurement mode
@@ -321,9 +323,10 @@ map.on('mousemove', function(e) {
         // Create new measurement line with selected color
         measurementLine = L.polyline([measurementStart, currentPoint], {
             color: measurementLineColor,
-            weight: 10,
+            weight: 5,
             opacity: 0.8,
-            dashArray: '5, 15'
+            dashArray: '5, 10',
+            interactive: false
         }).addTo(map);
 
         // Update measurement display with large numbers
@@ -578,7 +581,8 @@ function loadHexagonMapperData(data) {
                 color: color || '#0000ff',
                 fillColor: color || '#0000ff',
                 fillOpacity: fillOpacity || 0.3,
-                originalFillOpacity: fillOpacity || 0.3
+                originalFillOpacity: fillOpacity || 0.3,
+                interactive: false
             }).addTo(map);
 
             // Get center coordinates from h3Index
@@ -658,7 +662,8 @@ function addPartnerToMap(partner) {
             color: actualPrimaryColor,
             fillColor: actualPrimaryColor,
             fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
-            weight: PARTNER_CONSTANTS.DEFAULT_PRIMARY_HEXAGON_WEIGHT
+            weight: PARTNER_CONSTANTS.DEFAULT_PRIMARY_HEXAGON_WEIGHT,
+            interactive: false
         }).addTo(map);
         
         const hexagonObject = {
@@ -683,7 +688,8 @@ function addPartnerToMap(partner) {
                 color: actualSecondaryColor,
                 fillColor: actualSecondaryColor,
                 fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
-                weight: PARTNER_CONSTANTS.DEFAULT_SECONDARY_HEXAGON_WEIGHT
+                weight: PARTNER_CONSTANTS.DEFAULT_SECONDARY_HEXAGON_WEIGHT,
+                interactive: false
             }).addTo(map);
             
             const hexagonObject = {
@@ -715,7 +721,8 @@ function addPartnerToMap(partner) {
                     color: actualDeliveryColor,
                     fillColor: actualDeliveryColor,
                     fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
-                    weight: PARTNER_CONSTANTS.DEFAULT_DELIVERY_AREA_WEIGHT
+                    weight: PARTNER_CONSTANTS.DEFAULT_DELIVERY_AREA_WEIGHT,
+                    interactive: false
                 }).addTo(map);
                 
                 partnerObject.elements.deliveryAreaPolygons.push({
@@ -1956,7 +1963,8 @@ function placeCrossMarker(lat, lng) {
     removeCrossMarker();
     contextMenuState.crossMarker = L.marker([lat, lng], {
         icon: createCrossMarkerIcon(),
-        zIndexOffset: 1000
+        zIndexOffset: 1000,
+        interactive: false
     }).addTo(map);
 }
 
@@ -2759,14 +2767,14 @@ function closeAllSidebars() {
 // ==========================================
 
 const DELIVERY_AREA_CONSTANTS = {
-    LINE_COLOR: '#3b82f6',
+    LINE_COLOR: '#15489a',
     LINE_WEIGHT: 4,
     LINE_OPACITY: 0.8,
-    TEMP_LINE_COLOR: '#3b82f6',
-    TEMP_LINE_WEIGHT: 3,
-    TEMP_LINE_OPACITY: 0.5,
+    TEMP_LINE_COLOR: '#15489a',
+    TEMP_LINE_WEIGHT: 4,
+    TEMP_LINE_OPACITY: 0.8,
     TEMP_LINE_DASH_ARRAY: '8, 8',
-    POLYGON_FILL_COLOR: '#3b82f6',
+    POLYGON_FILL_COLOR: '#15489a',
     SNAP_TOLERANCE_PIXELS: 20
 };
 

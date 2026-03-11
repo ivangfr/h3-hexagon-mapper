@@ -2,7 +2,7 @@
 
 This project is a web tool that helps you see and interact with H3 hexagons on a map. You can add or remove hexagons, change their size, color, and transparency, manage partners with their own hexagonal zones, measure distances between points, and save or load everything as a JSON file.
 
-![Screenshot](documentation/demo.gif)
+![Screenshot](documentation/ScreenshotUI.jpg)
 
 ## Online Tool
 
@@ -33,6 +33,7 @@ Standalone hexagons are individual hexagons you can add anywhere on the map. You
 ### Map Display
 
 - **Grayscale Map Toggle**: Use the "Grayscale Map" toggle to switch the map tiles between normal color and grayscale view.
+- **Cursor Coordinates**: As you move your mouse over the map, the coordinates are displayed in real-time at the bottom-left corner of the screen.
 
 ### Tools
 
@@ -87,7 +88,9 @@ When adding or editing a partner, you can configure:
     - **Add Points**: Click on the map to add polygon vertices (minimum 3 points required).
     - **Close Polygon**: Click near the start point (turns green when close) to complete the polygon.
     - **Multi-Polygon**: After closing a polygon, you can immediately start drawing another one. All polygons will be combined when saved.
-    - **Export**: Choose "WKT" or "KML" to export the polygon(s) to the form. Multiple polygons are exported as `MULTIPOLYGON` in WKT or multiple `<Placemark>` elements in KML.
+    - **Export**: Choose "WKT" or "KML" to export the polygon(s) to the form.
+      - **Separate polygons**: Exported as `MULTIPOLYGON` in WKT or multiple `<Placemark>` elements in KML.
+      - **Nested polygons**: A polygon drawn inside another becomes a hole (inner ring) in a single `POLYGON` or `<Polygon>` with `<innerBoundaryIs>`.
     - **Cancel**: Click Cancel to exit drawing mode without saving.
     - **Undo Point**: Press `Esc` to remove the last point while drawing.
     - **Undo Polygon**: Press `Esc` to remove the last completed polygon (with confirmation). If no polygons exist, cancels the mode.
@@ -112,7 +115,7 @@ The Customer Info sidebar provides detailed information about hexagons and partn
   - Includes both standalone hexagons and partner hexagons.
   - Hexagons are sorted by resolution (highest first).
 
-#### Partner Info
+### Partner Info
 
 When viewing a partner's info panel:
 
@@ -120,7 +123,9 @@ When viewing a partner's info panel:
 - **Secondary Zone Toggle**: Show/hide the secondary H3 hexagonal zones for the selected partner (if configured).
 - **Delivery Area Toggle**: Show/hide the delivery area polygon for the selected partner (if configured).
 - **Highlight Intersection Toggle**: When a delivery area is defined, highlight hexagons that intersect with the delivery polygon. This toggle is enabled only when the delivery area and at least one zone (primary or secondary) are visible.
+- **Limit Delivery to Primary Toggle**: When enabled (default), if the delivery area is entirely inside the primary zone, secondary zone hexagons are marked as NOT intersected. This prevents double-counting. This toggle is only visible when both delivery area AND secondary zone exist.
 - **Partner Statistics**: View the resolution, number of zones, hexagon count, and intersection count (when delivery area exists) for both primary and secondary zones.
+  - **Coverage Bar**: When a delivery area exists, a visual progress bar shows the percentage of hexagons that intersect with the delivery area.
 
 ### Data Management
 
