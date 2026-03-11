@@ -4,6 +4,12 @@ This project is a web tool that helps you see and interact with H3 hexagons on a
 
 ![Screenshot](documentation/ScreenshotUI.jpg)
 
+## Support
+
+If you find this tool helpful, consider buying me a coffee to support future development!
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ivan.franchin)
+
 ## Online Tool
 
 You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mapper).
