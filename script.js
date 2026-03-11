@@ -36,7 +36,9 @@ let isMeasuring = false;
 let measurementStart = null;
 let measurementLine = null;
 let measurementStartMarker = null;
+let measurementEndMarker = null;
 let measurementLineColor = '#555555';
+let measurementCompleted = false;
 
 // Grayscale state
 let isGrayscale = true;
@@ -179,6 +181,7 @@ function startMeasurement() {
  */
 function stopMeasurement() {
     isMeasuring = false;
+    measurementCompleted = false;
     if (measurementLine) {
         map.removeLayer(measurementLine);
         measurementLine = null;
@@ -186,6 +189,10 @@ function stopMeasurement() {
     if (measurementStartMarker) {
         map.removeLayer(measurementStartMarker);
         measurementStartMarker = null;
+    }
+    if (measurementEndMarker) {
+        map.removeLayer(measurementEndMarker);
+        measurementEndMarker = null;
     }
     measurementStart = null;
 
@@ -245,7 +252,41 @@ map.on('click', function(e) {
     
     if (isMeasuring) {
         const { lat, lng } = e.latlng;
-        if (!measurementStart) {
+        
+        if (measurementCompleted) {
+            // Third click (or later) - clear previous measurement and start fresh
+            if (measurementLine) {
+                map.removeLayer(measurementLine);
+                measurementLine = null;
+            }
+            if (measurementStartMarker) {
+                map.removeLayer(measurementStartMarker);
+                measurementStartMarker = null;
+            }
+            if (measurementEndMarker) {
+                map.removeLayer(measurementEndMarker);
+                measurementEndMarker = null;
+            }
+            measurementStart = null;
+            measurementCompleted = false;
+            
+            // Set new start point
+            measurementStart = { lat, lng };
+            
+            // Add a small filled circle marker at the start point
+            measurementStartMarker = L.circleMarker([lat, lng], {
+                radius: 8,
+                color: '#ffffff',
+                fillColor: '#000000',
+                fillOpacity: 1,
+                weight: 2,
+                interactive: false
+            }).addTo(map);
+            
+            // Reset the display
+            const measurementDisplay = document.getElementById('measurement-display');
+            measurementDisplay.textContent = '0.00 km';
+        } else if (!measurementStart) {
             // First click - set measurement start point and add marker
             measurementStart = { lat, lng };
             
@@ -259,21 +300,40 @@ map.on('click', function(e) {
                 interactive: false
             }).addTo(map);
         } else {
-            // Second click - complete measurement but stay in measurement mode
-            // Clear the line and marker for the next measurement
+            // Second click - complete measurement, keep line visible
+            measurementCompleted = true;
+            
+            // Finalize the line to the clicked point
+            const endPoint = { lat, lng };
+            const distance = calculateDistance(measurementStart, endPoint);
+            
+            // Remove existing temporary line
             if (measurementLine) {
                 map.removeLayer(measurementLine);
-                measurementLine = null;
             }
-            if (measurementStartMarker) {
-                map.removeLayer(measurementStartMarker);
-                measurementStartMarker = null;
-            }
-            measurementStart = null;
             
-            // Reset the display
+            // Create final measurement line (keep dashed)
+            measurementLine = L.polyline([measurementStart, endPoint], {
+                color: measurementLineColor,
+                weight: 5,
+                opacity: 0.8,
+                dashArray: '5, 10',
+                interactive: false
+            }).addTo(map);
+            
+            // Add a small filled circle marker at the end point
+            measurementEndMarker = L.circleMarker([lat, lng], {
+                radius: 8,
+                color: '#ffffff',
+                fillColor: '#000000',
+                fillOpacity: 1,
+                weight: 2,
+                interactive: false
+            }).addTo(map);
+            
+            // Update measurement display with final distance
             const measurementDisplay = document.getElementById('measurement-display');
-            measurementDisplay.textContent = '0.00 km';
+            measurementDisplay.textContent = `${distance.toFixed(2)} km`;
         }
         return;
     }
@@ -316,8 +376,8 @@ map.on('mousemove', function(e) {
     if (deliveryAreaMode) {
         // Handle delivery area drawing
         handleDeliveryAreaMouseMove(e);
-    } else if (isMeasuring && measurementStart) {
-        // Update measurement line and show distance
+    } else if (isMeasuring && measurementStart && !measurementCompleted) {
+        // Update measurement line and show distance (only when not completed)
         const currentPoint = { lat: e.latlng.lat, lng: e.latlng.lng };
         const distance = calculateDistance(measurementStart, currentPoint);
 

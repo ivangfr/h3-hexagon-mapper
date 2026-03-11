@@ -1,12 +1,12 @@
 # H3 Hexagon Mapper
 
-This project is a web tool that helps you see and interact with H3 hexagons on a map. You can add or remove hexagons, change their size, color, and transparency, manage partners with their own hexagonal zones, measure distances between points, and save or load everything as a JSON file.
+A web tool for viewing and interacting with H3 hexagons on a map. Add or remove hexagons, adjust size, color, and transparency, manage partners with their own zones, draw delivery area polygons, highlight intersecting hexagons, measure distances, use a right-click context menu for location info, and save or load data as JSON files.
 
 ![Screenshot](documentation/ScreenshotUI.jpg)
 
 ## Support
 
-If you find this tool helpful, consider buying me a coffee to support future development!
+If you find this tool helpful, consider buying me a coffee to support future development! ❤️
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ivan.franchin)
 
@@ -51,9 +51,10 @@ Standalone hexagons are individual hexagons you can add anywhere on the map. You
 #### Measurement Mode
 
 - **Activate**: Click the "Measurement" button to enable measurement mode. An overlay will appear, controls will be dimmed and disabled, and a "Measurement Mode" indicator bar will show at the top of the screen with a pulsing "Stop" button.
-- **Measure Distance**: Click on the map to set a starting point, then move your mouse to see the distance in kilometers. A dashed line shows the measurement path.
+- **First Click**: Sets the starting point. A black circle marker appears at the start location, and a dashed line follows your cursor as you move the mouse.
+- **Second Click**: Completes the measurement. An end marker appears, the dashed line stays visible, and the final distance is displayed.
+- **Third Click**: Clears the measurement (line and markers) and starts fresh with a new starting point.
 - **Line Color**: Use the color picker in the indicator bar to customize the measurement line color.
-- **Continuous Measurement**: Click again on the map to clear the current measurement and start a new one immediately. This allows for consecutive measurements without exiting measurement mode.
 - **Exit**: Click the "Stop" button in the top indicator bar, or press the `Esc` key to exit measurement mode.
 
 ### Right-Click Context Menu
