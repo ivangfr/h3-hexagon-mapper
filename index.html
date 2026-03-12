@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-CK6B6QEMLG"></script>
     <script>
@@ -12,94 +13,919 @@
     </script>
 
     <title>H3 Hexagon Mapper</title>
+    <!-- Favicon - Inline SVG Hexagon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5' fill='%233b82f6'/></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" />
     <link rel="stylesheet" href="style.css" />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'roboto': ['Roboto', 'sans-serif'],
+                        'roboto-mono': ['Roboto Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
 </head>
-<body class="font-roboto">
+<body class="font-roboto m-0 p-0 h-screen">
     <div id="map" class="h-screen"></div>
-    <div id="drawing-overlay" class="fixed inset-0 bg-black bg-opacity-20 hidden" style="z-index: 9997; pointer-events: none;"></div>
-    <div id="drawing-mode-indicator" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white font-bold py-1 px-3 text-sm rounded-lg shadow-lg hidden" style="z-index: 9998; opacity: 0.8;">
-        Drawing Mode Active
+    <div id="measurement-overlay" class="fixed inset-0 hidden" style="z-index: 9997; pointer-events: none;"></div>
+    
+    <div id="measurement-mode-indicator" class="fixed top-5 left-1/2 -translate-x-1/2 hidden flex bg-gray-900/95 backdrop-blur-sm text-white font-semibold px-4 py-2 text-sm rounded-full shadow-lg items-center gap-3" style="z-index: 9998;">
+        <span>Measurement Mode</span>
+        <input type="color" id="measurement-color-picker" value="#555555" class="measurement-color-picker" title="Line Color">
+        <button id="stop-measurement-btn" class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-full transition-colors animate-pulse-custom">
+            <i data-lucide="square" class="w-3.5 h-3.5"></i>
+            Stop
+        </button>
     </div>
-    <div id="controls" class="absolute top-24 left-4 z-50 bg-white p-4 rounded-lg shadow-lg" style="z-index: 9998;">
-        <label for="resolution" class="block mb-2">Resolution: <span id="resolution-value">9</span></label>
-        <input type="range" id="resolution" min="0" max="15" value="9" class="w-full mb-4">
-        <label for="color-picker" class="block mb-2">Color:</label>
-        <input type="color" id="color-picker" value="#0000ff" class="w-full mb-4">
-        <label for="opacity" class="block mb-2">Opacity: <span id="opacity-value">0.3</span></label>
-        <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3" class="w-full mb-4">
-                <div class="flex space-x-2 mb-2">
-            <button id="undo-btn" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Undo</button>
-            <button id="redo-btn" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Redo</button>
+    
+    <!-- Delivery Area Mode Indicator -->
+    <div id="delivery-area-mode-indicator" class="fixed top-5 left-1/2 -translate-x-1/2 hidden flex bg-gray-900/95 backdrop-blur-sm text-white font-semibold px-4 py-2 text-sm rounded-full shadow-lg items-center gap-3" style="z-index: 9998;">
+        <span>Delivery Area Mode</span>
+        <div class="relative">
+            <button id="delivery-area-export-btn" class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-full transition-colors">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                Export
+                <i data-lucide="chevron-down" class="w-3 h-3"></i>
+            </button>
+            <div id="delivery-area-export-dropdown" class="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden hidden min-w-[100px]">
+                <button id="delivery-area-export-wkt" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 font-medium">WKT</button>
+                <button id="delivery-area-export-kml" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 font-medium border-t border-gray-100">KML</button>
+            </div>
         </div>
-        <hr class="my-4 border-t border-gray-300">
-        <button id="save-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Save</button>
-        <input type="file" id="load-file" accept=".geojson" style="display: none;">
-        <button id="load-btn" class="w-full bg-blue-500 text-white py-2 px-4 rounded mb-2 hover:bg-blue-600">Load</button>
-        <hr class="my-4 border-t border-gray-300">
-        <button id="draw-toggle" class="w-full bg-green-500 text-white py-2 px-4 rounded mb-2 hover:bg-green-600">Start Drawing</button>
-        <button id="measurement-toggle" class="w-full bg-green-500 text-white py-2 px-4 rounded mb-2 hover:bg-green-600">Start Measurement</button>
-        <button id="hexagon-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded mb-2 hover:bg-gray-600">Hexagon IDs</button>
-        <button id="help-sidebar-toggle" class="w-full bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Help</button>
-        <hr class="my-4 border-t border-gray-300">
-        <label>Ivan Franchin © 2025</label>
-        <a href="https://github.com/ivangfr/h3-hexagon-mapper/blob/main/LICENSE" class="text-blue-500 hover:underline">BSD 3-Clause License</a>
+        <button id="delivery-area-cancel-btn" class="flex items-center gap-1.5 px-3 py-1.5 text-gray-700 bg-gray-100 text-xs font-semibold rounded-full border border-gray-200 hover:bg-gray-200 hover:border-gray-300 transition-colors">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            Cancel
+        </button>
     </div>
-    <div id="cursor-coordinates" class="absolute bottom-4 left-4 z-50 bg-white p-2 rounded-lg shadow-lg" style="z-index: 9999;">Lat: 0, Lon: 0</div>
-    <div id="measurement-display" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-white px-4 py-2 rounded-lg shadow-lg text-xl font-bold hidden" style="z-index: 9999;">0.00 km</div>
-    <div id="hexagon-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white p-4 border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg" style="z-index: 9999;">
-        <h2 class="text-xl font-bold mb-4">Hexagon IDs</h2>
-        <hr class="my-4 border-t border-gray-300">
-        <p class="text-sm mb-4"><strong>Note:</strong> You can select the color and opacity of an existing hexagon by clicking on it in the list below.</p>
-        <hr class="my-4 border-t border-gray-300">
-        <ul id="hexagon-list"></ul>
-    </div>
-    <div id="help-sidebar" class="absolute top-0 right-0 w-80 h-full bg-white p-4 border-l border-gray-300 overflow-y-auto z-50 hidden shadow-lg"  style="z-index: 9999;">
-        <h2 class="text-xl font-bold mb-4">Help</h2>
-        <ul class="list-disc pl-5">
-            <li><strong>Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.</li>
-            <li><strong>Remove a Hexagon:</strong> Click on an existing hexagon to remove it. Make sure the resolution of the hexagon is the same as the resolution slider value.</li>
-            <li><strong>Add a Marker:</strong> Right-click on the map to open a popup where you can enter a marker name and add it to the map.</li>
-            <li><strong>Remove a Marker:</strong> Right-click on an existing marker to remove it.</li>
-            <li><strong>Adjust Hexagon Resolution:</strong> Use the resolution slider in the controls section to adjust the resolution of the hexagons.</li>
-            <li><strong>Change Hexagon Color:</strong> Use the color picker in the controls section to change the color of the hexagons.</li>
-            <li><strong>Change Hexagon Opacity:</strong> Use the opacity slider in the controls section to change the opacity of the hexagons.</li>
-            <li><strong>Free Drawing Mode:</strong> Click the "Start Drawing" button to enter free drawing mode. Click on the map to draw. Click the "Stop Drawing" button to exit free drawing mode.</li>
-            <li><strong>Measurement Mode:</strong> Click the "Start Measurement" button to enter measurement mode. Click once to set the starting point, then move the mouse to see a black dashed measurement line and distance in km displayed prominently at the bottom-center of the screen. Click again to clear the measurement.</li>
-            <li><strong>Undo/Redo:</strong> Use the "Undo" and "Redo" buttons to undo or redo your last actions (adding/removing hexagons, markers, or drawings).</li>
-            <li><strong>Save Hexagons and Markers:</strong> Click the "Save" button to download the current hexagons and markers as a GeoJSON file.</li>
-            <li><strong>Load Hexagons and Markers:</strong> Click the "Load" button and select a GeoJSON file to load hexagons and markers from the file.</li>
-        </ul>
-        <hr class="my-4 border-t border-gray-300">
-        <h3 class="text-lg font-bold mt-4">Source-code:</h3>
-        <ul class="list-disc pl-5">
-            <li><strong><a href="https://github.com/ivangfr/h3-hexagon-mapper" class="text-blue-500 hover:underline">ivangfr/h3-hexagon-mapper</a></strong></li>
-        </ul>
-        <hr class="my-4 border-t border-gray-300">
-        <h3 class="text-lg font-bold mt-4">Open-source libraries used:</h3>
-        <ul class="list-disc pl-5">
-            <li><strong><a href="https://github.com/Leaflet/Leaflet" class="text-blue-500 hover:underline">Leaflet</a></strong>: Licence <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" class="text-blue-500 hover:underline">BSD 2-Clause "Simplified" License</a></li>
-            <li><strong><a href="https://github.com/uber/h3" class="text-blue-500 hover:underline">H3-js</a></strong>: Licence <a href="https://github.com/uber/h3-js/blob/master/LICENSE" class="text-blue-500 hover:underline">Apache License 2.0</a></li>
-            <li><strong><a href="https://www.openstreetmap.org" class="text-blue-500 hover:underline">OpenStreetMap</a></strong>: Licence <a href="https://www.openstreetmap.org/copyright" class="text-blue-500 hover:underline">Open Database License (ODbL)</a></li>
-            <li><strong><a href="https://tailwindcss.com/" class="text-blue-500 hover:underline">Tailwind CSS</a></strong>: Licence <a href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE" class="text-blue-500 hover:underline">MIT License</a></li>
-        </ul>
-        <hr class="my-4 border-t border-gray-300">
-        <ul>
-            <li>Ivan Franchin © 2025</li>
-        </ul>
-    </div>
-    <div id="marker-popup" class="popup absolute bg-white p-4 border border-gray-300 rounded-lg shadow-lg hidden z-50" style="z-index: 9999;">
-        <label for="marker-name" class="block mb-2">Marker name:</label>
-        <input type="text" id="marker-name" class="w-full mb-4 p-2 border border-gray-300 rounded">
-        <div class="flex space-x-2">
-            <button id="add-marker-btn" class="flex-1 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">OK</button>
-            <button id="cancel-marker-btn" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">Cancel</button>
+    
+    <!-- Controls Panel -->
+    <div id="controls" class="absolute w-[280px] top-2.5 left-2.5 z-[9998] bg-white rounded-2xl shadow-lg shadow-black/10 overflow-hidden hover:shadow-xl hover:shadow-black/15 transition-shadow duration-300">
+        <!-- Header -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-700 px-4 py-3 flex items-center justify-between">
+            <h2 class="m-0 text-[15px] font-semibold text-white flex items-center gap-2">
+                <i data-lucide="hexagon" class="w-5 h-5"></i>
+                H3 Hexagon Mapper
+            </h2>
+            <div class="flex items-center gap-2">
+                <button id="controls-toggle" class="hidden w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer flex items-center justify-center text-white hover:bg-white/30 transition-all duration-200">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </button>
+                <button id="help-sidebar-toggle" class="w-8 h-8 rounded-full bg-white/20 border-none cursor-pointer flex items-center justify-center text-white hover:bg-white/30 transition-all duration-200">
+                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Body -->
+        <div class="p-5 space-y-5">
+            <!-- Standalone Hexagons Section -->
+            <div class="space-y-4">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="hexagon" class="w-4 h-4"></i>
+                        Standalone Hexagons
+                    </div>
+                    <!-- Enable Standalone Hexagons Toggle -->
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="standalone-hexagons-toggle" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                    </label>
+                </div>
+                
+                <!-- Standalone Hexagon Settings Container -->
+                <div id="standalone-hexagon-settings" class="space-y-4">
+                    <div class="space-y-2">
+                        <label for="resolution" class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                            H3 Resolution
+                            <span id="resolution-value" class="font-semibold text-blue-500 bg-blue-50 px-2.5 py-0.5 rounded-md text-xs font-mono">9</span>
+                        </label>
+                        <input type="range" id="resolution" min="0" max="15" value="9" class="w-full">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-2">
+                            <label for="color-picker" class="block text-[13px] font-medium text-gray-700">Color</label>
+                            <input type="color" id="color-picker" value="#0000ff" class="w-full h-9 cursor-pointer">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="opacity" class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                                Opacity
+                                <span id="opacity-value" class="font-semibold text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">0.3</span>
+                            </label>
+                            <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3" class="w-full">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grayscale Map Section -->
+            <div class="space-y-4">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                        Grayscale Map
+                    </div>
+                    <!-- Grayscale Map Toggle -->
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="grayscale-toggle" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Tools Section -->
+            <div class="space-y-4">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <i data-lucide="wrench" class="w-4 h-4"></i>
+                    Tools
+                </div>
+                
+                <div class="space-y-2">
+                    <button id="tools-add-partner" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md shadow-purple-500/30 hover:from-purple-600 hover:to-purple-700 hover:shadow-lg hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                        <i data-lucide="store" class="w-4 h-4"></i>
+                        Add Partner
+                    </button>
+                    <button id="measurement-toggle" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-md shadow-emerald-500/30 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                        <i data-lucide="ruler" class="w-4 h-4"></i>
+                        Measurement
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Section -->
+            <div class="space-y-4">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    Data
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="save-btn" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md shadow-blue-500/30 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        Save
+                    </button>
+                    <button id="load-btn" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md shadow-blue-500/30 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                        <i data-lucide="folder-open" class="w-4 h-4"></i>
+                        Load
+                    </button>
+                </div>
+                <input type="file" id="load-file" accept=".json" class="hidden">
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="px-5 py-4 bg-gray-50 border-t border-gray-200">
+            <div class="text-center mb-3">
+                <label class="text-base text-gray-900 block mb-1">Ivan Franchin © 2026</label>
+                <a href="https://github.com/ivangfr/h3-hexagon-mapper/blob/main/LICENSE" target="_blank" class="text-[13px] text-blue-500 hover:text-blue-700 hover:underline transition-colors">BSD 3-Clause License</a>
+            </div>
+            <a href="https://buymeacoffee.com/ivan.franchin" target="_blank" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl shadow-md shadow-amber-500/30 hover:from-amber-600 hover:to-yellow-600 hover:shadow-lg hover:shadow-amber-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                <i data-lucide="coffee" class="w-4 h-4"></i>
+                Buy Me a Coffee
+            </a>
         </div>
     </div>
+    
+    <!-- Coordinates Display -->
+    <div id="cursor-coordinates" class="absolute bottom-2.5 left-2.5 z-[9999] bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium text-gray-700 font-mono border border-black/5 w-[280px] text-center">
+        Lat: 0, Lon: 0
+    </div>
+    
+    <!-- Right-Click Context Menu -->
+    <div id="context-menu" class="fixed hidden z-[10001] bg-white rounded-xl shadow-xl shadow-black/15 border border-gray-200 py-2 min-w-[300px] overflow-hidden">
+        <div id="context-menu-header" class="hidden px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1">Coordinates</div>
+            <div id="context-menu-coords" class="text-[13px] font-semibold text-gray-900 font-mono"></div>
+        </div>
+        <div id="context-menu-partner-section" class="px-4 py-3 border-b border-gray-100 space-y-2">
+            <button id="context-menu-add-partner" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md shadow-purple-500/30 hover:from-purple-600 hover:to-purple-700 hover:shadow-lg hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                <i data-lucide="store" class="w-4 h-4"></i>
+                Add Partner Here
+            </button>
+            <button id="context-menu-customer-info" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md shadow-blue-500/30 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                <i data-lucide="map-pin" class="w-4 h-4"></i>
+                Customer Info Here
+            </button>
+        </div>
+    </div>
+    
+    <!-- Measurement Display -->
+    <div id="measurement-display" class="absolute bottom-5 left-1/2 -translate-x-1/2 hidden z-[9999] bg-white/95 backdrop-blur-sm px-8 py-4 rounded-2xl shadow-xl text-3xl font-bold text-gray-900 border border-black/5 font-mono">
+        0.00 km
+    </div>
+    
+    <!-- Drawer Overlay -->
+    <div id="drawer-overlay" class="fixed inset-0 bg-black/20 z-[9998] opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out"></div>
+    
+    <!-- Help Sidebar -->
+    <div id="help-sidebar" class="fixed top-0 right-0 h-full z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
+            <div class="flex justify-between items-center">
+                <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
+                    <i data-lucide="help-circle" class="w-5 h-5"></i>
+                    Help
+                </h2>
+                <button id="help-close-btn" class="w-9 h-9 rounded-full bg-gray-100 border-none cursor-pointer flex items-center justify-center text-xl text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:rotate-90 transition-all duration-200">&times;</button>
+            </div>
+        </div>
+        
+        <div class="p-5 space-y-4">
+            <!-- Support the Project Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="coffee" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Support the Project</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <p class="text-[13px] leading-relaxed text-gray-600 m-0 mb-3">
+                        If you find this tool helpful, consider buying me a coffee to support future development!
+                    </p>
+                    <a href="https://buymeacoffee.com/ivan.franchin" target="_blank" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-xl shadow-md hover:from-amber-600 hover:to-yellow-600 hover:shadow-lg transition-all duration-200">
+                        <i data-lucide="coffee" class="w-4 h-4"></i>
+                        Buy Me a Coffee
+                    </a>
+                </div>
+            </div>
+
+            <!-- Mobile Touch Instructions Card -->
+            <div id="mobile-touch-instructions" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 md:hidden">
+                <div class="bg-gradient-to-r from-teal-500 to-teal-600 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="hand" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Touch Instructions</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <ul class="space-y-2">
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Context Menu:</strong> Long-press (hold) on the map to open the context menu.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Add Hexagon:</strong> Long-press on the map to add a hexagon at that location.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Remove Hexagon:</strong> Long-press on an existing hexagon to remove it.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Standalone Hexagons Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="hexagon" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Standalone Hexagons</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <p class="text-[13px] leading-relaxed text-gray-600 m-0 mb-3">
+                        Individual hexagons you can add anywhere on the map. Use the toggle to enable or disable this feature.
+                    </p>
+                    <ul class="space-y-2">
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Enable/Disable:</strong> Toggle to enable/disable adding hexagons. When disabled, settings are hidden.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Add a Hexagon:</strong> Click on the map to add a hexagon at the clicked location.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Remove a Hexagon:</strong> Click on an existing hexagon to remove it.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">H3 Resolution:</strong> Use the slider to adjust H3 resolution (0-15).
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Color & Opacity:</strong> Use the color picker and opacity slider.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Map Display Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="bg-gradient-to-r from-gray-500 to-gray-600 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="image" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Map Display</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <ul class="space-y-2">
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Grayscale Map:</strong> Toggle to switch map tiles between normal color and grayscale view.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Cursor Coordinates:</strong> Real-time coordinates displayed at the bottom-left as you move the mouse.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Tools Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="wrench" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Tools</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <p class="text-[13px] leading-relaxed text-gray-900 font-semibold m-0 mb-2">Add Partner</p>
+                    <ul class="space-y-2 mb-4">
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Open Form:</strong> Click "Add Partner" to open the partner form with empty coordinates.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Enter Location:</strong> Manually provide latitude and longitude for the partner.
+                        </li>
+                    </ul>
+                    <p class="text-[13px] leading-relaxed text-gray-900 font-semibold m-0 mb-2">Measurement Mode</p>
+                    <ul class="space-y-2">
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Activate:</strong> Click "Measurement" to enable measurement mode. Controls will be dimmed and disabled, and a "Measurement Mode" indicator bar will appear at the top with a pulsing "Stop" button.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">First Click:</strong> Sets the starting point. A black circle marker appears at the start location, and a dashed line follows your cursor as you move.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Second Click:</strong> Completes the measurement. An end marker appears, the dashed line stays visible, and the final distance is displayed.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Third Click:</strong> Clears the measurement (line and markers) and starts fresh with a new starting point.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Line Color:</strong> Use the color picker in the indicator bar to customize the measurement line color.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Exit:</strong> Click the "Stop" button or press <kbd class="px-1.5 py-0.5 text-xs font-mono bg-gray-200 rounded border border-gray-300">Esc</kbd>.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Right-Click Context Menu Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="mouse-pointer-click" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Right-Click Context Menu</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <ul class="space-y-2">
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Open:</strong> Right-click anywhere on the map to open a context menu.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Add Partner Here:</strong> Opens partner form pre-filled with clicked coordinates.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Customer Info Here:</strong> View detailed hexagon and partner info at the clicked location.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Partner Management Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="store" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Partner Management</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <p class="text-[13px] leading-relaxed text-gray-600 m-0 mb-3">
+                        Add and manage H3 hexagonal zones around specific locations.
+                    </p>
+                    <div class="space-y-2 mb-4">
+                        <p class="text-[13px] leading-relaxed text-gray-600 m-0">
+                            <strong class="text-gray-900 font-semibold">Add (Tools):</strong> Click "Add Partner" in Tools → enter coordinates manually.
+                        </p>
+                        <p class="text-[13px] leading-relaxed text-gray-600 m-0">
+                            <strong class="text-gray-900 font-semibold">Add (Context):</strong> Right-click map → "Add Partner Here" with pre-filled coordinates.
+                        </p>
+                        <p class="text-[13px] leading-relaxed text-gray-600 m-0">
+                            <strong class="text-gray-900 font-semibold">Edit:</strong> Click partner marker → "Edit Partner"
+                        </p>
+                        <p class="text-[13px] leading-relaxed text-gray-600 m-0">
+                            <strong class="text-gray-900 font-semibold">Delete:</strong> Click partner marker → "Delete Partner"
+                        </p>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 pt-3 mb-3">
+                        <p class="text-[13px] font-semibold text-gray-900 mb-2">Partner Form</p>
+                        <ul class="space-y-1.5">
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Partner ID:</strong> Unique identifier
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Coordinates:</strong> Lat/Lon location
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Primary Zone:</strong> Resolution, zones, color
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Secondary Zone:</strong> Optional extra layer
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Delivery Area:</strong> Draw interactively or paste KML/WKT
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 pt-3 mb-3">
+                        <p class="text-[13px] font-semibold text-gray-900 mb-2">Draw Delivery Area</p>
+                        <ul class="space-y-1.5">
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Activate:</strong> Click "Draw Delivery Area" button
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Draw:</strong> Click map to add points (min. 3)
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Close:</strong> Click near start point (turns green)
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Multi-Polygon:</strong> After closing, draw another polygon or save
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Export:</strong> Choose WKT or KML format. Separate polygons export as MULTIPOLYGON or multiple Placemarks. Nested polygons become holes (inner rings).
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Undo point:</strong> Press <kbd class="px-1.5 py-0.5 text-xs font-mono bg-gray-200 rounded border border-gray-300">Esc</kbd> to remove last point
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Undo polygon:</strong> Press <kbd class="px-1.5 py-0.5 text-xs font-mono bg-gray-200 rounded border border-gray-300">Esc</kbd> to remove last completed polygon (confirmation required)
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Cancel:</strong> Press <kbd class="px-1.5 py-0.5 text-xs font-mono bg-gray-200 rounded border border-gray-300">Esc</kbd> when no points or polygons, or click Cancel button
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 pt-3">
+                        <p class="text-[13px] font-semibold text-gray-900 mb-2">Partner Info</p>
+                        <ul class="space-y-1.5">
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Toggles:</strong> Show/hide zones & delivery area
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Highlight Intersection:</strong> When a delivery area is defined, highlight hexagons that intersect with it. Available when delivery area and at least one zone are visible.
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Limit Delivery to Primary:</strong> When enabled (default), if the delivery area is entirely inside the primary zone, secondary zone hexagons are marked as NOT intersected. This prevents double-counting. Only visible when both delivery area AND secondary zone exist.
+                            </li>
+                            <li class="text-[13px] leading-relaxed text-gray-600">
+                                <strong class="text-gray-900 font-medium">Statistics:</strong> Resolution, zones, hexagon count, and intersection count when delivery area exists. Includes a visual coverage bar showing the percentage of hexagons intersected by the delivery area.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Info Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="bg-gradient-to-r from-sky-500 to-sky-600 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="map-pin" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Customer Info</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <p class="text-[13px] leading-relaxed text-gray-600 m-0 mb-3">
+                        View detailed information about hexagons and partners at a specific location.
+                    </p>
+                    <ul class="space-y-2">
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Open:</strong> Right-click on map → "Customer Info Here"
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Coordinates:</strong> Shows latitude and longitude of the clicked location.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Summary:</strong> Total hexagon and partner count at the location.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Partners Arriving:</strong> Partners whose hexagons cover this location. If a partner has a delivery area, only hexagons intersected by it are included.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Hexagons at Location:</strong> All H3 hexagons (standalone and partner) at the clicked point, sorted by resolution (highest first).
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Data Management Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="database" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Data Management</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <ul class="space-y-2">
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Save:</strong> Download hexagons and partners as JSON.
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <strong class="text-gray-900 font-semibold">Load:</strong> Import hexagons and partners from JSON.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Source & Libraries Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="bg-gradient-to-r from-slate-500 to-slate-600 px-4 py-3 flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-white"></i>
+                    <span class="text-sm font-semibold text-white">Source & Libraries</span>
+                </div>
+                <div class="p-4 bg-gray-50">
+                    <ul class="space-y-2">
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <a href="https://github.com/ivangfr/h3-hexagon-mapper" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline font-medium">ivangfr/h3-hexagon-mapper</a>
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <a href="https://github.com/Leaflet/Leaflet" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">Leaflet</a> - BSD 2-Clause
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <a href="https://github.com/uber/h3" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">H3-js</a> - Apache 2.0
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <a href="https://github.com/Turfjs/turf" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">Turf.js</a> - MIT
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <a href="https://www.openstreetmap.org" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">OpenStreetMap</a> - ODbL
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <a href="https://tailwindcss.com/" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">Tailwind CSS</a> - MIT
+                        </li>
+                        <li class="text-[13px] leading-relaxed text-gray-600">
+                            <a href="https://lucide.dev/" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">Lucide Icons</a> - ISC
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="pt-4 border-t border-gray-200 text-center">
+                <p class="text-[13px] text-gray-500 m-0">Ivan Franchin © 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partner Form Sidebar -->
+    <div id="partner-form-sidebar" class="fixed top-0 right-0 h-full z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
+            <div class="flex justify-between items-center">
+                <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
+                    <i data-lucide="store" class="w-5 h-5"></i>
+                    <span id="partner-form-title">Add Partner</span>
+                </h2>
+                <button id="sidebar-close-btn" class="w-9 h-9 rounded-full bg-gray-100 border-none cursor-pointer flex items-center justify-center text-xl text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:rotate-90 transition-all duration-200">&times;</button>
+            </div>
+        </div>
+        <div class="p-6">
+            <form id="partner-form" class="space-y-4">
+                <div class="space-y-2">
+                    <label for="sidebar-partnerId" class="block text-[13px] font-semibold text-gray-700">Partner ID</label>
+                    <input type="text" id="sidebar-partnerId" placeholder="Enter partner ID" value="partner1" required class="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
+                </div>
+                
+                <!-- Latitude and Longitude -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-2">
+                        <label for="sidebar-latitude" class="block text-[13px] font-semibold text-gray-700">Latitude</label>
+                        <input type="number" id="sidebar-latitude" placeholder="-90 to 90" value="52.52" step="any" required class="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="sidebar-longitude" class="block text-[13px] font-semibold text-gray-700">Longitude</label>
+                        <input type="number" id="sidebar-longitude" placeholder="-180 to 180" value="13.4" step="any" required class="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-xl outline-none bg-gray-50 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:bg-white transition-all">
+                    </div>
+                </div>
+                
+                <!-- Primary Zone Section -->
+                <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <i data-lucide="circle" class="w-4 h-4"></i>
+                    Primary Zone
+                </div>
+                
+                <div id="primary-fields" class="p-2.5 bg-gray-50 rounded-xl border border-gray-200">
+                    <!-- Primary Resolution, Zones, and Color -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="space-y-2">
+                            <label class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                                H3 Res.
+                                <span id="sidebar-primary-resolution-value" class="font-semibold text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">9</span>
+                            </label>
+                            <input type="range" id="sidebar-primary-h3Resolution" min="0" max="15" value="9" required>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                                Zones
+                                <span id="sidebar-primary-zones-value" class="font-semibold text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">18</span>
+                            </label>
+                            <input type="range" id="sidebar-primary-numZones" min="1" max="50" value="18" required>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[13px] font-medium text-gray-700 mb-0">Color</label>
+                            <input type="color" id="sidebar-primary-color" value="#0000ff" class="w-full h-9 cursor-pointer" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-4 border-gray-200">
+                
+                <!-- Secondary Zone Toggle -->
+                <div class="flex items-center p-3 bg-gray-50 rounded-xl">
+                    <label class="flex items-center gap-3 cursor-pointer w-full">
+                        <div class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="sidebar-enable-secondary" class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                        </div>
+                        <span class="text-sm font-medium text-gray-700">Enable Secondary Zone</span>
+                    </label>
+                </div>
+                
+                <!-- Secondary Zone Fields -->
+                <div id="secondary-fields" class="hidden p-2.5 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+                    <!-- Secondary Resolution and Zones -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-2">
+                            <label class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                                H3 Res.
+                                <span id="sidebar-secondary-resolution-value" class="font-semibold text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">6</span>
+                            </label>
+                            <input type="range" id="sidebar-secondary-h3Resolution" min="0" max="15" value="6">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex justify-between items-center text-[13px] font-medium text-gray-700">
+                                Zones
+                                <span id="sidebar-secondary-zones-value" class="font-semibold text-blue-500 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">8</span>
+                            </label>
+                            <input type="range" id="sidebar-secondary-numZones" min="1" max="50" value="8">
+                        </div>
+                    </div>
+                    
+                    <!-- Secondary Color and Use Primary Color -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
+                            <input type="checkbox" id="sidebar-same-color" checked class="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span>Use Primary Color</span>
+                        </label>
+                        <input type="color" id="sidebar-secondary-color" value="#0000ff" class="w-16 h-9 cursor-pointer">
+                    </div>
+                </div>
+                
+                <hr class="my-4 border-gray-200">
+                
+                <!-- Delivery Area Toggle -->
+                <div class="flex items-center p-3 bg-gray-50 rounded-xl">
+                    <label class="flex items-center gap-3 cursor-pointer w-full">
+                        <div class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="sidebar-enable-delivery-area" class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                        </div>
+                        <span class="text-sm font-medium text-gray-700">Enable Delivery Area</span>
+                    </label>
+                </div>
+                
+                <!-- Delivery Area Fields -->
+                <div id="delivery-area-fields" class="hidden p-2.5 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+                    <!-- Draw Delivery Area Button -->
+                    <button type="button" id="draw-delivery-area-btn" class="flex items-center justify-center gap-2 w-full px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-md shadow-emerald-500/30 hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                        Draw Delivery Area
+                    </button>
+                    
+                    <!-- Polygon Content Textarea (KML or WKT) -->
+                    <div class="space-y-2">
+                        <label for="sidebar-polygon-content" class="block text-[13px] font-semibold text-gray-700">Polygon Content</label>
+                        <textarea id="sidebar-polygon-content" placeholder="Paste KML or WKT content here..." rows="4" class="w-full px-3 py-2 text-[13px] font-mono border-2 border-gray-200 rounded-xl resize-y min-h-[100px] bg-white outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all placeholder:text-gray-400"></textarea>
+                    </div>
+                    
+                    <!-- Delivery Area Color -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
+                            <input type="checkbox" id="sidebar-same-color-delivery" checked class="w-3.5 h-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <span>Use Primary Color</span>
+                        </label>
+                        <input type="color" id="sidebar-delivery-color" value="#0000ff" class="w-16 h-9 cursor-pointer" disabled>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="flex gap-3 pt-5 border-t border-gray-200">
+                    <button type="submit" id="partner-submit-btn" class="flex-1 flex items-center justify-center gap-2 px-5 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md shadow-blue-500/30 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                        Add
+                    </button>
+                    <button type="button" id="sidebar-cancel-add" class="flex-1 flex items-center justify-center gap-2 px-5 py-3 text-[13px] font-semibold text-gray-700 bg-gray-100 rounded-xl border border-gray-200 hover:bg-gray-200 hover:border-gray-300 transition-all duration-200">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Customer Info Sidebar -->
+    <div id="customer-info-sidebar" class="fixed top-0 right-0 h-full z-[9999] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
+            <div class="flex justify-between items-center">
+                <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
+                    <i data-lucide="map-pin" class="w-5 h-5"></i>
+                    Customer Info
+                </h2>
+                <button id="customer-info-close-btn" class="w-9 h-9 rounded-full bg-gray-100 border-none cursor-pointer flex items-center justify-center text-xl text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:rotate-90 transition-all duration-200">&times;</button>
+            </div>
+        </div>
+        <div class="p-6 space-y-4">
+            <!-- Coordinates Card -->
+            <div class="bg-gradient-to-br from-sky-50 to-sky-100 border border-sky-200 rounded-xl p-4">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-sky-600 mb-1.5">Coordinates</div>
+                <div id="customer-info-coords" class="text-sm font-semibold text-sky-900 font-mono"></div>
+            </div>
+            
+            <!-- Summary Card -->
+            <div id="customer-info-summary" class="flex items-center justify-center bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                <div class="flex-1 text-center">
+                    <div id="summary-hexagon-count" class="text-3xl font-bold text-blue-500 leading-none mb-1">0</div>
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Hexagons</div>
+                </div>
+                <div class="w-px h-10 bg-gray-200 mx-4"></div>
+                <div class="flex-1 text-center">
+                    <div id="summary-partner-count" class="text-3xl font-bold text-blue-500 leading-none mb-1">0</div>
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Partners</div>
+                </div>
+            </div>
+            
+            <!-- Partners Arriving at Location -->
+            <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                <i data-lucide="store" class="w-4 h-4"></i>
+                Partners arriving at the location
+            </div>
+            <div id="customer-info-partner-list" class="space-y-3"></div>
+            
+            <!-- Hexagon List -->
+            <div class="text-[11px] font-bold uppercase tracking-wider text-gray-500 pb-2 border-b border-gray-200 flex items-center gap-2">
+                <i data-lucide="hexagon" class="w-4 h-4"></i>
+                Hexagons at Location
+            </div>
+            <div id="customer-info-hexagon-list" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <!-- Partner Info Sidebar -->
+    <div id="partner-info-sidebar" class="fixed top-0 right-0 h-full z-[10000] w-[380px] bg-white border-l border-gray-200 shadow-xl shadow-black/10 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="sticky top-0 bg-white px-6 py-5 border-b border-gray-200 z-10">
+            <div class="flex justify-between items-center">
+                <h2 class="m-0 text-xl font-bold text-gray-900 flex items-center gap-2.5">
+                    <i data-lucide="store" class="w-5 h-5"></i>
+                    <span id="slide-partner-id">Unknown</span>
+                </h2>
+                <button id="slide-close-btn" class="w-9 h-9 rounded-full bg-gray-100 border-none cursor-pointer flex items-center justify-center text-xl text-gray-500 hover:bg-gray-200 hover:text-gray-700 hover:rotate-90 transition-all duration-200">&times;</button>
+            </div>
+        </div>
+        <div class="p-4 space-y-3">
+            <!-- Primary Zone Toggle -->
+            <div id="toggle-primary-zone-container" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Primary Zone</h4>
+                    <p class="m-0 text-xs text-gray-500">Primary H3 hexagons</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-primary-zone" class="sr-only peer" checked>
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                </label>
+            </div>
+            
+            <!-- Secondary Zone Toggle -->
+            <div id="toggle-secondary-zone-container" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Secondary Zone</h4>
+                    <p class="m-0 text-xs text-gray-500">Secondary H3 hexagons</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-secondary-zone" class="sr-only peer" checked>
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                </label>
+            </div>
+            
+            <!-- Delivery Area Toggle -->
+            <div id="toggle-delivery-area-container" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Delivery Area</h4>
+                    <p class="m-0 text-xs text-gray-500">Custom polygon (KML/WKT)</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-delivery-area" class="sr-only peer" checked>
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                </label>
+            </div>
+            
+            <!-- Intersection Highlight Toggle -->
+            <div id="toggle-intersection-highlight-container" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Highlight Intersection</h4>
+                    <p class="m-0 text-xs text-gray-500">Hexagons intersected by delivery area</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-intersection-highlight" class="sr-only peer">
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                </label>
+            </div>
+            
+            <!-- Limit Delivery to Primary Toggle -->
+            <div id="toggle-limit-delivery-container" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <h4 class="m-0 text-sm font-semibold text-gray-900 mb-1">Limit Delivery to Primary</h4>
+                    <p class="m-0 text-xs text-gray-500">Skip secondary intersection if delivery inside primary</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-limit-delivery" class="sr-only peer" checked>
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 after:shadow-sm"></div>
+                </label>
+            </div>
+
+            <!-- Partner Stats -->
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <h4 class="m-0 text-sm font-semibold text-gray-900 mb-3">Statistics</h4>
+                
+                <!-- Primary Zone Statistics -->
+                <div id="primary-stats-container" class="bg-white rounded-lg p-3 mb-3 border border-gray-200">
+                    <div class="text-xs font-semibold text-gray-900 mb-2 uppercase tracking-wide">Primary Zone</div>
+                    <div class="space-y-1 text-[12px] mb-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">H3 Resolution:</span>
+                            <span id="primary-resolution-stat" class="font-semibold text-gray-900">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Hexagons:</span>
+                            <span id="primary-hexagons-stat" class="font-semibold text-gray-900">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Intersected:</span>
+                            <span id="primary-intersected-stat" class="font-semibold text-blue-600">-</span>
+                        </div>
+                    </div>
+                    <!-- Coverage Bar -->
+                    <div id="primary-coverage-bar-container">
+                        <div class="relative w-full h-6 bg-gray-300 rounded-full overflow-hidden">
+                            <div id="primary-coverage-bar" class="h-full bg-blue-300 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <span id="primary-coverage-percent" class="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-gray-900">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Secondary Zone Statistics -->
+                <div id="secondary-stats-container" class="bg-white rounded-lg p-3 mb-3 border border-gray-200 hidden">
+                    <div class="text-xs font-semibold text-gray-900 mb-2 uppercase tracking-wide">Secondary Zone</div>
+                    <div class="space-y-1 text-[12px] mb-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">H3 Resolution:</span>
+                            <span id="secondary-resolution-stat" class="font-semibold text-gray-900">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Hexagons:</span>
+                            <span id="secondary-hexagons-stat" class="font-semibold text-gray-900">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Intersected:</span>
+                            <span id="secondary-intersected-stat" class="font-semibold text-blue-600">-</span>
+                        </div>
+                    </div>
+                    <!-- Coverage Bar -->
+                    <div id="secondary-coverage-bar-container">
+                        <div class="relative w-full h-6 bg-gray-300 rounded-full overflow-hidden">
+                            <div id="secondary-coverage-bar" class="h-full bg-blue-300 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <span id="secondary-coverage-percent" class="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-gray-900">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Delivery Area Statistics -->
+                <div id="delivery-stats-container" class="bg-white rounded-lg p-3 border border-gray-200 hidden">
+                    <div class="text-xs font-semibold text-gray-900 mb-2 uppercase tracking-wide">Delivery Area</div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 flex items-center justify-center bg-green-100 rounded-full">
+                            <i data-lucide="check" class="w-3.5 h-3.5 text-green-600"></i>
+                        </div>
+                        <span class="text-[12px] text-gray-700">Custom polygon defined</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Partner Edit and Delete -->
+            <div class="grid grid-cols-2 gap-3">
+                <button id="edit-partner-btn" class="flex items-center justify-center gap-2 px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md shadow-blue-500/30 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                    Edit
+                </button>
+                <button id="delete-partner-btn" class="flex items-center justify-center gap-2 px-4 py-3 text-[13px] font-semibold text-white bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-md shadow-red-500/30 hover:from-red-600 hover:to-red-700 hover:shadow-lg hover:shadow-red-500/40 hover:-translate-y-0.5 transition-all duration-200">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/h3-js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

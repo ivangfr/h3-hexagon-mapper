@@ -1,113 +1,478 @@
-html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    font-family: 'Roboto', sans-serif;
+/* ==========================================
+   CROSS MARKER ANIMATION
+   ========================================== */
+
+.cross-marker {
+    background: transparent;
+    border: none;
 }
 
-#map { 
-    height: 100vh; 
+.cross-marker-icon {
+    width: 30px;
+    height: 30px;
+    position: relative;
+    animation: cross-marker-pulse 1.5s ease-out infinite;
 }
 
-#controls {
+.cross-marker-icon::before,
+.cross-marker-icon::after {
+    content: '';
     position: absolute;
-    width: 200px;
-    top: 90px;
-    left: 10px;
-    z-index: 1000;
-    background: white;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    background-color: #000000;
+    border-radius: 2px;
 }
 
-#cursor-coordinates {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    z-index: 1000;
-    background: white;
-    padding: 5px;
-    border-radius: 5px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-
-#hexagon-sidebar {
-    position: absolute;
+.cross-marker-icon::before {
+    width: 4px;
+    height: 30px;
+    left: 50%;
     top: 0;
-    right: 0;
-    width: 250px;
-    height: 100%;
-    background: white;
-    padding: 10px;
-    border-left: 1px solid #ccc;
-    overflow-y: auto;
-    z-index: 1000;
-    display: none;
-    box-shadow: -2px 0 6px rgba(0,0,0,0.3);
+    transform: translateX(-50%);
 }
 
-.hexagon-list-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
+.cross-marker-icon::after {
+    width: 30px;
+    height: 4px;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
 }
 
-.hexagon-color {
+@keyframes cross-marker-pulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* ==========================================
+   CUSTOM RANGE SLIDER - Webkit/Mozilla
+   ========================================== */
+
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right, #3b82f6 0%, #3b82f6 var(--value, 50%), #e5e7eb var(--value, 50%), #e5e7eb 100%);
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
     width: 16px;
     height: 16px;
-    margin-right: 8px;
-    border: 1px solid #ccc;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #3b82f6;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-#help-sidebar {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 480px;
-    height: 100%;
-    background: white;
-    padding: 10px;
-    border-left: 1px solid #ccc;
-    overflow-y: auto;
-    z-index: 1000;
-    display: none;
-    box-shadow: -2px 0 6px rgba(0,0,0,0.3);
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 }
 
-.popup {
-    display: none;
-    position: absolute;
-    background: white;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    z-index: 1001;
-    width: 200px;
+input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #3b82f6;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
 }
 
-.hexagon-list-item {
+/* ==========================================
+   CUSTOM COLOR PICKER - Webkit/Mozilla
+   ========================================== */
+
+input[type="color"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 28px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 2px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: #f9fafb;
+}
+
+input[type="color"]:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 6px;
+}
+
+input[type="color"]::-moz-color-swatch-wrapper {
+    padding: 0;
+}
+
+input[type="color"]::-moz-color-swatch {
+    border: none;
+    border-radius: 6px;
+}
+
+/* Measurement Color Picker - Dark theme for indicator bar */
+.measurement-color-picker {
+    -webkit-appearance: none;
+    width: 32px !important;
+    height: 32px !important;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 2px;
+    background: transparent;
+    flex-shrink: 0;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.measurement-color-picker:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: scale(1.1);
+}
+
+.measurement-color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.measurement-color-picker::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+.measurement-color-picker::-moz-color-swatch-wrapper {
+    padding: 0;
+}
+
+.measurement-color-picker::-moz-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+/* ==========================================
+   GRAYSCALE MAP
+   ========================================== */
+
+.map-grayscale .leaflet-tile-pane {
+    filter: grayscale(100%);
+}
+
+/* ==========================================
+   CONTROLS DISABLED STATE
+   ========================================== */
+
+.controls-disabled {
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+}
+
+/* ==========================================
+   PULSE ANIMATION
+   ========================================== */
+
+@keyframes pulse-custom {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+}
+
+.animate-pulse-custom {
+    animation: pulse-custom 1.5s ease-in-out infinite;
+}
+
+/* ==========================================
+   DELIVERY AREA DRAWING MODE
+   ========================================== */
+
+/* Start point marker for delivery area drawing */
+.delivery-area-start-marker {
+    background: transparent;
+    border: none;
+}
+
+.delivery-area-start-marker-icon {
+    width: 24px;
+    height: 24px;
+    background: #3b82f6;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.delivery-area-start-marker-icon:hover,
+.delivery-area-start-marker-icon.near-start {
+    transform: scale(1.3);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.7);
+}
+
+.delivery-area-start-marker-icon.near-start {
+    background: #10b981;
+    border-color: #ffffff;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.6);
+}
+
+/* Vertex marker for delivery area polygon points */
+.delivery-area-vertex-marker {
+    width: 12px;
+    height: 12px;
+    background: #3b82f6;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Snap tolerance indicator - larger hit area for start point */
+.delivery-area-snap-area {
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border-radius: 50%;
     cursor: pointer;
 }
 
-/* Enhanced disabled button styling for undo and redo buttons */
-#undo-btn:disabled,
-#redo-btn:disabled {
-    background-color: #d1d5db !important; /* Light gray background */
-    color: #9ca3af !important; /* Muted text color */
-    cursor: not-allowed !important;
-    opacity: 0.6 !important;
-    border: 0px solid #e5e7eb !important;
-    transform: none !important;
-    box-shadow: none !important;
+/* ==========================================
+   MOBILE RESPONSIVE STYLES
+   ========================================== */
+
+/* Controls collapse toggle button - hidden on desktop */
+#controls-toggle {
+    display: none;
 }
 
-#undo-btn:disabled:hover,
-#redo-btn:disabled:hover {
-    /* No hover effects when disabled */
-    background-color: #d1d5db !important;
-    color: #9ca3af !important;
-    transform: none !important;
-    box-shadow: none !important;
+/* Controls collapsed state - hide body and footer */
+#controls.controls-collapsed .p-5,
+#controls.controls-collapsed .px-5.py-4.bg-gray-50 {
+    display: none;
+}
+
+/* Tablet breakpoint (768px and below) */
+@media (max-width: 768px) {
+    /* Show controls toggle button on mobile */
+    #controls-toggle {
+        display: flex;
+    }
+
+    /* Controls Panel - Make it collapsible on mobile */
+    #controls {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-height: 60vh;
+        overflow-y: auto;
+        border-radius: 1.5rem 1.5rem 0 0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+        transition: max-height 0.3s ease-in-out;
+    }
+
+    /* Controls collapsed state on mobile */
+    #controls.controls-collapsed {
+        max-height: 52px;
+        overflow: hidden;
+    }
+
+    /* Hide footer on mobile to save space */
+    #controls .px-5.py-4.bg-gray-50 {
+        display: none;
+    }
+
+    /* Sidebars - Full width on mobile */
+    #help-sidebar,
+    #partner-form-sidebar,
+    #customer-info-sidebar,
+    #partner-info-sidebar {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Coordinates Display - Move to top on mobile and lower z-index so indicators appear on top */
+    #cursor-coordinates {
+        left: 0.2rem;
+        right: 0.625rem;
+        width: 252px;
+        bottom: auto;
+        top: 0.625rem;
+        z-index: 9997 !important;
+    }
+
+    /* Measurement Mode Indicator - Ensure higher z-index on mobile */
+    #measurement-mode-indicator {
+        z-index: 9998 !important;
+    }
+
+    /* Delivery Area Mode Indicator - Ensure higher z-index on mobile */
+    #delivery-area-mode-indicator {
+        z-index: 9998 !important;
+    }
+
+    /* Larger touch targets for buttons */
+    button {
+        min-height: 44px;
+    }
+
+    /* Larger touch targets for inputs */
+    input[type="range"] {
+        min-height: 44px;
+    }
+
+    input[type="color"] {
+        min-height: 44px;
+        height: 44px;
+    }
+
+    /* Toggle switches - larger for touch */
+    .w-9.h-5 {
+        width: 2.5rem;
+        height: 1.5rem;
+    }
+
+    /* Increase font sizes for mobile readability */
+    .text-\[11px\] {
+        font-size: 12px;
+    }
+
+    .text-\[13px\] {
+        font-size: 14px;
+    }
+
+    /* Add padding to sidebar content */
+    #help-sidebar .p-5,
+    #partner-form-sidebar .p-6,
+    #customer-info-sidebar .p-6,
+    #partner-info-sidebar .p-4 {
+        padding: 1rem;
+    }
+
+    /* Form inputs - larger for touch */
+    input[type="text"],
+    input[type="number"],
+    textarea {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    /* Close buttons - larger for touch */
+    #help-close-btn,
+    #sidebar-close-btn,
+    #customer-info-close-btn,
+    #slide-close-btn {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* Small mobile breakpoint (480px and below) */
+@media (max-width: 480px) {
+    /* Controls Panel - Even more compact */
+    #controls {
+        max-height: 70vh;
+    }
+
+    /* Reduce padding in controls body */
+    #controls .p-5 {
+        padding: 0.75rem;
+    }
+
+    /* Stack grid items on very small screens */
+    .grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+
+    /* Sidebar headers - smaller */
+    #help-sidebar .text-xl,
+    #partner-form-sidebar .text-xl,
+    #customer-info-sidebar .text-xl,
+    #partner-info-sidebar .text-xl {
+        font-size: 1.125rem;
+    }
+
+    /* Statistics - smaller text */
+    .text-3xl {
+        font-size: 1.5rem;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Remove hover effects on touch devices */
+    .hover\:shadow-xl:hover,
+    .hover\:shadow-md:hover,
+    .hover\:shadow-lg:hover {
+        box-shadow: inherit;
+    }
+
+    .hover\:-translate-y-0\.5:hover {
+        transform: none;
+    }
+
+    /* Active states for touch feedback */
+    button:active {
+        opacity: 0.9;
+        transform: scale(0.98);
+    }
+
+    /* Larger color picker for touch */
+    input[type="color"] {
+        height: 44px;
+        width: 100%;
+    }
+
+    /* Larger measurement color picker */
+    .measurement-color-picker {
+        width: 40px !important;
+        height: 40px !important;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    /* Controls Panel - Smaller in landscape */
+    #controls {
+        max-height: 80vh;
+        width: 50%;
+        right: auto;
+    }
+
+    /* Coordinates - Move to top in landscape */
+    #cursor-coordinates {
+        top: 0.625rem;
+        bottom: auto;
+        left: 52%;
+        width: auto;
+    }
 }
