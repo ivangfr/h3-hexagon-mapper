@@ -1567,6 +1567,7 @@ function updatePartnerSidebarContent(partner) {
     
     // Update Primary Zone Statistics
     document.getElementById('primary-resolution-stat').textContent = partner.primaryH3Resolution;
+    document.getElementById('primary-zones-stat').textContent = partner.primaryNumZones;
     document.getElementById('primary-hexagons-stat').textContent = primaryCount;
     document.getElementById('primary-intersected-stat').textContent = primaryIntersected > 0 ? `${primaryIntersected}` : '-';
     
@@ -1578,6 +1579,7 @@ function updatePartnerSidebarContent(partner) {
     if (secondaryCount > 0) {
         secondaryStatsContainer.classList.remove('hidden');
         document.getElementById('secondary-resolution-stat').textContent = partner.secondaryH3Resolution;
+        document.getElementById('secondary-zones-stat').textContent = partner.secondaryNumZones;
         document.getElementById('secondary-hexagons-stat').textContent = secondaryCount;
         document.getElementById('secondary-intersected-stat').textContent = secondaryIntersected > 0 ? `${secondaryIntersected}` : '-';
         
