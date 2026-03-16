@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-03-17
+
+### Changed
+- **JS File Organisation**: Moved all 11 JavaScript source files into a `js/` subdirectory. Updated `<script>` tag paths in `index.html` and file references in `AGENTS.md`. Zero logic changes — purely a structural reorganisation.
+
 ## [1.2.0] - 2026-03-16
 
 ### Changed

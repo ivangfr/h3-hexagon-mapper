@@ -13,18 +13,18 @@ application consists of the following files:
 | File | Purpose |
 |---|---|
 | `index.html` | Full HTML markup (~860 lines), CDN script/link tags, Tailwind config |
-| `state.js` | Map initialisation and all global state variables/constants |
-| `hexagons.js` | Standalone hexagon click and draw logic |
-| `measurement.js` | Distance measurement mode |
-| `map-events.js` | Leaflet map event listeners |
-| `ui-controls.js` | Toolbar and controls UI event listeners |
-| `save-load.js` | JSON save/load functionality |
-| `partners.js` | Partner management functions |
-| `partner-events.js` | Partner form and sidebar event listeners |
-| `context-menu.js` | Right-click context menu, cross marker, geometry helpers |
-| `customer-info.js` | Customer info sidebar and sidebar animation helpers |
-| `delivery-area.js` | Delivery area drawing mode and its event listeners |
 | `style.css` | Custom CSS overrides and animations (~480 lines) |
+| `js/state.js` | Map initialisation and all global state variables/constants |
+| `js/hexagons.js` | Standalone hexagon click and draw logic |
+| `js/measurement.js` | Distance measurement mode |
+| `js/map-events.js` | Leaflet map event listeners |
+| `js/ui-controls.js` | Toolbar and controls UI event listeners |
+| `js/save-load.js` | JSON save/load functionality |
+| `js/partners.js` | Partner management functions |
+| `js/partner-events.js` | Partner form and sidebar event listeners |
+| `js/context-menu.js` | Right-click context menu, cross marker, geometry helpers |
+| `js/customer-info.js` | Customer info sidebar and sidebar animation helpers |
+| `js/delivery-area.js` | Delivery area drawing mode and its event listeners |
 
 All library dependencies are loaded at runtime from CDN URLs embedded in `index.html`.
 
@@ -99,17 +99,17 @@ section banner. Some files contain multiple internal sections, each with their o
 `index.html` loads the scripts in this exact order — **do not change it**:
 
 ```html
-<script src="state.js"></script>        <!-- must be first: defines all globals -->
-<script src="hexagons.js"></script>
-<script src="measurement.js"></script>
-<script src="customer-info.js"></script>
-<script src="context-menu.js"></script>
-<script src="ui-controls.js"></script>
-<script src="partners.js"></script>
-<script src="delivery-area.js"></script>
-<script src="save-load.js"></script>
-<script src="map-events.js"></script>
-<script src="partner-events.js"></script>
+<script src="js/state.js"></script>        <!-- must be first: defines all globals -->
+<script src="js/hexagons.js"></script>
+<script src="js/measurement.js"></script>
+<script src="js/customer-info.js"></script>
+<script src="js/context-menu.js"></script>
+<script src="js/ui-controls.js"></script>
+<script src="js/partners.js"></script>
+<script src="js/delivery-area.js"></script>
+<script src="js/save-load.js"></script>
+<script src="js/map-events.js"></script>
+<script src="js/partner-events.js"></script>
 ```
 
 When adding new code, place it inside the most appropriate existing file. Do not create
@@ -185,7 +185,7 @@ for geospatial computations that may fail on degenerate geometry.
 ## State Management
 
 All application state is stored in **module-level `let`/`const` variables** at the top
-of `state.js`. There is no store, reducer, or reactive system.
+of `js/state.js`. There is no store, reducer, or reactive system.
 
 ```js
 // Keyed object maps for O(1) lookup
