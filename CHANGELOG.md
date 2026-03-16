@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-03-16
+
+### Added
+- **WKT Hole Detection Warning**: Alert shown when imported WKT contains polygon rings (holes); only the outer boundary of each polygon is imported
+
+### Changed
+- **Help Panel Layout**: Moved "Support the Project" card to the bottom of the Help panel, just above the copyright line
+- **Delivery Area Mode Blocking**: Context menu and long-press are now disabled during delivery area drawing mode (previously only blocked during measurement mode)
+- **Escape Key Handler**: Unified into a single global handler covering both measurement mode and delivery area mode (remove last point, remove last polygon with confirmation, or cancel)
+- **`resetSidebarForm` Refactor**: Delegates all field and edit-mode reset logic to `setupAddPartnerForm`, removing duplicated code
+- **`_teardownDeliveryAreaUI` Helper**: Extracted shared UI teardown logic from `exitDeliveryAreaMode` and `exportDeliveryArea` to eliminate duplication
+- **Dropdown Close Handler**: Consolidated delivery area export dropdown close-on-outside-click into the existing global document click listener
+- **Scoped `lucide.createIcons()` Calls**: All calls now scoped to specific DOM nodes instead of re-rendering the entire document
+- **Visibility Checks**: Hexagon and delivery area polygon visibility now checks both `fillOpacity > 0` and `opacity > 0`, fixing edge cases where polygons were incorrectly treated as hidden
+- **`intersectionContainer` Lookup**: Now resolved by element ID (`toggle-intersection-highlight-container`) instead of fragile DOM traversal
+- **Delivery Area Turf Polygons**: Pre-built once per `computeHexagonIntersections` call instead of being recreated for each hexagon
+- **Temporary Line Constants**: Delivery area temporary line now reuses `LINE_COLOR`, `LINE_WEIGHT`, and `LINE_OPACITY`; removed redundant `TEMP_LINE_*` constants
+- **Controls Footer Selector**: Replaced fragile multi-class CSS selector with stable `.controls-footer` class for collapsed/mobile state
+- **`h3.cellToLatLng` Access**: Result now accessed via array indices (`[0]`, `[1]`) instead of `.lat`/`.lng` properties
+
+### Fixed
+- **`isHexagonIntersectedByPolygon`**: Wrapped in `try/catch` for silent fallback on degenerate geometry
+- **Delivery Area Export**: Polygon layers are no longer cleared prematurely on export
+
+### Removed
+- `originalFillOpacity` property from standalone hexagon Leaflet layer options
+
 ## [1.0.0] - 2026-03-12
 
 ### Added
