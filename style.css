@@ -270,7 +270,7 @@ input[type="color"]::-moz-color-swatch {
 
 /* Controls collapsed state - hide body and footer */
 #controls.controls-collapsed .p-5,
-#controls.controls-collapsed .px-5.py-4.bg-gray-50 {
+#controls.controls-collapsed .controls-footer {
     display: none;
 }
 
@@ -303,7 +303,7 @@ input[type="color"]::-moz-color-swatch {
     }
 
     /* Hide footer on mobile to save space */
-    #controls .px-5.py-4.bg-gray-50 {
+    #controls .controls-footer {
         display: none;
     }
 

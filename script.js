@@ -114,7 +114,6 @@ function addHexagon(hexagon) {
         color: color,
         fillColor: color,
         fillOpacity: opacity,
-        originalFillOpacity: opacity,
         weight: PARTNER_CONSTANTS.DEFAULT_STANDALONE_HEXAGON_WEIGHT,
         interactive: false
     }).addTo(map);
@@ -406,8 +405,8 @@ map.on('mousemove', function(e) {
 map.on('contextmenu', function(e) {
     e.originalEvent.preventDefault();
     
-    // Disable context menu during measurement mode
-    if (isMeasuring) {
+    // Disable context menu during measurement mode or delivery area mode
+    if (isMeasuring || deliveryAreaMode) {
         return;
     }
     
@@ -424,8 +423,8 @@ const LONG_PRESS_DURATION = 500; // milliseconds
 const LONG_PRESS_TOLERANCE = 10; // pixels
 
 map.on('touchstart', function(e) {
-    // Disable long-press during measurement mode
-    if (isMeasuring) {
+    // Disable long-press during measurement mode or delivery area mode
+    if (isMeasuring || deliveryAreaMode) {
         return;
     }
     
@@ -536,7 +535,7 @@ function setControlsCollapsed(collapsed) {
         if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'chevron-down');
     }
     
-    if (toggleIcon) lucide.createIcons();
+    if (toggleIcon) lucide.createIcons({ nodes: [toggleBtn] });
 }
 
 // Controls toggle button - collapse/expand controls panel on mobile
@@ -552,7 +551,7 @@ document.getElementById('controls-toggle').addEventListener('click', function() 
         toggleIcon.setAttribute('data-lucide', 'chevron-down');
     }
     
-    lucide.createIcons();
+    lucide.createIcons({ nodes: [this] });
 });
 
 // ==========================================
@@ -745,16 +744,15 @@ function loadHexagonMapperData(data) {
                 color: color || '#0000ff',
                 fillColor: color || '#0000ff',
                 fillOpacity: fillOpacity || 0.3,
-                originalFillOpacity: fillOpacity || 0.3,
                 interactive: false
             }).addTo(map);
 
             // Get center coordinates from h3Index
-            const cellToLatLng = h3.cellToLatLng(h3Index);
+            const cellCenter = h3.cellToLatLng(h3Index);
             standaloneHexagons[h3Index] = {
                 polygon, 
-                latitude: cellToLatLng.lat, 
-                longitude: cellToLatLng.lng 
+                latitude: cellCenter[0], 
+                longitude: cellCenter[1]
             };
         });
     }
@@ -1067,7 +1065,7 @@ function toggleIntersectionHighlight(partnerId, enabled) {
     if (!hasDeliveryArea) return;
     
     // Check if delivery area is visible
-    const deliveryVisible = partner.elements.deliveryAreaPolygons[0].polygon.options.fillOpacity > 0;
+    const deliveryVisible = partner.elements.deliveryAreaPolygons[0].polygon.options.fillOpacity > 0 || partner.elements.deliveryAreaPolygons[0].polygon.options.opacity > 0;
     
     // When disabling, we don't need delivery area to be visible
     // We just need to reset hexagon opacity to default
@@ -1165,12 +1163,12 @@ function updateIntersectionToggleState(partnerId) {
     if (!partner) return;
     
     const intersectionToggle = document.getElementById('toggle-intersection-highlight');
-    const intersectionContainer = intersectionToggle.closest('.zone-toggle') || intersectionToggle.parentElement;
+    const intersectionContainer = document.getElementById('toggle-intersection-highlight-container');
     
     const hasDeliveryArea = partner.elements.deliveryAreaPolygons && partner.elements.deliveryAreaPolygons.length > 0;
-    const deliveryVisible = hasDeliveryArea && partner.elements.deliveryAreaPolygons[0].polygon.options.fillOpacity > 0;
-    const primaryVisible = partner.elements.primaryHexagons.length > 0 && partner.elements.primaryHexagons[0].polygon.options.fillOpacity > 0;
-    const secondaryVisible = partner.elements.secondaryHexagons.length > 0 && partner.elements.secondaryHexagons[0].polygon.options.fillOpacity > 0;
+    const deliveryVisible = hasDeliveryArea && (partner.elements.deliveryAreaPolygons[0].polygon.options.fillOpacity > 0 || partner.elements.deliveryAreaPolygons[0].polygon.options.opacity > 0);
+    const primaryVisible = partner.elements.primaryHexagons.length > 0 && (partner.elements.primaryHexagons[0].polygon.options.fillOpacity > 0 || partner.elements.primaryHexagons[0].polygon.options.opacity > 0);
+    const secondaryVisible = partner.elements.secondaryHexagons.length > 0 && (partner.elements.secondaryHexagons[0].polygon.options.fillOpacity > 0 || partner.elements.secondaryHexagons[0].polygon.options.opacity > 0);
     const anyZoneVisible = primaryVisible || secondaryVisible;
     
     // Enable toggle only if delivery area exists, is visible, and at least one zone is visible
@@ -1470,6 +1468,8 @@ function parseWKTMultiPolygon(wktContent) {
         let depth = 0;
         let currentPolygon = '';
         let inPolygon = false;
+        let polygonHasHoles = false;
+        let anyHolesDetected = false;
         
         for (let i = 0; i < content.length; i++) {
             const char = content[i];
@@ -1479,15 +1479,27 @@ function parseWKTMultiPolygon(wktContent) {
                 if (depth === 2) {
                     inPolygon = true;
                     currentPolygon = '';
+                    polygonHasHoles = false;
                     continue;
+                } else if (depth === 3 && inPolygon) {
+                    // A second ring inside this polygon — it's a hole ring
+                    polygonHasHoles = true;
+                    anyHolesDetected = true;
                 }
             } else if (char === ')') {
                 depth--;
                 if (depth === 1 && inPolygon) {
                     // End of a polygon
                     inPolygon = false;
-                    if (currentPolygon.trim()) {
+                    if (currentPolygon.trim() && !polygonHasHoles) {
                         const coords = parseWKTRing(currentPolygon);
+                        if (coords.length > 0) {
+                            polygons.push(coords);
+                        }
+                    } else if (currentPolygon.trim() && polygonHasHoles) {
+                        // Parse only the outer ring (everything before the first hole ',(')
+                        const outerRingContent = currentPolygon.split(',(')[0];
+                        const coords = parseWKTRing(outerRingContent);
                         if (coords.length > 0) {
                             polygons.push(coords);
                         }
@@ -1499,6 +1511,10 @@ function parseWKTMultiPolygon(wktContent) {
             if (inPolygon) {
                 currentPolygon += char;
             }
+        }
+        
+        if (anyHolesDetected) {
+            alert('Warning: The imported WKT contains polygon rings (holes). Hole rings are not supported and have been ignored — only the outer boundary of each polygon was imported.');
         }
     }
     
@@ -1598,9 +1614,9 @@ function updatePartnerSidebarContent(partner) {
     }
 
     // Set initial toggle states
-    const primaryVisible = partner.elements.primaryHexagons.length > 0 && partner.elements.primaryHexagons[0].polygon.options.fillOpacity > 0;
-    const secondaryVisible = partner.elements.secondaryHexagons.length > 0 && partner.elements.secondaryHexagons[0].polygon.options.fillOpacity > 0;
-    const deliveryVisible = hasDeliveryArea && partner.elements.deliveryAreaPolygons[0].polygon.options.fillOpacity > 0;
+    const primaryVisible = partner.elements.primaryHexagons.length > 0 && (partner.elements.primaryHexagons[0].polygon.options.fillOpacity > 0 || partner.elements.primaryHexagons[0].polygon.options.opacity > 0);
+    const secondaryVisible = partner.elements.secondaryHexagons.length > 0 && (partner.elements.secondaryHexagons[0].polygon.options.fillOpacity > 0 || partner.elements.secondaryHexagons[0].polygon.options.opacity > 0);
+    const deliveryVisible = hasDeliveryArea && (partner.elements.deliveryAreaPolygons[0].polygon.options.fillOpacity > 0 || partner.elements.deliveryAreaPolygons[0].polygon.options.opacity > 0);
     const hasSecondaryHexagons = partner.elements.secondaryHexagons.length > 0;
 
     document.getElementById('toggle-primary-zone').checked = primaryVisible;
@@ -1655,7 +1671,7 @@ function updatePartnerSidebarContent(partner) {
     updateIntersectionToggleState(partner.partnerId);
     
     // Re-initialize Lucide icons for any new elements
-    lucide.createIcons();
+    lucide.createIcons({ nodes: [document.getElementById('partner-info-sidebar')] });
 }
 
 /**
@@ -1675,33 +1691,8 @@ function resetSidebarForm() {
     // Clear pending delivery area polygons
     clearPendingDeliveryAreaPolygons();
     
-    document.getElementById('partner-form').reset();
-    document.getElementById('sidebar-partnerId').value = `partner${partnerIdCounter}`;
-    document.getElementById('sidebar-primary-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_H3_RESOLUTION.toString();
-    document.getElementById('sidebar-primary-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_PRIMARY_NUM_ZONES.toString();
-    document.getElementById('sidebar-secondary-resolution-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_H3_RESOLUTION.toString();
-    document.getElementById('sidebar-secondary-zones-value').textContent = PARTNER_CONSTANTS.DEFAULT_SECONDARY_NUM_ZONES.toString();
-    document.getElementById('secondary-fields').classList.add('hidden');
-    document.getElementById('sidebar-same-color').checked = true;
-    document.getElementById('sidebar-secondary-color').disabled = true;
-    
-    // Reset delivery area fields
-    document.getElementById('sidebar-enable-delivery-area').checked = false;
-    document.getElementById('delivery-area-fields').classList.add('hidden');
-    document.getElementById('sidebar-same-color-delivery').checked = true;
-    document.getElementById('sidebar-delivery-color').disabled = true;
-    // Set delivery color to match primary color
-    const primaryColor = document.getElementById('sidebar-primary-color').value || PARTNER_CONSTANTS.DEFAULT_PRIMARY_COLOR;
-    document.getElementById('sidebar-delivery-color').value = primaryColor;
-    // Clear polygon textarea
-    document.getElementById('sidebar-polygon-content').value = '';
-    
-    editMode.isActive = false;
-    editMode.partnerId = null;
-    
-    document.getElementById('partner-form-title').textContent = 'Add Partner';
-    const submitButton = document.getElementById('partner-submit-btn');
-    submitButton.textContent = 'Add';
+    // Delegate all field reset + editMode reset to setupAddPartnerForm
+    setupAddPartnerForm();
 }
 
 /**
@@ -2207,27 +2198,31 @@ function isPointInPolygon(lat, lng, polygonCoords) {
  * @returns {boolean} True if hexagon intersects with delivery area
  */
 function isHexagonIntersectedByPolygon(hexagonBoundary, deliveryPolygonCoords) {
-    // Turf.js uses [lng, lat] format, so we need to convert
-    // Convert hexagon boundary from [lat, lng] to [lng, lat]
-    const hexagonCoords = hexagonBoundary.map(v => [v[1], v[0]]);
-    // Close the ring (Turf.js requires closed rings)
-    hexagonCoords.push(hexagonCoords[0]);
-    
-    // Convert delivery polygon from [lat, lng] to [lng, lat]
-    const deliveryCoords = deliveryPolygonCoords.map(v => [v[1], v[0]]);
-    // Close the ring
-    deliveryCoords.push(deliveryCoords[0]);
-    
-    // Create Turf.js polygons
-    const hexagon = turf.polygon([hexagonCoords]);
-    const deliveryArea = turf.polygon([deliveryCoords]);
-    
-    // Check for intersection or containment
-    // intersects() catches: edge crossings, partial overlaps, vertex containment
-    // contains() catches: one polygon fully inside the other (either direction)
-    return turf.booleanIntersects(hexagon, deliveryArea) || 
-           turf.booleanContains(deliveryArea, hexagon) ||
-           turf.booleanContains(hexagon, deliveryArea);
+    try {
+        // Turf.js uses [lng, lat] format, so we need to convert
+        // Convert hexagon boundary from [lat, lng] to [lng, lat]
+        const hexagonCoords = hexagonBoundary.map(v => [v[1], v[0]]);
+        // Close the ring (Turf.js requires closed rings)
+        hexagonCoords.push(hexagonCoords[0]);
+        
+        // Convert delivery polygon from [lat, lng] to [lng, lat]
+        const deliveryCoords = deliveryPolygonCoords.map(v => [v[1], v[0]]);
+        // Close the ring
+        deliveryCoords.push(deliveryCoords[0]);
+        
+        // Create Turf.js polygons
+        const hexagon = turf.polygon([hexagonCoords]);
+        const deliveryArea = turf.polygon([deliveryCoords]);
+        
+        // Check for intersection or containment
+        // intersects() catches: edge crossings, partial overlaps, vertex containment
+        // contains() catches: one polygon fully inside the other (either direction)
+        return turf.booleanIntersects(hexagon, deliveryArea) || 
+               turf.booleanContains(deliveryArea, hexagon) ||
+               turf.booleanContains(hexagon, deliveryArea);
+    } catch (e) {
+        return false;
+    }
 }
 
 /**
@@ -2322,13 +2317,18 @@ function computeHexagonIntersections(partnerObject) {
     }
     
     // Helper function to check if a hexagon intersects with delivery area (excluding holes)
+    // Pre-build Turf polygon objects once so they are not recreated per hexagon.
+    const deliveryTurfPolygons = deliveryPolygons.map(polyObj => {
+        const latlngs = polyObj.polygon.getLatLngs()[0];
+        const polyCoords = latlngs.map(ll => [ll.lat, ll.lng]);
+        return polyCoords;
+    });
+
     function checkHexagonIntersection(hexagon) {
         const hexBoundary = h3.cellToBoundary(hexagon.h3Index);
         
         // Check if hexagon intersects with ANY delivery polygon's outer boundary
-        const intersectsOuter = deliveryPolygons.some(polyObj => {
-            const latlngs = polyObj.polygon.getLatLngs()[0];
-            const polyCoords = latlngs.map(ll => [ll.lat, ll.lng]);
+        const intersectsOuter = deliveryTurfPolygons.some(polyCoords => {
             return isHexagonIntersectedByPolygon(hexBoundary, polyCoords);
         });
         
@@ -2388,6 +2388,9 @@ function computeHexagonIntersections(partnerObject) {
  * Finds all hexagons (standalone and partner) at a given location.
  */
 function findHexagonsAtLocation(lat, lng) {
+    // NOTE: This is a linear scan over all hexagons. Performance degrades as
+    // the number of partners / standalone hexagons grows. Consider spatial
+    // indexing (e.g. an H3 cell lookup) if large datasets become a concern.
     const detectedHexagons = [];
     
     // Check standaloneHexagons
@@ -2553,21 +2556,40 @@ function openPartnerSidebar() {
 }
 
 // Hide context menu on document click (outside menu)
+// Hide context menu on document click (outside menu); close export dropdown too
 document.addEventListener('click', function(e) {
     const contextMenu = document.getElementById('context-menu');
     if (!contextMenu.contains(e.target)) {
         hideContextMenu();
     }
+    
+    const dropdown = document.getElementById('delivery-area-export-dropdown');
+    const exportBtn = document.getElementById('delivery-area-export-btn');
+    if (!dropdown.contains(e.target) && !exportBtn.contains(e.target)) {
+        dropdown.classList.add('hidden');
+    }
 });
 
-// Escape key handler - exit measurement mode
+// Global Escape key handler — exits measurement mode or delivery area mode
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && isMeasuring) {
+    if (e.key !== 'Escape') return;
+    
+    if (isMeasuring) {
         stopMeasurement();
-        const measurementToggle = document.getElementById('measurement-toggle');
-        measurementToggle.innerHTML = '<i data-lucide="ruler" class="icon-btn"></i> Start Measurement';
-        measurementToggle.style.backgroundColor = '';
-        lucide.createIcons();
+    } else if (deliveryAreaMode) {
+        if (deliveryAreaPoints.length > 0) {
+            // Remove last point and continue drawing
+            removeLastDeliveryAreaPoint();
+        } else if (deliveryAreaCompletedPolygons.length > 0) {
+            // No current points but has completed polygons - ask for confirmation before removing
+            const confirmed = confirm('Remove the last completed polygon?');
+            if (confirmed) {
+                removeLastCompletedPolygon();
+            }
+        } else {
+            // No points and no completed polygons, cancel the whole mode
+            cancelDeliveryAreaMode();
+        }
     }
 });
 
@@ -2594,6 +2616,7 @@ document.getElementById('tools-add-partner').addEventListener('click', function(
  * For partners without delivery area: all hexagons at the location are included
  */
 function findPartnersArrivingAtLocation(lat, lng) {
+    // NOTE: Linear scan — same performance caveat as findHexagonsAtLocation.
     const arrivingPartners = {};
     
     // Check partner hexagons
@@ -2733,7 +2756,7 @@ function updateCustomerInfoSidebarContent(lat, lng) {
         });
         
         // Initialize Lucide icons for the new content
-        lucide.createIcons();
+        lucide.createIcons({ nodes: [customerInfoPartnerList] });
     } else {
         // No partners arriving
         const noPartnersMsg = document.createElement('div');
@@ -2820,7 +2843,7 @@ function updateCustomerInfoSidebarContent(lat, lng) {
         });
         
         // Initialize Lucide icons for the new content
-        lucide.createIcons();
+        lucide.createIcons({ nodes: [customerInfoHexagonList] });
     } else {
         // No hexagons found
         const noHexagonsMsg = document.createElement('div');
@@ -2936,9 +2959,6 @@ const DELIVERY_AREA_CONSTANTS = {
     LINE_COLOR: '#15489a',
     LINE_WEIGHT: 4,
     LINE_OPACITY: 0.8,
-    TEMP_LINE_COLOR: '#15489a',
-    TEMP_LINE_WEIGHT: 4,
-    TEMP_LINE_OPACITY: 0.8,
     TEMP_LINE_DASH_ARRAY: '8, 8',
     POLYGON_FILL_COLOR: '#15489a',
     SNAP_TOLERANCE_PIXELS: 20
@@ -3020,18 +3040,17 @@ function startDeliveryAreaMode() {
     indicator.classList.remove('hidden');
     
     // Re-initialize Lucide icons for the indicator
-    lucide.createIcons();
+    lucide.createIcons({ nodes: [indicator] });
 }
 
 /**
  * Exits delivery area drawing mode and cleans up.
  */
-function exitDeliveryAreaMode() {
-    deliveryAreaMode = false;
-    
-    // Clear all drawing elements
-    clearDeliveryAreaDrawing();
-    
+/**
+ * Shared UI teardown for delivery area mode — called by both exitDeliveryAreaMode
+ * and exportDeliveryArea (which must NOT clear the polygon layers themselves).
+ */
+function _teardownDeliveryAreaUI() {
     // Re-enable all controls in the controls panel
     const controlsPanel = document.getElementById('controls');
     controlsPanel.classList.remove('controls-disabled');
@@ -3058,15 +3077,22 @@ function exitDeliveryAreaMode() {
     document.getElementById('measurement-overlay').classList.add('hidden');
     
     // Hide delivery area mode indicator
-    const indicator = document.getElementById('delivery-area-mode-indicator');
-    indicator.classList.add('hidden');
+    document.getElementById('delivery-area-mode-indicator').classList.add('hidden');
     
     // Hide export dropdown
     document.getElementById('delivery-area-export-dropdown').classList.add('hidden');
     
     // Remove pulse animation from Export button
-    const exportBtn = document.getElementById('delivery-area-export-btn');
-    exportBtn.classList.remove('animate-pulse-custom');
+    document.getElementById('delivery-area-export-btn').classList.remove('animate-pulse-custom');
+}
+
+function exitDeliveryAreaMode() {
+    deliveryAreaMode = false;
+    
+    // Clear all drawing elements
+    clearDeliveryAreaDrawing();
+    
+    _teardownDeliveryAreaUI();
 }
 
 /**
@@ -3266,9 +3292,9 @@ function handleDeliveryAreaMouseMove(e) {
     
     // Create new temporary line from last point to cursor
     deliveryAreaTempLine = L.polyline([[lastPoint.lat, lastPoint.lng], [lat, lng]], {
-        color: DELIVERY_AREA_CONSTANTS.TEMP_LINE_COLOR,
-        weight: DELIVERY_AREA_CONSTANTS.TEMP_LINE_WEIGHT,
-        opacity: DELIVERY_AREA_CONSTANTS.TEMP_LINE_OPACITY,
+        color: DELIVERY_AREA_CONSTANTS.LINE_COLOR,
+        weight: DELIVERY_AREA_CONSTANTS.LINE_WEIGHT,
+        opacity: DELIVERY_AREA_CONSTANTS.LINE_OPACITY,
         dashArray: DELIVERY_AREA_CONSTANTS.TEMP_LINE_DASH_ARRAY,
         interactive: false
     }).addTo(map);
@@ -3739,41 +3765,7 @@ function exportDeliveryArea(format) {
     // Exit delivery area mode (without clearing the now-pending polygons)
     deliveryAreaMode = false;
     
-    // Re-enable all controls in the controls panel
-    const controlsPanel = document.getElementById('controls');
-    controlsPanel.classList.remove('controls-disabled');
-    
-    // Expand controls panel on mobile
-    setControlsCollapsed(false);
-    
-    // Re-enable all interactive elements within the controls panel
-    const interactiveElements = controlsPanel.querySelectorAll('button, input, label');
-    interactiveElements.forEach(el => {
-        el.style.pointerEvents = 'auto';
-    });
-    
-    // Re-enable partner marker clicks
-    Object.values(partnersById).forEach(partner => {
-        if (partner.marker) {
-            partner.marker.on('click', function() {
-                showPartnerSidebar(partner.partnerId);
-            });
-        }
-    });
-    
-    // Hide measurement overlay
-    document.getElementById('measurement-overlay').classList.add('hidden');
-    
-    // Hide delivery area mode indicator
-    const indicator = document.getElementById('delivery-area-mode-indicator');
-    indicator.classList.add('hidden');
-    
-    // Hide export dropdown
-    document.getElementById('delivery-area-export-dropdown').classList.add('hidden');
-    
-    // Remove pulse animation from Export button
-    const exportBtn = document.getElementById('delivery-area-export-btn');
-    exportBtn.classList.remove('animate-pulse-custom');
+    _teardownDeliveryAreaUI();
     
     // Clear drawing state
     deliveryAreaPoints = [];
@@ -3828,32 +3820,4 @@ document.getElementById('delivery-area-export-kml').addEventListener('click', fu
 // Cancel button
 document.getElementById('delivery-area-cancel-btn').addEventListener('click', function() {
     cancelDeliveryAreaMode();
-});
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function(e) {
-    const dropdown = document.getElementById('delivery-area-export-dropdown');
-    const exportBtn = document.getElementById('delivery-area-export-btn');
-    if (!dropdown.contains(e.target) && !exportBtn.contains(e.target)) {
-        dropdown.classList.add('hidden');
-    }
-});
-
-// Escape key handler for delivery area mode
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && deliveryAreaMode) {
-        if (deliveryAreaPoints.length > 0) {
-            // Remove last point and continue drawing
-            removeLastDeliveryAreaPoint();
-        } else if (deliveryAreaCompletedPolygons.length > 0) {
-            // No current points but has completed polygons - ask for confirmation before removing
-            const confirmed = confirm('Remove the last completed polygon?');
-            if (confirmed) {
-                removeLastCompletedPolygon();
-            }
-        } else {
-            // No points and no completed polygons, cancel the whole mode
-            cancelDeliveryAreaMode();
-        }
-    }
 });
