@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-16
+
+### Changed
+- **Codebase Split**: Monolithic `script.js` (~3,800 lines) split into 11 logically
+  grouped files — `state.js`, `hexagons.js`, `measurement.js`, `map-events.js`,
+  `ui-controls.js`, `save-load.js`, `partners.js`, `partner-events.js`,
+  `context-menu.js`, `customer-info.js`, `delivery-area.js`. `index.html` updated to
+  load them in order via `<script>` tags. Zero logic changes — purely a structural
+  reorganisation.
+
+### Removed
+- `script.js` — replaced by the 11 files listed above.
+
 ## [1.1.0] - 2026-03-16
 
 ### Added

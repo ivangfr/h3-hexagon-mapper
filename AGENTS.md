@@ -8,12 +8,22 @@ Guidance for agentic coding assistants working in this repository.
 
 H3 Hexagon Mapper is a **pure vanilla JavaScript** single-page web application. There is
 no build system, no package manager, no transpilation step, and no test framework. The
-entire application consists of three files:
+application consists of the following files:
 
 | File | Purpose |
 |---|---|
 | `index.html` | Full HTML markup (~860 lines), CDN script/link tags, Tailwind config |
-| `script.js` | All application logic (~3,900 lines, single flat file) |
+| `state.js` | Map initialisation and all global state variables/constants |
+| `hexagons.js` | Standalone hexagon click and draw logic |
+| `measurement.js` | Distance measurement mode |
+| `map-events.js` | Leaflet map event listeners |
+| `ui-controls.js` | Toolbar and controls UI event listeners |
+| `save-load.js` | JSON save/load functionality |
+| `partners.js` | Partner management functions |
+| `partner-events.js` | Partner form and sidebar event listeners |
+| `context-menu.js` | Right-click context menu, cross marker, geometry helpers |
+| `customer-info.js` | Customer info sidebar and sidebar animation helpers |
+| `delivery-area.js` | Delivery area drawing mode and its event listeners |
 | `style.css` | Custom CSS overrides and animations (~480 lines) |
 
 All library dependencies are loaded at runtime from CDN URLs embedded in `index.html`.
@@ -46,8 +56,8 @@ no formatter, and no automated test suite. Verification is done manually in a br
 
 - Do **not** add `npm`, `eslint`, `prettier`, `vitest`, or any other tooling unless
   explicitly requested by the user.
-- Do **not** introduce ES module `import`/`export` syntax — all code runs as a plain
-  browser script loaded via `<script src="script.js">`.
+- Do **not** introduce ES module `import`/`export` syntax — all code runs as plain
+  browser scripts loaded via multiple `<script>` tags in `index.html`.
 - Do **not** introduce TypeScript, JSX, or any compile-time transformation.
 
 ---
@@ -82,16 +92,28 @@ There are no `import` or `export` statements anywhere. All library APIs are acce
 as browser globals (`L`, `h3`, `turf`, `lucide`). New code must follow the same pattern.
 
 ### File Organisation
-`script.js` is divided into clearly labelled sections separated by banner comments:
+Each logical area of the application lives in its own `.js` file (see the table in
+**Project Overview**). Every file begins with a `// ==========================================`
+section banner. Some files contain multiple internal sections, each with their own banner.
 
-```js
-// ==========================================
-// SECTION NAME
-// ==========================================
+`index.html` loads the scripts in this exact order — **do not change it**:
+
+```html
+<script src="state.js"></script>        <!-- must be first: defines all globals -->
+<script src="hexagons.js"></script>
+<script src="measurement.js"></script>
+<script src="customer-info.js"></script>
+<script src="context-menu.js"></script>
+<script src="ui-controls.js"></script>
+<script src="partners.js"></script>
+<script src="delivery-area.js"></script>
+<script src="save-load.js"></script>
+<script src="map-events.js"></script>
+<script src="partner-events.js"></script>
 ```
 
-Add new code inside the most appropriate existing section. Do not create additional
-`.js` files unless explicitly asked.
+When adding new code, place it inside the most appropriate existing file. Do not create
+additional `.js` files unless explicitly asked.
 
 ---
 
@@ -163,7 +185,7 @@ for geospatial computations that may fail on degenerate geometry.
 ## State Management
 
 All application state is stored in **module-level `let`/`const` variables** at the top
-of `script.js`. There is no store, reducer, or reactive system.
+of `state.js`. There is no store, reducer, or reactive system.
 
 ```js
 // Keyed object maps for O(1) lookup
