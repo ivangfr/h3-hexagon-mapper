@@ -5,7 +5,7 @@
 
 A web tool for viewing and interacting with H3 hexagons on a map. Add or remove hexagons, adjust size, color, and transparency, manage partners with their own zones, draw delivery area polygons, highlight intersecting hexagons, measure distances, use a right-click context menu for location info, and save or load data as JSON files.
 
-![Screenshot](documentation/ScreenshotUI.jpg)
+![Screenshot](documentation/tool-ui.jpg)
 
 ## Online Tool
 
