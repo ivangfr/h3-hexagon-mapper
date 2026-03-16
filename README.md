@@ -1,18 +1,15 @@
 # H3 Hexagon Mapper
 
+[![Hosted on GitHub Pages](https://img.shields.io/badge/hosted%20on-GitHub%20Pages-blue?logo=github)](https://ivangfr.github.io/h3-hexagon-mapper)
+[![License](https://img.shields.io/github/license/ivangfr/h3-hexagon-mapper)](LICENSE)
+
 A web tool for viewing and interacting with H3 hexagons on a map. Add or remove hexagons, adjust size, color, and transparency, manage partners with their own zones, draw delivery area polygons, highlight intersecting hexagons, measure distances, use a right-click context menu for location info, and save or load data as JSON files.
 
 ![Screenshot](documentation/ScreenshotUI.jpg)
 
-## Support
-
-If you find this tool helpful, consider buying me a coffee to support future development! ❤️
-
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ivan.franchin)
-
 ## Online Tool
 
-You can access the online tool [here](https://ivangfr.github.io/h3-hexagon-mapper).
+[https://ivangfr.github.io/h3-hexagon-mapper](https://ivangfr.github.io/h3-hexagon-mapper)
 
 ## Libraries Used
 
@@ -159,6 +156,12 @@ To run the project locally, follow these steps:
 ## Contributing
 
 Contributions are welcome! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request.
+
+## Support
+
+If you find this useful, consider buying me a coffee:
+
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/ivan.franchin)
 
 ## License
 
