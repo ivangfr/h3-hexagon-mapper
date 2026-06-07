@@ -6,7 +6,7 @@
 
 A web tool for viewing and interacting with H3 hexagons on a map. Add or remove hexagons, adjust size, color, and transparency, manage partners with their own zones, draw delivery area polygons, highlight intersecting hexagons, measure distances, use a right-click context menu for location info, and save or load data as JSON files.
 
-![Screenshot](documentation/tool-ui.jpg)
+![Screenshot](documentation/tool-ui.png)
 
 ## Online Tool
 
@@ -86,8 +86,8 @@ When adding or editing a partner, you can configure:
 
 - **Partner ID**: Unique identifier for the partner.
 - **Coordinates**: Latitude and longitude of the partner location.
-- **Primary Zone**: H3 resolution (0-15), number of zones (1-50), and color.
-- **Secondary Zone**: Optional additional zone layer with its own resolution, number of zones, and color. Enable the toggle to configure.
+- **Primary Zone**: H3 resolution (0-15), number of zones (1-50), and color. Zone hexagons automatically use per-ring opacity — even zones (0, 2, 4...) at 0.3, odd zones (1, 3, 5...) at 0.2.
+- **Secondary Zone**: Optional additional zone layer with its own resolution, number of zones, and color. Same per-ring opacity logic applies.
 - **Delivery Area**: Optional custom delivery polygon. Enable to define a boundary.
   - **Draw Delivery Area**: Click the "Draw Delivery Area" button to interactively draw a polygon on the map:
     - **Add Points**: Click on the map to add polygon vertices (minimum 3 points required).
@@ -127,7 +127,7 @@ When viewing a partner's info panel:
 - **Primary Zone Toggle**: Show/hide the primary H3 hexagonal zones for the selected partner.
 - **Secondary Zone Toggle**: Show/hide the secondary H3 hexagonal zones for the selected partner (if configured).
 - **Delivery Area Toggle**: Show/hide the delivery area polygon for the selected partner (if configured).
-- **Highlight Intersection Toggle**: When a delivery area is defined, highlight hexagons that intersect with the delivery polygon. This toggle is enabled only when the delivery area and at least one zone (primary or secondary) are visible.
+- **Highlight Intersection Toggle**: When a delivery area is defined, highlight hexagons that intersect with the delivery polygon. Highlighted opacity follows the same parity rule (even: 0.5, odd: 0.6). This toggle is enabled only when the delivery area and at least one zone (primary or secondary) are visible.
 - **Limit Delivery to Primary Toggle**: When enabled (default), if the delivery area is entirely inside the primary zone, secondary zone hexagons are marked as NOT intersected. This prevents double-counting. This toggle is only visible when both delivery area AND secondary zone exist.
 - **Partner Statistics**: View the resolution, number of zones, hexagon count, and intersection count (when delivery area exists) for both primary and secondary zones.
   - **Coverage Bar**: When a delivery area exists, a visual progress bar shows the percentage of hexagons that intersect with the delivery area.

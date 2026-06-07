@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-06-06
+
+### Changed
+- **Per-Zone Opacity for Hexagons**: Zone hexagons (both primary and secondary) now automatically use parity-based opacity — even zone rings (0, 2, 4...) render at 0.3, odd zone rings (1, 3, 5...) at 0.2. Intersected hexagon highlighting also follows parity (even: 0.5, odd: 0.6). Removed unused `INTERSECTION_OPACITY` constant.
+
 ## [1.2.1] - 2026-03-17
 
 ### Changed

@@ -74,7 +74,6 @@ let pendingDeliveryAreaPolygons = []; // Array to store pending delivery area po
 // Partner constants
 const PARTNER_CONSTANTS = {
     DEFAULT_OPACITY: 0.1,
-    INTERSECTION_OPACITY: 0.4,
     DEFAULT_PRIMARY_COLOR: '#0000ff',
     DEFAULT_PRIMARY_H3_RESOLUTION: 9,
     DEFAULT_PRIMARY_NUM_ZONES: 18,

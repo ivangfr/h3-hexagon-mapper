@@ -43,10 +43,11 @@ function addPartnerToMap(partner) {
     const disk = h3.gridDisk(centerCell, primaryNumZones - 1);
     disk.forEach(cell => {
         const boundary = h3.cellToBoundary(cell);
+        const zoneNumber = h3.gridDistance(centerCell, cell);
         const polygon = L.polygon(boundary, {
             color: actualPrimaryColor,
             fillColor: actualPrimaryColor,
-            fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
+            fillOpacity: zoneNumber % 2 === 0 ? 0.3 : 0.2,
             weight: PARTNER_CONSTANTS.DEFAULT_PRIMARY_HEXAGON_WEIGHT,
             interactive: false
         }).addTo(map);
@@ -57,7 +58,7 @@ function addPartnerToMap(partner) {
             center: { lat: latitude, lng: longitude },
             layerType: 'primary',
             h3Resolution: primaryH3Resolution,
-            zoneNumber: h3.gridDistance(centerCell, cell)
+            zoneNumber: zoneNumber
         };
         partnerObject.elements.primaryHexagons.push(hexagonObject);
     });
@@ -69,10 +70,11 @@ function addPartnerToMap(partner) {
         const disk2 = h3.gridDisk(centerCell2, secondaryNumZones - 1);
         disk2.forEach(cell => {
             const boundary = h3.cellToBoundary(cell);
+            const zoneNumber = h3.gridDistance(centerCell2, cell);
             const polygon = L.polygon(boundary, {
                 color: actualSecondaryColor,
                 fillColor: actualSecondaryColor,
-                fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY,
+                fillOpacity: zoneNumber % 2 === 0 ? 0.3 : 0.2,
                 weight: PARTNER_CONSTANTS.DEFAULT_SECONDARY_HEXAGON_WEIGHT,
                 interactive: false
             }).addTo(map);
@@ -83,7 +85,7 @@ function addPartnerToMap(partner) {
                 center: { lat: latitude, lng: longitude },
                 layerType: 'secondary',
                 h3Resolution: secondaryH3Resolution,
-                zoneNumber: h3.gridDistance(centerCell2, cell)
+                zoneNumber: zoneNumber
             };
             partnerObject.elements.secondaryHexagons.push(hexagonObject);
         });
@@ -221,8 +223,8 @@ function toggleHexagonsVisibility(partnerId, zoneType, visible) {
         hexagons.forEach(hexagon => {
             // If intersection is active and hexagon is intersected, use intersection opacity
             const targetOpacity = (intersectionActive && hexagon.isIntersectedByDelivery) 
-                ? PARTNER_CONSTANTS.INTERSECTION_OPACITY 
-                : PARTNER_CONSTANTS.DEFAULT_OPACITY;
+                ? (hexagon.zoneNumber % 2 === 0 ? 0.5 : 0.6)
+                : (hexagon.zoneNumber % 2 === 0 ? 0.3 : 0.2);
             hexagon.polygon.setStyle({
                 fillOpacity: targetOpacity,
                 opacity: 1
@@ -293,13 +295,13 @@ function toggleIntersectionHighlight(partnerId, enabled) {
     // When disabling, we don't need delivery area to be visible
     // We just need to reset hexagon opacity to default
     if (!enabled) {
-        // Reset all visible intersected hexagons to default opacity
+        // Reset all visible intersected hexagons to per-zone opacity
         partner.elements.primaryHexagons.forEach(hexagon => {
             if (hexagon.isIntersectedByDelivery) {
                 const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
                 if (isVisible) {
                     hexagon.polygon.setStyle({
-                        fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY
+                        fillOpacity: hexagon.zoneNumber % 2 === 0 ? 0.3 : 0.2
                     });
                 }
             }
@@ -310,7 +312,7 @@ function toggleIntersectionHighlight(partnerId, enabled) {
                 const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
                 if (isVisible) {
                     hexagon.polygon.setStyle({
-                        fillOpacity: PARTNER_CONSTANTS.DEFAULT_OPACITY
+                        fillOpacity: hexagon.zoneNumber % 2 === 0 ? 0.3 : 0.2
                     });
                 }
             }
@@ -327,7 +329,7 @@ function toggleIntersectionHighlight(partnerId, enabled) {
             const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
             if (isVisible) {
                 hexagon.polygon.setStyle({
-                    fillOpacity: PARTNER_CONSTANTS.INTERSECTION_OPACITY
+                    fillOpacity: hexagon.zoneNumber % 2 === 0 ? 0.5 : 0.6
                 });
             }
         }
@@ -339,7 +341,7 @@ function toggleIntersectionHighlight(partnerId, enabled) {
             const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
             if (isVisible) {
                 hexagon.polygon.setStyle({
-                    fillOpacity: PARTNER_CONSTANTS.INTERSECTION_OPACITY
+                    fillOpacity: hexagon.zoneNumber % 2 === 0 ? 0.5 : 0.6
                 });
             }
         }
@@ -883,10 +885,10 @@ function updatePartnerSidebarContent(partner) {
     // Initialize intersection highlight toggle state
     // Check if intersection highlight is currently active by checking hexagon opacity
     const primaryIntersectedHighlighted = partner.elements.primaryHexagons.some(hexagon => 
-        hexagon.isIntersectedByDelivery && hexagon.polygon.options.fillOpacity === PARTNER_CONSTANTS.INTERSECTION_OPACITY
+        hexagon.isIntersectedByDelivery && hexagon.polygon.options.fillOpacity === (hexagon.zoneNumber % 2 === 0 ? 0.5 : 0.6)
     );
     const secondaryIntersectedHighlighted = partner.elements.secondaryHexagons.some(hexagon => 
-        hexagon.isIntersectedByDelivery && hexagon.polygon.options.fillOpacity === PARTNER_CONSTANTS.INTERSECTION_OPACITY
+        hexagon.isIntersectedByDelivery && hexagon.polygon.options.fillOpacity === (hexagon.zoneNumber % 2 === 0 ? 0.5 : 0.6)
     );
     const intersectionCurrentlyActive = primaryIntersectedHighlighted || secondaryIntersectedHighlighted;
     

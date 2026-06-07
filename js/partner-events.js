@@ -259,8 +259,8 @@ document.getElementById('toggle-limit-delivery').addEventListener('change', func
         const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
         if (isVisible) {
             const targetOpacity = (intersectionActive && hexagon.isIntersectedByDelivery) 
-                ? PARTNER_CONSTANTS.INTERSECTION_OPACITY 
-                : PARTNER_CONSTANTS.DEFAULT_OPACITY;
+                ? (hexagon.zoneNumber % 2 === 0 ? 0.5 : 0.6)
+                : (hexagon.zoneNumber % 2 === 0 ? 0.3 : 0.2);
             hexagon.polygon.setStyle({
                 fillOpacity: targetOpacity
             });
@@ -272,8 +272,8 @@ document.getElementById('toggle-limit-delivery').addEventListener('change', func
         const isVisible = hexagon.polygon.options.fillOpacity > 0 || hexagon.polygon.options.opacity > 0;
         if (isVisible) {
             const targetOpacity = (intersectionActive && hexagon.isIntersectedByDelivery) 
-                ? PARTNER_CONSTANTS.INTERSECTION_OPACITY 
-                : PARTNER_CONSTANTS.DEFAULT_OPACITY;
+                ? (hexagon.zoneNumber % 2 === 0 ? 0.5 : 0.6)
+                : (hexagon.zoneNumber % 2 === 0 ? 0.3 : 0.2);
             hexagon.polygon.setStyle({
                 fillOpacity: targetOpacity
             });
